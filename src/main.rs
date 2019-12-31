@@ -1,5 +1,5 @@
-extern crate rand;
-
+use cursive::Cursive;
+use cursive::views::TextView;
 use rand::{rngs::StdRng, SeedableRng};
 
 mod game;
@@ -15,4 +15,9 @@ fn main() {
     }
     print!("{}", tiles::Hai::back_char());
     println!("{}", tiles::Hai::back_char());
+
+    let mut siv = Cursive::default();
+    siv.add_global_callback('q', |s| s.quit());
+    siv.add_layer(TextView::new("Hello cursive! Press <q> to quit."));
+    siv.run();
 }
