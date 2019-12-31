@@ -71,7 +71,7 @@ impl Game {
             yama[i] = Some(hai);
         }
 
-        yama.shuffle(rng);
+        // yama.shuffle(rng);
         let dice1 = rng.gen();
         let dice2 = rng.gen();
 
@@ -91,9 +91,9 @@ impl Game {
 
     pub fn to_string_repr(&self) -> String {
         let mut grid = unsafe {
-            let mut grid: [[String; 23]; 23] = std::mem::zeroed();
-            for i in 0..23 {
-                for j in 0..23 {
+            let mut grid: [[String; 25]; 25] = std::mem::zeroed();
+            for i in 0..25 {
+                for j in 0..25 {
                     grid[i][j] = String::from("  ");
                 }
             }
@@ -160,6 +160,65 @@ impl Game {
             grid[0][top_player.te.hai.len() + 1 + offset] = hai.to_string();
         }
         // Add Players 1/3/4
+        let bottom_player = &self.players[0];
+        let mut offset = 0;
+        for fuuro in &bottom_player.te.fuuro {
+            match fuuro {
+                Fuuro::Shuntsu { own, taken, from } | Fuuro::Kootsu { own, taken, from } => {
+                    let tiles = match from {
+                        Direction::Left => [*taken, own[0], own[1]],
+                        Direction::Front => [own[0], *taken, own[1]],
+                        Direction::Right => [own[0], own[1], *taken],
+                    };
+                    grid[24][24 - offset - 2] = tiles[0].to_string();
+                    grid[24][24 - offset - 1] = tiles[1].to_string();
+                    grid[24][24 - offset] = tiles[2].to_string();
+                    offset += 4;
+                }
+                Fuuro::Kantsu(KantsuInner::Ankan { own }) => {
+                    grid[24][24 - offset - 3] = own[0].to_string();
+                    grid[24][24 - offset - 2] = Hai::back_char().to_string();
+                    grid[24][24 - offset - 1] = Hai::back_char().to_string();
+                    grid[24][24 - offset] = own[3].to_string();
+                    offset += 5;
+                }
+                Fuuro::Kantsu(KantsuInner::DaiMinkan { own, taken, from }) => {
+                    let tiles = match from {
+                        Direction::Left => [*taken, own[0], own[1], own[2]],
+                        Direction::Front => [own[0], *taken, own[1], own[2]],
+                        Direction::Right => [own[0], own[1], own[2], *taken],
+                    };
+                    grid[24][24 - offset - 3] = tiles[0].to_string();
+                    grid[24][24 - offset - 2] = tiles[1].to_string();
+                    grid[24][24 - offset - 1] = tiles[2].to_string();
+                    grid[24][24 - offset] = tiles[3].to_string();
+                    offset += 5;
+                }
+                Fuuro::Kantsu(KantsuInner::ShouMinkan {
+                    own,
+                    taken,
+                    added,
+                    from,
+                }) => {
+                    let (tiles, taken_pos) = match from {
+                        Direction::Left => ([*taken, own[0], own[1]], 2),
+                        Direction::Front => ([own[0], *taken, own[1]], 1),
+                        Direction::Right => ([own[0], own[1], *taken], 0),
+                    };
+                    grid[24][24 - offset - 2] = tiles[0].to_string();
+                    grid[24][24 - offset - 1] = tiles[1].to_string();
+                    grid[24][24 - offset] = tiles[2].to_string();
+                    grid[23][24 - offset - taken_pos] = added.to_string();
+                    offset += 4;
+                }
+            }
+        }
+        for (i, hai) in bottom_player.te.hai.iter().enumerate() {
+            grid[24][i] = hai.to_string();
+        }
+        if let Some(hai) = bottom_player.te.tsumo {
+            grid[24][bottom_player.te.hai.len() + 1] = hai.to_string();
+        }
 
         for (i, hai) in self.yama.iter().enumerate() {
             if let Some(hai) = hai {
