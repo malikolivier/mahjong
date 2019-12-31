@@ -159,6 +159,7 @@ impl Game {
         if let Some(hai) = top_player.te.tsumo {
             grid[0][top_player.te.hai.len() + 1 + offset] = hai.to_string();
         }
+        // Add Players 1/3/4
 
         for (i, hai) in self.yama.iter().enumerate() {
             if let Some(hai) = hai {
@@ -195,6 +196,9 @@ impl Game {
                 }
             }
         }
+
+        grid[11][10] = format!(" {}", self.dice[0].into_char());
+        grid[11][13] = format!("{} ", self.dice[1].into_char());
 
         let mut out = String::with_capacity(22 * 21);
         for line in &grid {
