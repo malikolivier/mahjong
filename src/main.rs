@@ -11,7 +11,8 @@ fn main() {
     println!("{:?}", game);
 
     for hai in tiles::make_all_tiles().iter() {
-        println!("{:?}: {}", hai, hai.into_char());
+        print!("{}", hai.into_char());
     }
+    print!("{}", tiles::Hai::back_char());
     println!("{}", tiles::Hai::back_char());
 }
