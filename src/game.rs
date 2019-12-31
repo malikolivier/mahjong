@@ -104,6 +104,21 @@ impl Game {
                 }
             }
         }
+
+        let tsumohai_i = (break_point + 14 + 3 * 14) % 136;
+        let tsumohai = self.yama[tsumohai_i];
+        self.yama[tsumohai_i] = None;
+        self.players[0].te.tsumo = tsumohai;
+    }
+
+    pub fn throw_tsumo(&mut self) {
+        self.players[0].te.tsumo = None;
+    }
+
+    pub fn throw_tile(&mut self, i: usize) {
+        if let Some(hai) = self.players[0].te.hai.iter().nth(i).cloned() {
+            self.players[0].te.hai.remove(&hai);
+        }
     }
 
     pub fn to_string_repr(&self) -> String {
@@ -288,6 +303,13 @@ impl Game {
             out.push('\n');
         }
         out
+    }
+
+    pub fn player1_te(&self) -> impl Iterator<Item = &Hai> {
+        self.players[0].te.hai.iter()
+    }
+    pub fn player1_tsumo(&self) -> Option<Hai> {
+        self.players[0].te.tsumo
     }
 }
 

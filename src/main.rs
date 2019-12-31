@@ -1,3 +1,4 @@
+use cursive::views::Dialog;
 use cursive::views::TextView;
 use cursive::Cursive;
 use rand::{rngs::StdRng, SeedableRng};
@@ -5,9 +6,22 @@ use rand::{rngs::StdRng, SeedableRng};
 mod game;
 mod tiles;
 
-fn main() {
+static mut GAME: Option<game::Game> = None;
+
+fn game() -> &'static mut game::Game {
+    unsafe { GAME.as_mut().unwrap() }
+}
+fn init() {
     let mut rng: StdRng = SeedableRng::from_seed([0; 32]);
-    let mut game = game::Game::new(&mut rng);
+    let game = game::Game::new(&mut rng);
+    unsafe {
+        GAME = Some(game);
+    }
+}
+
+fn main() {
+    init();
+    let game = game();
     println!("{:?}", &game);
     println!("{}", game.to_string_repr());
 
@@ -17,8 +31,37 @@ fn main() {
     siv.add_global_callback('q', |s| s.quit());
     // siv.add_layer(TextView::new("Hello cursive! Press <q> to quit."));
     game.deal();
-    siv.add_layer(TextView::new(game.to_string_repr()));
+    run(&mut siv);
+
     siv.run();
+}
+
+fn run(siv: &mut Cursive) {
+    let game = game();
+    siv.add_layer(TextView::new(game.to_string_repr()));
+
+    let mut dialog = Dialog::text("").title("Hand");
+    for (i, hai) in game.player1_te().enumerate() {
+        dialog = dialog.button(hai.to_string(), move |s| discard(s, i))
+    }
+    if let Some(hai) = game.player1_tsumo() {
+        dialog = dialog.button(hai.to_string(), move |s| discard_tsumo(s));
+    }
+    siv.add_layer(dialog);
+}
+
+fn discard(s: &mut Cursive, i: usize) {
+    let game = game();
+    game.throw_tile(i);
+    // TODO: Do stuff for game to continue
+    s.pop_layer();
+    run(s);
+}
+fn discard_tsumo(s: &mut Cursive) {
+    let game = game();
+    game.throw_tsumo();
+    s.pop_layer();
+    run(s);
 }
 
 fn test_print_all_chars() {
