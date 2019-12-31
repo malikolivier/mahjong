@@ -68,8 +68,8 @@ pub enum Hai {
 }
 
 impl Hai {
-    pub fn into_char(self) -> char {
-        match self {
+    pub fn to_string(self) -> String {
+        let c = match self {
             Hai::Suu(SuuHai {
                 suu: Suu::Wan,
                 value,
@@ -88,8 +88,16 @@ impl Hai {
             Hai::Ji(JiHai::Fon(fon)) => std::char::from_u32(0x1F000 + fon as u32).unwrap(),
             Hai::Ji(JiHai::Sangen(Sangen::Haku)) => std::char::from_u32(0x1F006).unwrap(),
             Hai::Ji(JiHai::Sangen(Sangen::Hatsu)) => std::char::from_u32(0x1F005).unwrap(),
-            Hai::Ji(JiHai::Sangen(Sangen::Chun)) => std::char::from_u32(0x1F004).unwrap(),
-        }
+            Hai::Ji(JiHai::Sangen(Sangen::Chun)) => {
+                let mut s = String::new();
+                // Add VS15 before mahjong Chun tile for it to be shown as char (not emoji)
+                s.push(std::char::from_u32(0x1F004).unwrap());
+                s.push(std::char::from_u32(0xFE0E).unwrap());
+                return s;
+            }
+        };
+        // Except for Chun, all tiles seem to be shown as half-width characters, so add space
+        format!("{} ", c)
     }
 
     pub fn back_char() -> char {

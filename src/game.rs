@@ -2,7 +2,7 @@ use rand::distributions::{Distribution, Standard};
 use rand::seq::SliceRandom;
 use rand::Rng;
 
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 use super::tiles::{make_all_tiles, Fon, Hai};
 
@@ -35,18 +35,41 @@ impl Distribution<Dice> for Standard {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Game {
     wind: Fon,
     turn: Fon,
     players: [Player; 4],
-    yama: Vec<Hai>,
+    yama: [Option<Hai>; 136],
     dice: [Dice; 2],
+}
+
+use std::fmt;
+
+impl fmt::Debug for Game {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut yama = f.debug_list();
+        for hai in self.yama.iter() {
+            yama.entry(hai);
+        }
+        let yama = yama.finish();
+
+        f.debug_struct("Game")
+            .field("wind", &self.wind)
+            .field("turn", &self.turn)
+            .field("players", &self.players)
+            .field("yama", &yama)
+            .field("dice", &self.dice)
+            .finish()
+    }
 }
 
 impl Game {
     pub fn new<R: Rng>(rng: &mut R) -> Self {
-        let mut yama = make_all_tiles();
+        let mut yama = [None; 136];
+        for (i, hai) in make_all_tiles().iter().cloned().enumerate() {
+            yama[i] = Some(hai);
+        }
 
         yama.shuffle(rng);
         let dice1 = rng.gen();
@@ -61,9 +84,126 @@ impl Game {
                 Player::new(Fon::Shaa),
                 Player::new(Fon::Pee),
             ],
-            yama: yama.iter().cloned().collect(),
+            yama,
             dice: [dice1, dice2],
         }
+    }
+
+    pub fn to_string_repr(&self) -> String {
+        let mut grid = unsafe {
+            let mut grid: [[String; 23]; 23] = std::mem::zeroed();
+            for i in 0..23 {
+                for j in 0..23 {
+                    grid[i][j] = String::from("  ");
+                }
+            }
+            grid
+        };
+        let top_player = &self.players[2];
+
+        let mut offset = 0;
+        for fuuro in &top_player.te.fuuro {
+            match fuuro {
+                Fuuro::Shuntsu { own, taken, from } | Fuuro::Kootsu { own, taken, from } => {
+                    let tiles = match from {
+                        Direction::Left => [own[0], own[1], *taken],
+                        Direction::Front => [own[0], *taken, own[1]],
+                        Direction::Right => [*taken, own[0], own[1]],
+                    };
+                    grid[0][offset] = tiles[0].to_string();
+                    grid[0][offset + 1] = tiles[1].to_string();
+                    grid[0][offset + 2] = tiles[2].to_string();
+                    offset += 4;
+                }
+                Fuuro::Kantsu(KantsuInner::Ankan { own }) => {
+                    grid[0][offset] = own[0].to_string();
+                    grid[0][offset + 1] = Hai::back_char().to_string();
+                    grid[0][offset + 2] = Hai::back_char().to_string();
+                    grid[0][offset + 3] = own[3].to_string();
+                    offset += 5;
+                }
+                Fuuro::Kantsu(KantsuInner::DaiMinkan { own, taken, from }) => {
+                    let tiles = match from {
+                        Direction::Left => [own[0], own[1], own[2], *taken],
+                        Direction::Front => [own[0], *taken, own[1], own[2]],
+                        Direction::Right => [*taken, own[0], own[1], own[2]],
+                    };
+                    grid[0][offset] = tiles[0].to_string();
+                    grid[0][offset + 1] = tiles[1].to_string();
+                    grid[0][offset + 2] = tiles[2].to_string();
+                    grid[0][offset + 3] = tiles[3].to_string();
+                    offset += 5;
+                }
+                Fuuro::Kantsu(KantsuInner::ShouMinkan {
+                    own,
+                    taken,
+                    added,
+                    from,
+                }) => {
+                    let (tiles, taken_pos) = match from {
+                        Direction::Left => ([own[0], own[1], *taken], 2),
+                        Direction::Front => ([own[0], *taken, own[1]], 1),
+                        Direction::Right => ([*taken, own[0], own[1]], 0),
+                    };
+                    grid[0][offset] = tiles[0].to_string();
+                    grid[0][offset + 1] = tiles[1].to_string();
+                    grid[0][offset + 2] = tiles[2].to_string();
+                    grid[1][offset + taken_pos] = added.to_string();
+                    offset += 4;
+                }
+            }
+        }
+        for (i, hai) in top_player.te.hai.iter().enumerate() {
+            grid[0][i + offset] = hai.to_string();
+        }
+        if let Some(hai) = top_player.te.tsumo {
+            grid[0][top_player.te.hai.len() + 1 + offset] = hai.to_string();
+        }
+
+        for (i, hai) in self.yama.iter().enumerate() {
+            if let Some(hai) = hai {
+                match i {
+                    0..=33 => {
+                        if i % 2 == 0 {
+                            grid[21][20 - i / 2] = hai.to_string();
+                        } else {
+                            grid[22][20 - i / 2] = hai.to_string();
+                        }
+                    }
+                    34..=67 => {
+                        if i % 2 == 0 {
+                            grid[20 - (i - 34) / 2][3] = hai.to_string();
+                        } else {
+                            grid[20 - (i - 34) / 2][2] = hai.to_string();
+                        }
+                    }
+                    68..=101 => {
+                        if i % 2 == 0 {
+                            grid[3][4 + (i - 68) / 2] = hai.to_string();
+                        } else {
+                            grid[2][4 + (i - 68) / 2] = hai.to_string();
+                        }
+                    }
+                    102..=std::usize::MAX => {
+                        if i % 2 == 0 {
+                            grid[4 + (i - 102) / 2][21] = hai.to_string();
+                        } else {
+                            grid[4 + (i - 102) / 2][22] = hai.to_string();
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        let mut out = String::with_capacity(22 * 21);
+        for line in &grid {
+            for c in line {
+                out.push_str(c);
+            }
+            out.push('\n');
+        }
+        out
     }
 }
 
@@ -84,7 +224,7 @@ impl Player {
 
 #[derive(Default, Debug, Eq, PartialEq, Clone)]
 pub struct Te {
-    hai: HashSet<Hai>,
+    hai: BTreeSet<Hai>,
     fuuro: Vec<Fuuro>,
     tsumo: Option<Hai>,
 }
