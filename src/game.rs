@@ -116,8 +116,9 @@ impl Game {
             }
             grid
         };
-        let top_player = &self.players[2];
 
+        // Player 3
+        let top_player = &self.players[2];
         let mut offset = 0;
         for fuuro in &top_player.te.fuuro {
             match fuuro {
@@ -176,7 +177,8 @@ impl Game {
         if let Some(hai) = top_player.te.tsumo {
             grid[0][top_player.te.hai.len() + 1 + offset] = hai.to_string();
         }
-        // Add Players 1/3/4
+
+        // Player 1
         let bottom_player = &self.players[0];
         let mut offset = 0;
         for fuuro in &bottom_player.te.fuuro {
@@ -236,6 +238,8 @@ impl Game {
         if let Some(hai) = bottom_player.te.tsumo {
             grid[24][bottom_player.te.hai.len() + 1] = hai.to_string();
         }
+
+        // TODO: Add player 2 and 4
 
         for (i, hai) in self.yama.iter().enumerate() {
             if let Some(hai) = hai {
