@@ -16,6 +16,12 @@ pub enum Dice {
     Six = 6,
 }
 
+impl Dice {
+    pub fn into_char(self) -> char {
+        std::char::from_u32(0x267F + self as u32).unwrap()
+    }
+}
+
 impl Distribution<Dice> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Dice {
         match rng.gen_range(0, 6) {
