@@ -71,7 +71,7 @@ impl Game {
             yama[i] = Some(hai);
         }
 
-        // yama.shuffle(rng);
+        yama.shuffle(rng);
         let dice1 = rng.gen();
         let dice2 = rng.gen();
 
