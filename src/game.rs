@@ -1,9 +1,10 @@
+use std::fmt;
+
 use rand::distributions::{Distribution, Standard};
 use rand::seq::SliceRandom;
 use rand::Rng;
 
-use std::collections::BTreeSet;
-
+use super::list::OrderedList;
 use super::tiles::{make_all_tiles, Fon, Hai};
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
@@ -41,10 +42,9 @@ pub struct Game {
     turn: Fon,
     players: [Player; 4],
     yama: [Option<Hai>; 136],
+    hoo: [Hoo; 4],
     dice: [Dice; 2],
 }
-
-use std::fmt;
 
 impl fmt::Debug for Game {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -85,6 +85,7 @@ impl Game {
                 Player::new(Fon::Pee),
             ],
             yama,
+            hoo: Default::default(),
             dice: [dice1, dice2],
         }
     }
@@ -111,14 +112,22 @@ impl Game {
         self.players[0].te.tsumo = tsumohai;
     }
 
-    pub fn throw_tsumo(&mut self) {
-        self.players[0].te.tsumo = None;
+    pub fn throw_tsumo(&mut self, riichi: bool) {
+        let hai = self.players[0].te.tsumo.take().expect("Has tsumohai");
+        self.hoo[0].river.push(if riichi {
+            SuteHai::Riichi(hai)
+        } else {
+            SuteHai::Normal(hai)
+        })
     }
 
-    pub fn throw_tile(&mut self, i: usize) {
-        if let Some(hai) = self.players[0].te.hai.iter().nth(i).cloned() {
-            self.players[0].te.hai.remove(&hai);
-        }
+    pub fn throw_tile(&mut self, i: usize, riichi: bool) {
+        let hai = self.players[0].te.hai.remove(i);
+        self.hoo[0].river.push(if riichi {
+            SuteHai::Riichi(hai)
+        } else {
+            SuteHai::Normal(hai)
+        })
     }
 
     pub fn to_string_repr(&self) -> String {
@@ -254,6 +263,13 @@ impl Game {
             grid[24][bottom_player.te.hai.len() + 1] = hai.to_string();
         }
 
+        for (i, sutehai) in self.hoo[0].river.iter().enumerate() {
+            let hai = match sutehai {
+                SuteHai::Normal(hai) | SuteHai::Riichi(hai) => hai,
+            };
+            grid[17 + i / 6][9 + i % 6] = hai.to_string();
+        }
+
         // TODO: Add player 2 and 4
 
         for (i, hai) in self.yama.iter().enumerate() {
@@ -313,6 +329,16 @@ impl Game {
     }
 }
 
+#[derive(Default, Debug, Clone)]
+pub struct Hoo {
+    river: Vec<SuteHai>,
+}
+#[derive(Debug, Copy, Clone)]
+pub enum SuteHai {
+    Normal(Hai),
+    Riichi(Hai),
+}
+
 #[derive(Debug, Clone)]
 pub struct Player {
     wind: Fon,
@@ -330,7 +356,7 @@ impl Player {
 
 #[derive(Default, Debug, Eq, PartialEq, Clone)]
 pub struct Te {
-    hai: BTreeSet<Hai>,
+    hai: OrderedList<Hai>,
     fuuro: Vec<Fuuro>,
     tsumo: Option<Hai>,
 }

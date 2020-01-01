@@ -4,6 +4,7 @@ use cursive::Cursive;
 use rand::{rngs::StdRng, SeedableRng};
 
 mod game;
+mod list;
 mod tiles;
 
 static mut GAME: Option<game::Game> = None;
@@ -52,14 +53,14 @@ fn run(siv: &mut Cursive) {
 
 fn discard(s: &mut Cursive, i: usize) {
     let game = game();
-    game.throw_tile(i);
+    game.throw_tile(i, false);
     // TODO: Do stuff for game to continue
     s.pop_layer();
     run(s);
 }
 fn discard_tsumo(s: &mut Cursive) {
     let game = game();
-    game.throw_tsumo();
+    game.throw_tsumo(false);
     s.pop_layer();
     run(s);
 }
