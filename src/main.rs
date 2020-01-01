@@ -3,6 +3,7 @@ use cursive::views::TextView;
 use cursive::Cursive;
 use rand::{rngs::StdRng, SeedableRng};
 
+mod ai;
 mod game;
 mod list;
 mod tiles;
