@@ -127,8 +127,6 @@ impl Game {
     }
 
     pub fn start(&mut self, [p1, p2, p3, p4]: [Box<dyn AI>; 4]) {
-        use rayon::scope;
-
         loop {
             let mut call1 = None;
             let mut call2 = None;

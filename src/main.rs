@@ -18,8 +18,14 @@ fn init() {
     let game = game::Game::new(&mut rng);
     unsafe {
         GAME = Some(game);
+        // SIV = Some(Cursive::default());
     }
 }
+
+// static mut SIV: Option<Cursive> = None;
+// fn siv() -> &'static mut Cursive {
+//     unsafe { SIV.as_mut().unwrap() }
+// }
 
 fn main() {
     init();
@@ -33,9 +39,31 @@ fn main() {
     siv.add_global_callback('q', |s| s.quit());
     // siv.add_layer(TextView::new("Hello cursive! Press <q> to quit."));
     game.deal();
+
     run(&mut siv);
 
+    // game.start([
+    //     Box::new(CursiveHuman),
+    //     Box::new(NullBot),
+    //     Box::new(NullBot),
+    //     Box::new(NullBot),
+    // ]);
+
     siv.run();
+}
+
+struct CursiveHuman;
+struct NullBot;
+
+impl ai::AI for CursiveHuman {
+    fn call(&self, game: &game::Game, player_index: usize) -> Option<ai::Call> {
+        Some(ai::Call::Tsumo)
+    }
+}
+impl ai::AI for NullBot {
+    fn call(&self, game: &game::Game, player_index: usize) -> Option<ai::Call> {
+        Some(ai::Call::Tsumo)
+    }
 }
 
 fn run(siv: &mut Cursive) {
