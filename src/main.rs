@@ -11,23 +11,30 @@ use std::sync::mpsc::channel;
 
 fn main() {
     let mut rng: StdRng = SeedableRng::from_seed([0; 32]);
-    let mut game = game::Game::new(&mut rng);
     let (tx_call, rx_call) = channel();
     let (tx_turn, rx_turn) = channel();
+    let (tx_game, rx_game) = channel();
 
     test_print_all_chars();
 
+    std::thread::spawn(move || {
+        let mut game = game::Game::new(&mut rng);
+
+        game.play(
+            &[
+                Box::new(CursiveHuman { rx_call, rx_turn }),
+                Box::new(NullBot),
+                Box::new(NullBot),
+                Box::new(NullBot),
+            ],
+            tx_game,
+        );
+    });
+
     let mut siv = Cursive::default();
     siv.add_global_callback('q', |s| s.quit());
-    game.play(&[
-        Box::new(CursiveHuman {
-            rx_call, rx_turn
-        }),
-        Box::new(NullBot),
-        Box::new(NullBot),
-        Box::new(NullBot),
-    ]);
 
+    let game = rx_game.recv().expect("Receive initial state");
     siv.add_layer(TextView::new(game.to_string_repr()));
 
     let mut dialog = Dialog::text("").title("Hand");
@@ -39,7 +46,15 @@ fn main() {
     }
     siv.add_layer(dialog);
 
-    siv.run();
+    siv.refresh();
+    loop {
+        if siv.is_running() {
+            siv.step();
+            std::thread::sleep(std::time::Duration::new(0, 100_000));
+        } else {
+            break;
+        }
+    }
 }
 
 struct CursiveHuman {

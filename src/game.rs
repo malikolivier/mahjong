@@ -116,10 +116,14 @@ impl Game {
         tsumohai_i
     }
 
-    pub fn play(&mut self, players: &[Box<dyn AI>; 4]) {
+    pub fn play(&mut self, players: &[Box<dyn AI>; 4], tx: std::sync::mpsc::Sender<Game>) {
+        tx.send(self.clone()).expect("Sent!");
         self.deal();
+        tx.send(self.clone()).expect("Sent!");
 
-        while self.next_turn(players) {}
+        while self.next_turn(players) {
+            tx.send(self.clone()).expect("Sent!");
+        }
     }
 
     fn deal(&mut self) {
