@@ -116,11 +116,8 @@ impl Game {
 
     pub fn play(&mut self, players: &[Box<dyn AI>; 4], tx: std::sync::mpsc::Sender<Game>) {
         self.deal();
-        tx.send(self.clone()).expect("Sent!");
 
-        while self.next_turn(players) {
-            tx.send(self.clone()).expect("Sent!");
-        }
+        while self.next_turn(players, &tx) {}
     }
 
     fn deal(&mut self) {
@@ -149,7 +146,11 @@ impl Game {
     }
 
     /// Returns a boolean whose value is false if this is the last turn
-    fn next_turn(&mut self, players: &[Box<dyn AI>; 4]) -> bool {
+    fn next_turn(
+        &mut self,
+        players: &[Box<dyn AI>; 4],
+        tx: &std::sync::mpsc::Sender<Game>,
+    ) -> bool {
         // Listen for chi/pon/kan/ron
         let call1 = players[self.turn as usize].call(
             self,
@@ -170,6 +171,7 @@ impl Game {
         match [call1, call2, call3] {
             [None, None, None] => {
                 self.draw();
+                tx.send(self.clone()).expect("Sent!");
                 let result = players[self.turn as usize].do_turn(self, self.turn);
                 match result {
                     TurnResult::Tsumo => self.agari(self.turn),
@@ -206,6 +208,7 @@ impl Game {
             .tsumo
             .take()
             .expect("Has tsumohai");
+        eprintln!("Throw tsumohai {}", hai.to_string());
         self.hoo[p as usize].river.push(if riichi {
             SuteHai::Riichi(hai)
         } else {
@@ -215,6 +218,11 @@ impl Game {
 
     pub fn throw_tile(&mut self, p: Fon, i: usize, riichi: bool) {
         let hai = self.players[p as usize].te.hai.remove(i);
+        if let Some(tsumohai) = self.players[p as usize].te.tsumo.take() {
+            eprintln!("Insert tsumohai {}", tsumohai.to_string());
+            self.players[p as usize].te.hai.insert(tsumohai);
+        }
+        eprintln!("Throw tehai {}", hai.to_string());
         self.hoo[p as usize].river.push(if riichi {
             SuteHai::Riichi(hai)
         } else {
@@ -362,7 +370,76 @@ impl Game {
             grid[17 + i / 6][9 + i % 6] = hai.to_string();
         }
 
-        // TODO: Add player 2 and 4
+        // Player 2
+        let bottom_player = &self.players[1];
+        let mut offset = 0;
+        // TODO: Called tiles not done
+        for fuuro in &bottom_player.te.fuuro {
+            match fuuro {
+                Fuuro::Shuntsu { own, taken, from } | Fuuro::Kootsu { own, taken, from } => {
+                    let tiles = match from {
+                        Direction::Left => [*taken, own[0], own[1]],
+                        Direction::Front => [own[0], *taken, own[1]],
+                        Direction::Right => [own[0], own[1], *taken],
+                    };
+                    grid[24][24 - offset - 2] = tiles[0].to_string();
+                    grid[24][24 - offset - 1] = tiles[1].to_string();
+                    grid[24][24 - offset] = tiles[2].to_string();
+                    offset += 4;
+                }
+                Fuuro::Kantsu(KantsuInner::Ankan { own }) => {
+                    grid[24][24 - offset - 3] = own[0].to_string();
+                    grid[24][24 - offset - 2] = Hai::back_char().to_string();
+                    grid[24][24 - offset - 1] = Hai::back_char().to_string();
+                    grid[24][24 - offset] = own[3].to_string();
+                    offset += 5;
+                }
+                Fuuro::Kantsu(KantsuInner::DaiMinkan { own, taken, from }) => {
+                    let tiles = match from {
+                        Direction::Left => [*taken, own[0], own[1], own[2]],
+                        Direction::Front => [own[0], *taken, own[1], own[2]],
+                        Direction::Right => [own[0], own[1], own[2], *taken],
+                    };
+                    grid[24][24 - offset - 3] = tiles[0].to_string();
+                    grid[24][24 - offset - 2] = tiles[1].to_string();
+                    grid[24][24 - offset - 1] = tiles[2].to_string();
+                    grid[24][24 - offset] = tiles[3].to_string();
+                    offset += 5;
+                }
+                Fuuro::Kantsu(KantsuInner::ShouMinkan {
+                    own,
+                    taken,
+                    added,
+                    from,
+                }) => {
+                    let (tiles, taken_pos) = match from {
+                        Direction::Left => ([*taken, own[0], own[1]], 2),
+                        Direction::Front => ([own[0], *taken, own[1]], 1),
+                        Direction::Right => ([own[0], own[1], *taken], 0),
+                    };
+                    grid[24][24 - offset - 2] = tiles[0].to_string();
+                    grid[24][24 - offset - 1] = tiles[1].to_string();
+                    grid[24][24 - offset] = tiles[2].to_string();
+                    grid[23][24 - offset - taken_pos] = added.to_string();
+                    offset += 4;
+                }
+            }
+        }
+        for (i, hai) in bottom_player.te.hai.iter().enumerate() {
+            grid[i + 5][0] = hai.to_string();
+        }
+        if let Some(hai) = bottom_player.te.tsumo {
+            grid[bottom_player.te.hai.len() + 6][0] = hai.to_string();
+        }
+
+        for (i, sutehai) in self.hoo[1].river.iter().enumerate() {
+            let hai = match sutehai {
+                SuteHai::Normal(hai) | SuteHai::Riichi(hai) => hai,
+            };
+            grid[8 + i % 6][7 + i / 6] = hai.to_string();
+        }
+
+        // TODO: Add player 4
 
         for (i, hai) in self.yama.iter().enumerate() {
             if let Some(hai) = hai {
@@ -414,10 +491,10 @@ impl Game {
     }
 
     pub fn player1_te(&self) -> impl Iterator<Item = &Hai> {
-        self.players[0].te.hai.iter()
+        self.players[Fon::Ton as usize].te.hai.iter()
     }
     pub fn player1_tsumo(&self) -> Option<Hai> {
-        self.players[0].te.tsumo
+        self.players[Fon::Ton as usize].te.tsumo
     }
 }
 
