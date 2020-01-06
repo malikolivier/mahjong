@@ -45,7 +45,7 @@ fn main() {
 
         if game.turn == tiles::Fon::Ton {
             let mut dialog = Dialog::text("").title("Hand");
-            for (i, hai) in game.player1_te().enumerate() {
+            for (i, hai) in game.player_te(tiles::Fon::Ton).enumerate() {
                 let tx_turn = tx_turn.clone();
                 dialog = dialog.button(hai.to_string(), move |s| {
                     tx_turn
@@ -57,7 +57,7 @@ fn main() {
                     s.quit();
                 })
             }
-            if let Some(hai) = game.player1_tsumo() {
+            if let Some(hai) = game.player_tsumo(tiles::Fon::Ton) {
                 let tx_turn = tx_turn.clone();
                 dialog = dialog.button(hai.to_string(), move |s| {
                     tx_turn

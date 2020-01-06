@@ -490,11 +490,11 @@ impl Game {
         out
     }
 
-    pub fn player1_te(&self) -> impl Iterator<Item = &Hai> {
-        self.players[Fon::Ton as usize].te.hai.iter()
+    pub fn player_te(&self, p: Fon) -> impl Iterator<Item = &Hai> {
+        self.players[p as usize].te.hai.iter()
     }
-    pub fn player1_tsumo(&self) -> Option<Hai> {
-        self.players[Fon::Ton as usize].te.tsumo
+    pub fn player_tsumo(&self, p: Fon) -> Option<Hai> {
+        self.players[p as usize].te.tsumo
     }
 }
 
