@@ -41,7 +41,7 @@ impl Distribution<Dice> for Standard {
 pub struct Game {
     wind: Fon,
     /// Current player that should draw
-    turn: Fon,
+    pub turn: Fon,
     honba: usize,
     // turn_player: usize,
     tsumo_cnt: usize,

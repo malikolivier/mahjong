@@ -34,23 +34,36 @@ fn main() {
     let mut siv = Cursive::default();
     siv.add_global_callback('q', |s| s.quit());
 
-    let game = rx_game.recv().expect("Receive initial state");
-    siv.add_layer(TextView::new(game.to_string_repr()));
-
-    let mut dialog = Dialog::text("").title("Hand");
-    for (i, hai) in game.player1_te().enumerate() {
-        dialog = dialog.button(hai.to_string(), move |s| ())
-    }
-    if let Some(hai) = game.player1_tsumo() {
-        dialog = dialog.button(hai.to_string(), move |s| ());
-    }
-    siv.add_layer(dialog);
-
-    siv.refresh();
     loop {
         if siv.is_running() {
             siv.step();
-            std::thread::sleep(std::time::Duration::new(0, 100_000));
+
+            siv.pop_layer();
+            let game = rx_game.recv().expect("Receive state");
+            siv.add_layer(TextView::new(game.to_string_repr()));
+
+            std::thread::sleep(std::time::Duration::new(1, 0));
+
+            if game.turn == tiles::Fon::Ton {
+                let mut dialog = Dialog::text("").title("Hand");
+                for (i, hai) in game.player1_te().enumerate() {
+                    let tx_turn = tx_turn.clone();
+                    dialog = dialog.button(hai.to_string(), move |s| {
+                        tx_turn.send(ai::TurnResult::ThrowHai {
+                            index: i,
+                            riichi: false,
+                        }).expect("Sent turn result!");
+                    })
+                }
+                if let Some(hai) = game.player1_tsumo() {
+                    let tx_turn = tx_turn.clone();
+                    dialog = dialog.button(hai.to_string(), move |s| {
+                        tx_turn.send(ai::TurnResult::ThrowTsumoHai { riichi: false }).expect("Sent turn result!");
+                    });
+                }
+                siv.add_layer(dialog);
+            }
+            siv.refresh();
         } else {
             break;
         }
@@ -60,7 +73,6 @@ fn main() {
 struct CursiveHuman {
     rx_call: std::sync::mpsc::Receiver<Option<ai::Call>>,
     rx_turn: std::sync::mpsc::Receiver<ai::TurnResult>,
-    // siv
 }
 struct NullBot;
 
@@ -74,7 +86,7 @@ impl ai::AI for CursiveHuman {
         None
     }
     fn do_turn(&self, game: &game::Game, player: tiles::Fon) -> ai::TurnResult {
-        ai::TurnResult::ThrowTsumoHai { riichi: false }
+        self.rx_turn.recv().expect("Receive result!")
     }
 }
 impl ai::AI for NullBot {
