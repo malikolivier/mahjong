@@ -195,7 +195,7 @@ impl Game {
         false
     }
 
-    fn agari(&mut self, player: Fon) -> bool {
+    fn agari(&mut self, _player: Fon) -> bool {
         // TODO
         false
     }

@@ -60,14 +60,6 @@ impl Fon {
             Fon::Pee => Fon::Ton,
         }
     }
-    pub fn prev(self) -> Self {
-        match self {
-            Fon::Ton => Fon::Pee,
-            Fon::Nan => Fon::Ton,
-            Fon::Shaa => Fon::Nan,
-            Fon::Pee => Fon::Shaa,
-        }
-    }
 }
 
 const FON: [Fon; 4] = [Fon::Ton, Fon::Nan, Fon::Shaa, Fon::Pee];

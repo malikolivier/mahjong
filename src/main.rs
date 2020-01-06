@@ -32,7 +32,7 @@ fn main() {
     });
 
     let quit = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
-    let mut instant = None;
+    let mut instant;
     'quit: loop {
         let mut siv = Cursive::default();
         let quit_ptr = quit.clone();
@@ -104,26 +104,26 @@ struct NullBot;
 impl ai::AI for CursiveHuman {
     fn call(
         &self,
-        game: &game::Game,
-        player: tiles::Fon,
-        allowed_calls: &[ai::Call],
+        _game: &game::Game,
+        _player: tiles::Fon,
+        _allowed_calls: &[ai::Call],
     ) -> Option<ai::Call> {
         None
     }
-    fn do_turn(&self, game: &game::Game, player: tiles::Fon) -> ai::TurnResult {
+    fn do_turn(&self, _game: &game::Game, _player: tiles::Fon) -> ai::TurnResult {
         self.rx_turn.recv().expect("Receive result!")
     }
 }
 impl ai::AI for NullBot {
     fn call(
         &self,
-        game: &game::Game,
-        player: tiles::Fon,
-        allowed_calls: &[ai::Call],
+        _game: &game::Game,
+        _player: tiles::Fon,
+        _allowed_calls: &[ai::Call],
     ) -> Option<ai::Call> {
         None
     }
-    fn do_turn(&self, game: &game::Game, player: tiles::Fon) -> ai::TurnResult {
+    fn do_turn(&self, _game: &game::Game, _player: tiles::Fon) -> ai::TurnResult {
         ai::TurnResult::ThrowTsumoHai { riichi: false }
     }
 }

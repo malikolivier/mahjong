@@ -11,12 +11,6 @@ impl<T> Default for OrderedList<T> {
     }
 }
 
-impl<T> OrderedList<T> {
-    pub fn new() -> Self {
-        Default::default()
-    }
-}
-
 impl<T: PartialOrd> OrderedList<T> {
     pub fn insert(&mut self, element: T) {
         let mut index = 0;
