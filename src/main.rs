@@ -31,41 +31,66 @@ fn main() {
         );
     });
 
-    let mut siv = Cursive::default();
-    siv.add_global_callback('q', |s| s.quit());
+    let quit = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
+    let mut instant = None;
+    'quit: loop {
+        let mut siv = Cursive::default();
+        let quit_ptr = quit.clone();
+        siv.add_global_callback('q', move |_s| {
+            quit_ptr.store(true, std::sync::atomic::Ordering::SeqCst)
+        });
 
-    loop {
-        if siv.is_running() {
-            siv.step();
+        let game = rx_game.recv().expect("Receive state");
+        siv.add_layer(TextView::new(game.to_string_repr()));
 
-            siv.pop_layer();
-            let game = rx_game.recv().expect("Receive state");
-            siv.add_layer(TextView::new(game.to_string_repr()));
-
-            std::thread::sleep(std::time::Duration::new(1, 0));
-
-            if game.turn == tiles::Fon::Ton {
-                let mut dialog = Dialog::text("").title("Hand");
-                for (i, hai) in game.player1_te().enumerate() {
-                    let tx_turn = tx_turn.clone();
-                    dialog = dialog.button(hai.to_string(), move |s| {
-                        tx_turn.send(ai::TurnResult::ThrowHai {
+        if game.turn == tiles::Fon::Ton {
+            let mut dialog = Dialog::text("").title("Hand");
+            for (i, hai) in game.player1_te().enumerate() {
+                let tx_turn = tx_turn.clone();
+                dialog = dialog.button(hai.to_string(), move |s| {
+                    tx_turn
+                        .send(ai::TurnResult::ThrowHai {
                             index: i,
                             riichi: false,
-                        }).expect("Sent turn result!");
-                    })
-                }
-                if let Some(hai) = game.player1_tsumo() {
-                    let tx_turn = tx_turn.clone();
-                    dialog = dialog.button(hai.to_string(), move |s| {
-                        tx_turn.send(ai::TurnResult::ThrowTsumoHai { riichi: false }).expect("Sent turn result!");
-                    });
-                }
-                siv.add_layer(dialog);
+                        })
+                        .expect("Sent turn result!");
+                    s.quit();
+                })
             }
-            siv.refresh();
+            if let Some(hai) = game.player1_tsumo() {
+                let tx_turn = tx_turn.clone();
+                dialog = dialog.button(hai.to_string(), move |s| {
+                    tx_turn
+                        .send(ai::TurnResult::ThrowTsumoHai { riichi: false })
+                        .expect("Sent turn result!");
+                    s.quit();
+                });
+            }
+            siv.add_layer(dialog);
+
+            instant = None;
         } else {
-            break;
+            instant = Some(std::time::Instant::now());
+        }
+
+        loop {
+            if quit.load(std::sync::atomic::Ordering::SeqCst) {
+                break 'quit;
+            }
+            if let Some(instant) = instant {
+                if std::time::Instant::now().duration_since(instant)
+                    >= std::time::Duration::from_secs(1)
+                {
+                    siv.quit();
+                }
+            }
+            if siv.is_running() {
+                siv.step();
+                std::thread::sleep(std::time::Duration::from_millis(30));
+                siv.refresh();
+            } else {
+                break;
+            }
         }
     }
 }

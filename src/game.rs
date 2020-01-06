@@ -117,7 +117,6 @@ impl Game {
     }
 
     pub fn play(&mut self, players: &[Box<dyn AI>; 4], tx: std::sync::mpsc::Sender<Game>) {
-        tx.send(self.clone()).expect("Sent!");
         self.deal();
         tx.send(self.clone()).expect("Sent!");
 
