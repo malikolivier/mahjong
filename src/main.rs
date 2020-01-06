@@ -7,52 +7,46 @@ mod ai;
 mod game;
 mod list;
 mod tiles;
-
-static mut GAME: Option<game::Game> = None;
-
-fn game() -> &'static mut game::Game {
-    unsafe { GAME.as_mut().unwrap() }
-}
-fn init() {
-    let mut rng: StdRng = SeedableRng::from_seed([0; 32]);
-    let game = game::Game::new(&mut rng);
-    unsafe {
-        GAME = Some(game);
-        // SIV = Some(Cursive::default());
-    }
-}
-
-// static mut SIV: Option<Cursive> = None;
-// fn siv() -> &'static mut Cursive {
-//     unsafe { SIV.as_mut().unwrap() }
-// }
+use std::sync::mpsc::channel;
 
 fn main() {
-    init();
-    let game = game();
-    println!("{:?}", &game);
-    println!("{}", game.to_string_repr());
+    let mut rng: StdRng = SeedableRng::from_seed([0; 32]);
+    let mut game = game::Game::new(&mut rng);
+    let (tx_call, rx_call) = channel();
+    let (tx_turn, rx_turn) = channel();
 
     test_print_all_chars();
 
     let mut siv = Cursive::default();
     siv.add_global_callback('q', |s| s.quit());
-    // siv.add_layer(TextView::new("Hello cursive! Press <q> to quit."));
-    game.deal();
+    game.play(&[
+        Box::new(CursiveHuman {
+            rx_call, rx_turn
+        }),
+        Box::new(NullBot),
+        Box::new(NullBot),
+        Box::new(NullBot),
+    ]);
 
-    run(&mut siv);
+    siv.add_layer(TextView::new(game.to_string_repr()));
 
-    // game.start([
-    //     Box::new(CursiveHuman),
-    //     Box::new(NullBot),
-    //     Box::new(NullBot),
-    //     Box::new(NullBot),
-    // ]);
+    let mut dialog = Dialog::text("").title("Hand");
+    for (i, hai) in game.player1_te().enumerate() {
+        dialog = dialog.button(hai.to_string(), move |s| ())
+    }
+    if let Some(hai) = game.player1_tsumo() {
+        dialog = dialog.button(hai.to_string(), move |s| ());
+    }
+    siv.add_layer(dialog);
 
     siv.run();
 }
 
-struct CursiveHuman;
+struct CursiveHuman {
+    rx_call: std::sync::mpsc::Receiver<Option<ai::Call>>,
+    rx_turn: std::sync::mpsc::Receiver<ai::TurnResult>,
+    // siv
+}
 struct NullBot;
 
 impl ai::AI for CursiveHuman {
@@ -80,34 +74,6 @@ impl ai::AI for NullBot {
     fn do_turn(&self, game: &game::Game, player: tiles::Fon) -> ai::TurnResult {
         ai::TurnResult::ThrowTsumoHai { riichi: false }
     }
-}
-
-fn run(siv: &mut Cursive) {
-    let game = game();
-    siv.add_layer(TextView::new(game.to_string_repr()));
-
-    let mut dialog = Dialog::text("").title("Hand");
-    for (i, hai) in game.player1_te().enumerate() {
-        dialog = dialog.button(hai.to_string(), move |s| discard(s, i))
-    }
-    if let Some(hai) = game.player1_tsumo() {
-        dialog = dialog.button(hai.to_string(), move |s| discard_tsumo(s));
-    }
-    siv.add_layer(dialog);
-}
-
-fn discard(s: &mut Cursive, i: usize) {
-    let game = game();
-    // game.throw_tile(i, false);
-    // TODO: Do stuff for game to continue
-    s.pop_layer();
-    run(s);
-}
-fn discard_tsumo(s: &mut Cursive) {
-    let game = game();
-    // game.throw_tsumo(false);
-    s.pop_layer();
-    run(s);
 }
 
 fn test_print_all_chars() {

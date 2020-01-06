@@ -4,7 +4,7 @@ use rand::distributions::{Distribution, Standard};
 use rand::seq::SliceRandom;
 use rand::Rng;
 
-use super::ai::{Call, AI, TurnResult};
+use super::ai::{Call, TurnResult, AI};
 use super::list::OrderedList;
 use super::tiles::{make_all_tiles, Fon, Hai};
 
@@ -116,7 +116,13 @@ impl Game {
         tsumohai_i
     }
 
-    pub fn deal(&mut self) {
+    pub fn play(&mut self, players: &[Box<dyn AI>; 4]) {
+        self.deal();
+
+        while self.next_turn(players) {}
+    }
+
+    fn deal(&mut self) {
         let break_point = self.wall_break_index();
 
         for i in 0..=13 {
@@ -141,7 +147,8 @@ impl Game {
         self.tsumo_cnt += 1;
     }
 
-    fn next_turn(&mut self, players: [Box<dyn AI>; 4]) {
+    /// Returns a boolean whose value is false if this is the last turn
+    fn next_turn(&mut self, players: &[Box<dyn AI>; 4]) -> bool {
         // Listen for chi/pon/kan/ron
         let call1 = players[self.turn as usize].call(
             self,
@@ -169,10 +176,12 @@ impl Game {
                     TurnResult::ThrowHai { index, riichi } => {
                         self.throw_tile(self.turn, index, riichi);
                         self.turn = self.turn.next();
+                        true
                     }
                     TurnResult::ThrowTsumoHai { riichi } => {
                         self.throw_tsumo(self.turn, riichi);
                         self.turn = self.turn.next();
+                        true
                     }
                 }
             }
@@ -180,12 +189,14 @@ impl Game {
         }
     }
 
-    fn ryukyoku(&mut self) {
+    fn ryukyoku(&mut self) -> bool {
         // TODO
+        false
     }
 
-    fn agari(&mut self, player: Fon) {
+    fn agari(&mut self, player: Fon) -> bool {
         // TODO
+        false
     }
 
     pub fn start(&mut self, [p1, p2, p3, p4]: [Box<dyn AI>; 4]) {

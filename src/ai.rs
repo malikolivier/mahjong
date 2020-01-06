@@ -1,7 +1,7 @@
 use super::game::Game;
 use super::tiles::Fon;
 
-pub trait AI: Sync + Send {
+pub trait AI {
     fn call(&self, game: &Game, player: Fon, allowed_calls: &[Call]) -> Option<Call>;
     fn do_turn(&self, game: &Game, player: Fon) -> TurnResult;
 }
