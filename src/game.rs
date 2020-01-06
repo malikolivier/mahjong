@@ -65,7 +65,6 @@ impl fmt::Debug for Game {
             .field("wind", &self.wind)
             .field("turn", &self.turn)
             .field("honba", &self.honba)
-            // .field("turn_player", &self.turn_player)
             .field("tsumo_cnt", &self.tsumo_cnt)
             .field("players", &self.players)
             .field("yama", &yama)
@@ -89,7 +88,6 @@ impl Game {
         Self {
             wind: Fon::Ton,
             turn: Fon::Ton,
-            // turn_player: 0,
             honba: 0,
             tsumo_cnt: 0,
             players: [
@@ -200,69 +198,6 @@ impl Game {
     fn agari(&mut self, player: Fon) -> bool {
         // TODO
         false
-    }
-
-    pub fn start(&mut self, [p1, p2, p3, p4]: [Box<dyn AI>; 4]) {
-        // loop {
-        //     let mut call1 = None;
-        //     let mut call2 = None;
-        //     let mut call3 = None;
-        //     let mut call4 = None;
-        //     let first_caller = std::sync::Arc::new(std::sync::Mutex::new(None));
-        //     rayon::scope(|s| {
-        //         s.spawn(|_| {
-        //             call1 = p1.call(self, 0);
-        //             if call1.is_some() {
-        //                 let mut caller = first_caller.lock().unwrap();
-        //                 if caller.is_none() {
-        //                     *caller = Some(0);
-        //                 }
-        //             }
-        //         });
-        //         s.spawn(|_| {
-        //             call2 = p2.call(self, 1);
-        //             if call2.is_some() {
-        //                 let mut caller = first_caller.lock().unwrap();
-        //                 if caller.is_none() {
-        //                     *caller = Some(1);
-        //                 }
-        //             }
-        //         });
-        //         s.spawn(|_| {
-        //             call3 = p3.call(self, 2);
-        //             if call3.is_some() {
-        //                 let mut caller = first_caller.lock().unwrap();
-        //                 if caller.is_none() {
-        //                     *caller = Some(2);
-        //                 }
-        //             }
-        //         });
-        //         s.spawn(|_| {
-        //             call4 = p4.call(self, 3);
-        //             if call4.is_some() {
-        //                 let mut caller = first_caller.lock().unwrap();
-        //                 if caller.is_none() {
-        //                     *caller = Some(3);
-        //                 }
-        //             }
-        //         });
-        //     });
-        //     // TODO: Check that all calls are possible
-        //     // We assume that most calls done where allowed in standard Mahjong rules
-
-        //     let calls = [call1, call2, call3, call4];
-        //     let first_caller_value = (*first_caller.lock().expect("Get lock")).expect("Called");
-        //     if first_caller_value == self.turn_player {
-        //         // Turn player draws
-        //         if calls[self.turn_player] == Some(Call::Tsumo) {
-        //             let tsumohai_i = self.next_tsumohai_index();
-        //             let tsumohai = self.yama[tsumohai_i];
-        //             self.yama[tsumohai_i] = None;
-        //             self.players[self.turn_player].te.tsumo = tsumohai;
-        //             self.tsumo_cnt += 1;
-        //         }
-        //     }
-        // }
     }
 
     pub fn throw_tsumo(&mut self, p: Fon, riichi: bool) {
