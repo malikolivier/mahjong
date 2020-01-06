@@ -56,13 +56,29 @@ struct CursiveHuman;
 struct NullBot;
 
 impl ai::AI for CursiveHuman {
-    fn call(&self, game: &game::Game, player_index: usize) -> Option<ai::Call> {
-        Some(ai::Call::Tsumo)
+    fn call(
+        &self,
+        game: &game::Game,
+        player: tiles::Fon,
+        allowed_calls: &[ai::Call],
+    ) -> Option<ai::Call> {
+        None
+    }
+    fn do_turn(&self, game: &game::Game, player: tiles::Fon) -> ai::TurnResult {
+        ai::TurnResult::ThrowTsumoHai { riichi: false }
     }
 }
 impl ai::AI for NullBot {
-    fn call(&self, game: &game::Game, player_index: usize) -> Option<ai::Call> {
-        Some(ai::Call::Tsumo)
+    fn call(
+        &self,
+        game: &game::Game,
+        player: tiles::Fon,
+        allowed_calls: &[ai::Call],
+    ) -> Option<ai::Call> {
+        None
+    }
+    fn do_turn(&self, game: &game::Game, player: tiles::Fon) -> ai::TurnResult {
+        ai::TurnResult::ThrowTsumoHai { riichi: false }
     }
 }
 
@@ -82,14 +98,14 @@ fn run(siv: &mut Cursive) {
 
 fn discard(s: &mut Cursive, i: usize) {
     let game = game();
-    game.throw_tile(i, false);
+    // game.throw_tile(i, false);
     // TODO: Do stuff for game to continue
     s.pop_layer();
     run(s);
 }
 fn discard_tsumo(s: &mut Cursive) {
     let game = game();
-    game.throw_tsumo(false);
+    // game.throw_tsumo(false);
     s.pop_layer();
     run(s);
 }

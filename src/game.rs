@@ -4,7 +4,7 @@ use rand::distributions::{Distribution, Standard};
 use rand::seq::SliceRandom;
 use rand::Rng;
 
-use super::ai::{Call, AI};
+use super::ai::{Call, AI, TurnResult};
 use super::list::OrderedList;
 use super::tiles::{make_all_tiles, Fon, Hai};
 
@@ -40,11 +40,15 @@ impl Distribution<Dice> for Standard {
 #[derive(Clone)]
 pub struct Game {
     wind: Fon,
+    /// Current player that should draw
     turn: Fon,
-    turn_player: usize,
+    honba: usize,
+    // turn_player: usize,
     tsumo_cnt: usize,
+    /// 4 players indexed by Ton/Nan/Sha/Pee
     players: [Player; 4],
     yama: [Option<Hai>; 136],
+    /// 4 rivers indexed by Ton/Nan/Sha/Pee
     hoo: [Hoo; 4],
     dice: [Dice; 2],
 }
@@ -60,7 +64,8 @@ impl fmt::Debug for Game {
         f.debug_struct("Game")
             .field("wind", &self.wind)
             .field("turn", &self.turn)
-            .field("turn_player", &self.turn_player)
+            .field("honba", &self.honba)
+            // .field("turn_player", &self.turn_player)
             .field("tsumo_cnt", &self.tsumo_cnt)
             .field("players", &self.players)
             .field("yama", &yama)
@@ -84,7 +89,8 @@ impl Game {
         Self {
             wind: Fon::Ton,
             turn: Fon::Ton,
-            turn_player: 0,
+            // turn_player: 0,
+            honba: 0,
             tsumo_cnt: 0,
             players: [
                 Player::new(Fon::Ton),
@@ -126,81 +132,141 @@ impl Game {
         }
     }
 
-    pub fn start(&mut self, [p1, p2, p3, p4]: [Box<dyn AI>; 4]) {
-        loop {
-            let mut call1 = None;
-            let mut call2 = None;
-            let mut call3 = None;
-            let mut call4 = None;
-            let first_caller = std::sync::Arc::new(std::sync::Mutex::new(None));
-            rayon::scope(|s| {
-                s.spawn(|_| {
-                    call1 = p1.call(self, 0);
-                    if call1.is_some() {
-                        let mut caller = first_caller.lock().unwrap();
-                        if caller.is_none() {
-                            *caller = Some(0);
-                        }
-                    }
-                });
-                s.spawn(|_| {
-                    call2 = p2.call(self, 1);
-                    if call2.is_some() {
-                        let mut caller = first_caller.lock().unwrap();
-                        if caller.is_none() {
-                            *caller = Some(1);
-                        }
-                    }
-                });
-                s.spawn(|_| {
-                    call3 = p3.call(self, 2);
-                    if call3.is_some() {
-                        let mut caller = first_caller.lock().unwrap();
-                        if caller.is_none() {
-                            *caller = Some(2);
-                        }
-                    }
-                });
-                s.spawn(|_| {
-                    call4 = p4.call(self, 3);
-                    if call4.is_some() {
-                        let mut caller = first_caller.lock().unwrap();
-                        if caller.is_none() {
-                            *caller = Some(3);
-                        }
-                    }
-                });
-            });
-            // TODO: Check that all calls are possible
-            // We assume that most calls done where allowed in standard Mahjong rules
+    /// Make turn player draw a tile
+    fn draw(&mut self) {
+        let tsumohai_i = self.next_tsumohai_index();
+        let tsumohai = self.yama[tsumohai_i];
+        self.yama[tsumohai_i] = None;
+        self.players[self.turn as usize].te.tsumo = tsumohai;
+        self.tsumo_cnt += 1;
+    }
 
-            let calls = [call1, call2, call3, call4];
-            let first_caller_value = (*first_caller.lock().expect("Get lock")).expect("Called");
-            if first_caller_value == self.turn_player {
-                // Turn player draws
-                if calls[self.turn_player] == Some(Call::Tsumo) {
-                    let tsumohai_i = self.next_tsumohai_index();
-                    let tsumohai = self.yama[tsumohai_i];
-                    self.yama[tsumohai_i] = None;
-                    self.players[self.turn_player].te.tsumo = tsumohai;
-                    self.tsumo_cnt += 1;
+    fn next_turn(&mut self, players: [Box<dyn AI>; 4]) {
+        // Listen for chi/pon/kan/ron
+        let call1 = players[self.turn as usize].call(
+            self,
+            self.turn,
+            &[Call::Chi, Call::Pon, Call::Kan, Call::Ron],
+        );
+        let call2 = players[self.turn.next() as usize].call(
+            self,
+            self.turn.next(),
+            &[Call::Pon, Call::Kan, Call::Ron],
+        );
+        let call3 = players[self.turn.next().next() as usize].call(
+            self,
+            self.turn.next().next(),
+            &[Call::Pon, Call::Kan, Call::Ron],
+        );
+
+        match [call1, call2, call3] {
+            [None, None, None] => {
+                self.draw();
+                let result = players[self.turn as usize].do_turn(self, self.turn);
+                match result {
+                    TurnResult::Tsumo => self.agari(self.turn),
+                    TurnResult::Kyusyukyuhai => self.ryukyoku(),
+                    TurnResult::ThrowHai { index, riichi } => {
+                        self.throw_tile(self.turn, index, riichi);
+                        self.turn = self.turn.next();
+                    }
+                    TurnResult::ThrowTsumoHai { riichi } => {
+                        self.throw_tsumo(self.turn, riichi);
+                        self.turn = self.turn.next();
+                    }
                 }
             }
+            _ => unimplemented!("Someone called!"),
         }
     }
 
-    pub fn throw_tsumo(&mut self, riichi: bool) {
-        let hai = self.players[0].te.tsumo.take().expect("Has tsumohai");
-        self.hoo[0].river.push(if riichi {
+    fn ryukyoku(&mut self) {
+        // TODO
+    }
+
+    fn agari(&mut self, player: Fon) {
+        // TODO
+    }
+
+    pub fn start(&mut self, [p1, p2, p3, p4]: [Box<dyn AI>; 4]) {
+        // loop {
+        //     let mut call1 = None;
+        //     let mut call2 = None;
+        //     let mut call3 = None;
+        //     let mut call4 = None;
+        //     let first_caller = std::sync::Arc::new(std::sync::Mutex::new(None));
+        //     rayon::scope(|s| {
+        //         s.spawn(|_| {
+        //             call1 = p1.call(self, 0);
+        //             if call1.is_some() {
+        //                 let mut caller = first_caller.lock().unwrap();
+        //                 if caller.is_none() {
+        //                     *caller = Some(0);
+        //                 }
+        //             }
+        //         });
+        //         s.spawn(|_| {
+        //             call2 = p2.call(self, 1);
+        //             if call2.is_some() {
+        //                 let mut caller = first_caller.lock().unwrap();
+        //                 if caller.is_none() {
+        //                     *caller = Some(1);
+        //                 }
+        //             }
+        //         });
+        //         s.spawn(|_| {
+        //             call3 = p3.call(self, 2);
+        //             if call3.is_some() {
+        //                 let mut caller = first_caller.lock().unwrap();
+        //                 if caller.is_none() {
+        //                     *caller = Some(2);
+        //                 }
+        //             }
+        //         });
+        //         s.spawn(|_| {
+        //             call4 = p4.call(self, 3);
+        //             if call4.is_some() {
+        //                 let mut caller = first_caller.lock().unwrap();
+        //                 if caller.is_none() {
+        //                     *caller = Some(3);
+        //                 }
+        //             }
+        //         });
+        //     });
+        //     // TODO: Check that all calls are possible
+        //     // We assume that most calls done where allowed in standard Mahjong rules
+
+        //     let calls = [call1, call2, call3, call4];
+        //     let first_caller_value = (*first_caller.lock().expect("Get lock")).expect("Called");
+        //     if first_caller_value == self.turn_player {
+        //         // Turn player draws
+        //         if calls[self.turn_player] == Some(Call::Tsumo) {
+        //             let tsumohai_i = self.next_tsumohai_index();
+        //             let tsumohai = self.yama[tsumohai_i];
+        //             self.yama[tsumohai_i] = None;
+        //             self.players[self.turn_player].te.tsumo = tsumohai;
+        //             self.tsumo_cnt += 1;
+        //         }
+        //     }
+        // }
+    }
+
+    pub fn throw_tsumo(&mut self, p: Fon, riichi: bool) {
+        let hai = self.players[p as usize]
+            .te
+            .tsumo
+            .take()
+            .expect("Has tsumohai");
+        self.hoo[p as usize].river.push(if riichi {
             SuteHai::Riichi(hai)
         } else {
             SuteHai::Normal(hai)
         })
     }
 
-    pub fn throw_tile(&mut self, i: usize, riichi: bool) {
-        let hai = self.players[0].te.hai.remove(i);
-        self.hoo[0].river.push(if riichi {
+    pub fn throw_tile(&mut self, p: Fon, i: usize, riichi: bool) {
+        let hai = self.players[p as usize].te.hai.remove(i);
+        self.hoo[p as usize].river.push(if riichi {
             SuteHai::Riichi(hai)
         } else {
             SuteHai::Normal(hai)

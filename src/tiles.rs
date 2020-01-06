@@ -45,10 +45,29 @@ pub struct SuuHai {
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum Fon {
-    Ton,
-    Nan,
-    Shaa,
-    Pee,
+    Ton = 0,
+    Nan = 1,
+    Shaa = 2,
+    Pee = 3,
+}
+
+impl Fon {
+    pub fn next(self) -> Self {
+        match self {
+            Fon::Ton => Fon::Nan,
+            Fon::Nan => Fon::Shaa,
+            Fon::Shaa => Fon::Pee,
+            Fon::Pee => Fon::Ton,
+        }
+    }
+    pub fn prev(self) -> Self {
+        match self {
+            Fon::Ton => Fon::Pee,
+            Fon::Nan => Fon::Ton,
+            Fon::Shaa => Fon::Nan,
+            Fon::Pee => Fon::Shaa,
+        }
+    }
 }
 
 const FON: [Fon; 4] = [Fon::Ton, Fon::Nan, Fon::Shaa, Fon::Pee];
