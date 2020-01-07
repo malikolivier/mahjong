@@ -151,8 +151,9 @@ impl Game {
         players: &[Box<dyn AI>; 4],
         tx: &std::sync::mpsc::Sender<Game>,
     ) -> bool {
-        // Listen for chi/pon/kan/ron
+        tx.send(self.clone()).expect("Sent!");
 
+        // Listen for chi/pon/kan/ron
         let call1 =
             players[self.turn as usize].call(self, self.turn, &self.allowed_calls(self.turn));
         let call2 = players[self.turn.next() as usize].call(
