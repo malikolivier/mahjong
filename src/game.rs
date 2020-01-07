@@ -636,10 +636,10 @@ impl Game {
         }
     }
 
-    fn can_pon(&self) -> bool {
+    fn can_pon(&self, player: Fon) -> bool {
         if let Some(hai) = self.last_thrown_tile() {
             let mut cnt = 0;
-            for tehai in self.players[self.turn as usize].te.hai.iter() {
+            for tehai in self.players[player as usize].te.hai.iter() {
                 if tehai == &hai {
                     cnt += 1;
                 }
@@ -650,10 +650,10 @@ impl Game {
         }
     }
 
-    fn can_kan(&self) -> bool {
+    fn can_kan(&self, player: Fon) -> bool {
         if let Some(hai) = self.last_thrown_tile() {
             let mut cnt = 0;
-            for tehai in self.players[self.turn as usize].te.hai.iter() {
+            for tehai in self.players[player as usize].te.hai.iter() {
                 if tehai == &hai {
                     cnt += 1;
                 }
