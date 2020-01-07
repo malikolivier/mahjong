@@ -152,25 +152,18 @@ impl Game {
         tx: &std::sync::mpsc::Sender<Game>,
     ) -> bool {
         // Listen for chi/pon/kan/ron
-        let call1 = players[self.turn as usize].call(
-            self,
-            self.turn,
-            &[
-                PossibleCall::Chi,
-                PossibleCall::Pon,
-                PossibleCall::Kan,
-                PossibleCall::Ron,
-            ],
-        );
+
+        let call1 =
+            players[self.turn as usize].call(self, self.turn, &self.allowed_calls(self.turn));
         let call2 = players[self.turn.next() as usize].call(
             self,
             self.turn.next(),
-            &[PossibleCall::Pon, PossibleCall::Kan, PossibleCall::Ron],
+            &self.allowed_calls(self.turn.next()),
         );
         let call3 = players[self.turn.next().next() as usize].call(
             self,
             self.turn.next().next(),
-            &[PossibleCall::Pon, PossibleCall::Kan, PossibleCall::Ron],
+            &self.allowed_calls(self.turn.next().next()),
         );
 
         match [call1, call2, call3] {
@@ -665,7 +658,7 @@ impl Game {
         }
     }
 
-    fn can_ron(&self) -> bool {
+    fn can_ron(&self, player: Fon) -> bool {
         if let Some(hai) = self.last_thrown_tile() {
             // TODO: Check all yakus
             false
@@ -673,6 +666,23 @@ impl Game {
             // TODO: Take into account Shouminkan
             false
         }
+    }
+
+    fn allowed_calls(&self, player: Fon) -> Vec<PossibleCall> {
+        let mut allowed_calls = Vec::with_capacity(4);
+        if self.turn == player && self.can_chi() {
+            allowed_calls.push(PossibleCall::Chi);
+        }
+        if self.can_pon(player) {
+            allowed_calls.push(PossibleCall::Pon);
+        }
+        if self.can_kan(player) {
+            allowed_calls.push(PossibleCall::Kan);
+        }
+        if self.can_ron(player) {
+            allowed_calls.push(PossibleCall::Ron);
+        }
+        allowed_calls
     }
 }
 
