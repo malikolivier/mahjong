@@ -62,10 +62,55 @@ fn cursive_human() -> ai::AiServer {
                 game::Request::Refresh => {
                     instant = Some(std::time::Instant::now());
                 }
-                game::Request::Call(_calls) => {
-                    // TODO: Implement calling
+                game::Request::Call(calls) => {
                     tx_call.send(None).expect("Sent call!");
-                    instant = Some(std::time::Instant::now());
+                    let mut dialog = Dialog::text("").title("Call?");
+                    let tx_call_ = tx_call.clone();
+                    dialog = dialog.button("Pass", move |s| {
+                        tx_call_.send(None).expect("Sent call result!");
+                        s.quit();
+                    });
+
+                    for call in calls {
+                        let tx_call = tx_call.clone();
+                        match call {
+                            ai::PossibleCall::Chi => {
+                                dialog = dialog.button("Chi", move |s| {
+                                    tx_call
+                                        .send(Some(ai::Call::Chi { index: 0 })) // TODO
+                                        .expect("Sent call result!");
+                                    s.quit();
+                                });
+                            }
+                            ai::PossibleCall::Pon => {
+                                dialog = dialog.button("Pon", move |s| {
+                                    tx_call
+                                        .send(Some(ai::Call::Pon))
+                                        .expect("Sent call result!");
+                                    s.quit();
+                                });
+                            }
+                            ai::PossibleCall::Kan => {
+                                dialog = dialog.button("Kan", move |s| {
+                                    tx_call
+                                        .send(Some(ai::Call::Kan))
+                                        .expect("Sent call result!");
+                                    s.quit();
+                                });
+                            }
+                            ai::PossibleCall::Ron => {
+                                dialog = dialog.button("Ron", move |s| {
+                                    tx_call
+                                        .send(Some(ai::Call::Ron))
+                                        .expect("Sent call result!");
+                                    s.quit();
+                                });
+                            }
+                        };
+                    }
+                    siv.add_layer(dialog);
+
+                    instant = None;
                 }
                 game::Request::DoTurn => {
                     let mut dialog = Dialog::text("").title("Hand");
