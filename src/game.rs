@@ -6,7 +6,7 @@ use rand::Rng;
 
 use super::ai::{PossibleCall, TurnResult, AI};
 use super::list::OrderedList;
-use super::tiles::{make_all_tiles, Fon, Hai};
+use super::tiles::{make_all_tiles, Fon, Hai, ParseHaiError, SuuHai, Values};
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum Dice {
@@ -516,6 +516,13 @@ impl Game {
 pub struct Hoo {
     river: Vec<SuteHai>,
 }
+
+impl Hoo {
+    pub fn new() -> Self {
+        Self { river: vec![] }
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub enum SuteHai {
     Normal(Hai),
@@ -595,28 +602,34 @@ pub enum KantsuInner {
 impl Game {
     fn can_chi(&self) -> bool {
         if let Some(hai) = self.last_thrown_tile() {
-            if hai.is_suuhai() {
-                // FIXME: 9, 1, 2 would be accepted...
-                let possible_patterns = &[
-                    [hai.prev().prev(), hai.prev(), hai],
-                    [hai.prev(), hai, hai.next()],
-                    [hai, hai.next(), hai.next().next()],
-                ];
+            match hai {
+                Hai::Suu(SuuHai { value, .. }) => {
+                    let left = [hai.next(), hai.next().next()];
+                    let middle = [hai.prev(), hai.next()];
+                    let right = [hai.next(), hai.next().next()];
 
-                let mut out = false;
-                for pattern in possible_patterns {
-                    if self.players[self.turn as usize]
-                        .te
-                        .hai
-                        .contains_all(pattern)
-                    {
-                        out = true;
-                        break;
+                    let possible_patterns = match value {
+                        Values::Ii => vec![left],
+                        Values::Ryan => vec![left, middle],
+                        Values::Paa => vec![middle, right],
+                        Values::Kyuu => vec![right],
+                        _ => vec![left, middle, right],
+                    };
+
+                    let mut out = false;
+                    for pattern in possible_patterns {
+                        if self.players[self.turn as usize]
+                            .te
+                            .hai
+                            .contains_all(&pattern)
+                        {
+                            out = true;
+                            break;
+                        }
                     }
+                    out
                 }
-                out
-            } else {
-                false
+                Hai::Ji(..) => false,
             }
         } else {
             false
@@ -647,8 +660,99 @@ impl Game {
             }
             cnt >= 3
         } else {
+            // TODO: Take into account Shouminkan
             false
         }
-        // TODO: Take into account Shouminkan
+    }
+}
+
+struct StringifiedGameDebug<'a> {
+    te: [&'a str; 4],
+    hoo: [&'a str; 4],
+    dice: [Dice; 2],
+}
+
+impl Game {
+    fn from_string_debug(data: StringifiedGameDebug) -> Result<Self, ParseHaiError> {
+        let mut players = [
+            Player::new(Fon::Ton),
+            Player::new(Fon::Nan),
+            Player::new(Fon::Shaa),
+            Player::new(Fon::Pee),
+        ];
+        let mut hoo = [Hoo::new(), Hoo::new(), Hoo::new(), Hoo::new()];
+
+        for i in 0..4 {
+            for c in data.te[i].chars() {
+                let hai = c.to_string().parse()?;
+                players[i].te.hai.insert(hai);
+            }
+            for c in data.hoo[i].chars() {
+                // FIXME: Ignore riichi
+                let hai = c.to_string().parse()?;
+                hoo[i].river.push(SuteHai::Normal(hai));
+            }
+        }
+
+        Ok(Self {
+            wind: Fon::Ton,
+            turn: Fon::Ton,
+            honba: 0,
+            tsumo_cnt: 0,
+            players,
+            yama: [None; 136],
+            hoo,
+            dice: data.dice,
+        })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::*;
+
+    #[test]
+    fn test_chi_normal() {
+        let game = Game::from_string_debug(StringifiedGameDebug {
+            te: ["🀇🀈🀉🀊🀋🀌🀍🀎🀏🀙🀚🀛🀜🀝", "", "", ""],
+            hoo: ["", "", "", "🀊"],
+            dice: [Dice::One, Dice::Six],
+        })
+        .unwrap();
+        assert!(game.can_chi());
+    }
+
+    #[test]
+    fn test_chi_cannot_call_from_wrong_river() {
+        let game = Game::from_string_debug(StringifiedGameDebug {
+            te: ["🀇🀈🀉🀊🀋🀌🀍🀎🀏🀙🀚🀛🀜🀝", "", "", ""],
+            hoo: ["", "", "🀊", ""],
+            dice: [Dice::One, Dice::Six],
+        })
+        .unwrap();
+        assert!(!game.can_chi());
+    }
+
+    #[test]
+    fn test_chi_wrong_sutehai() {
+        let game = Game::from_string_debug(StringifiedGameDebug {
+            te: ["🀇🀈🀉🀊🀋🀌🀍🀎🀏🀙🀚🀛🀜🀝", "", "", ""],
+            hoo: ["", "", "", "🀟"],
+            dice: [Dice::One, Dice::Six],
+        })
+        .unwrap();
+        assert!(!game.can_chi());
+    }
+
+    #[test]
+    fn test_chi_middle() {
+        let game = Game::from_string_debug(StringifiedGameDebug {
+            te: ["🀇🀈🀉🀊🀋🀌🀍🀎🀏🀙🀛🀀🀀🀀", "", "", ""],
+            hoo: ["", "", "", "🀚"],
+            dice: [Dice::One, Dice::Six],
+        })
+        .unwrap();
+        assert!(game.can_chi());
     }
 }

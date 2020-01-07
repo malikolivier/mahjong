@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum Values {
     Ii = 1,
@@ -38,9 +40,9 @@ pub enum JiHai {
 
 #[derive(Debug, Ord, PartialOrd, Hash, Copy, Clone)]
 pub struct SuuHai {
-    suu: Suu,
-    value: Values,
-    aka: bool,
+    pub suu: Suu,
+    pub value: Values,
+    pub aka: bool,
 }
 
 impl PartialEq for SuuHai {
@@ -173,8 +175,8 @@ impl Hai {
 }
 
 impl Hai {
-    pub fn to_string(self) -> String {
-        let c = match self {
+    pub fn to_char(self) -> char {
+        match self {
             Hai::Suu(SuuHai {
                 suu: Suu::Wan,
                 value,
@@ -193,16 +195,25 @@ impl Hai {
             Hai::Ji(JiHai::Fon(fon)) => std::char::from_u32(0x1F000 + fon as u32).unwrap(),
             Hai::Ji(JiHai::Sangen(Sangen::Haku)) => std::char::from_u32(0x1F006).unwrap(),
             Hai::Ji(JiHai::Sangen(Sangen::Hatsu)) => std::char::from_u32(0x1F005).unwrap(),
+            Hai::Ji(JiHai::Sangen(Sangen::Chun)) => std::char::from_u32(0x1F004).unwrap(),
+        }
+    }
+
+    /// Convert to terminal-friendly strings for display
+    pub fn to_string(self) -> String {
+        match self {
             Hai::Ji(JiHai::Sangen(Sangen::Chun)) => {
                 let mut s = String::new();
                 // Add VS15 before mahjong Chun tile for it to be shown as char (not emoji)
                 s.push(std::char::from_u32(0x1F004).unwrap());
                 s.push(std::char::from_u32(0xFE0E).unwrap());
-                return s;
+                s
             }
-        };
-        // Except for Chun, all tiles seem to be shown as half-width characters, so add space
-        format!("{} ", c)
+            _ => {
+                // Except for Chun, all tiles seem to be shown as half-width characters, so add space
+                format!("{} ", self.to_char())
+            }
+        }
     }
 
     pub fn back_char() -> char {
@@ -237,4 +248,29 @@ pub fn make_all_tiles() -> [Hai; 136] {
         }
     }
     hai
+}
+
+#[derive(Debug, Clone)]
+pub enum ParseHaiError {
+    EmptyString,
+    NoMahjongCharFound { string: String },
+}
+
+impl FromStr for Hai {
+    type Err = ParseHaiError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Some(c) = s.chars().next() {
+            for hai in make_all_tiles().iter() {
+                if hai.to_char() == c {
+                    return Ok(*hai);
+                }
+            }
+
+            Err(ParseHaiError::NoMahjongCharFound {
+                string: s.to_owned(),
+            })
+        } else {
+            Err(ParseHaiError::EmptyString)
+        }
+    }
 }
