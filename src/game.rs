@@ -1,10 +1,11 @@
 use std::fmt;
 
+use log::debug;
 use rand::distributions::{Distribution, Standard};
 use rand::seq::SliceRandom;
 use rand::Rng;
 
-use super::ai::{AiServer, Call, PossibleCall, TurnResult};
+use super::ai::{AiServer, PossibleCall, TurnResult};
 use super::list::OrderedList;
 use super::tiles::{make_all_tiles, Fon, Hai, ParseHaiError, SuuHai, Values};
 
@@ -277,7 +278,7 @@ impl Game {
             .tsumo
             .take()
             .expect("Has tsumohai");
-        eprintln!("Throw tsumohai {}", hai.to_string());
+        debug!("Throw tsumohai {}", hai.to_string());
         self.hoo[p as usize].river.push(if riichi {
             SuteHai::Riichi(hai)
         } else {
@@ -288,10 +289,10 @@ impl Game {
     pub fn throw_tile(&mut self, p: Fon, i: usize, riichi: bool) {
         let hai = self.players[p as usize].te.hai.remove(i);
         if let Some(tsumohai) = self.players[p as usize].te.tsumo.take() {
-            eprintln!("Insert tsumohai {}", tsumohai.to_string());
+            debug!("Insert tsumohai {}", tsumohai.to_string());
             self.players[p as usize].te.hai.insert(tsumohai);
         }
-        eprintln!("Throw tehai {}", hai.to_string());
+        debug!("Throw tehai {}", hai.to_string());
         self.hoo[p as usize].river.push(if riichi {
             SuteHai::Riichi(hai)
         } else {

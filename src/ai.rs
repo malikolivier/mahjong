@@ -76,7 +76,6 @@ pub fn null_bot() -> AiServer {
                 .expect("Sent!"),
             _ => {}
         }
-        std::thread::sleep(std::time::Duration::from_millis(10));
     });
     server
 }
