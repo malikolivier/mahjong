@@ -1,3 +1,6 @@
+use env_logger;
+use log::debug;
+
 use cursive::views::Dialog;
 use cursive::views::TextView;
 use cursive::Cursive;
@@ -9,6 +12,9 @@ mod list;
 mod tiles;
 
 fn main() {
+    let mut log_builder = env_logger::Builder::from_default_env();
+    log_builder.target(env_logger::Target::Stderr).init();
+
     let mut rng: StdRng = SeedableRng::from_seed([0; 32]);
 
     test_print_all_chars();
@@ -25,15 +31,16 @@ fn main() {
 fn cursive_human() -> ai::AiServer {
     let (server, client) = ai::channel();
     std::thread::spawn(move || {
-        eprintln!("INIT!");
+        debug!("Init..");
         let rx = client.rx;
         let tx_call = client.tx_call;
         let tx_turn = client.tx_turn;
 
         let quit = std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false));
         let mut instant;
+        debug!("Done..");
         'quit: loop {
-            eprintln!("START FRAME!");
+            debug!("Start frame...");
 
             let mut siv = Cursive::default();
             let quit_ptr = quit.clone();
@@ -41,9 +48,9 @@ fn cursive_human() -> ai::AiServer {
                 quit_ptr.store(true, std::sync::atomic::Ordering::SeqCst)
             });
 
-            eprintln!("Waiting for request...");
+            debug!("Waiting for request...");
             let game::GameRequest { game, request } = rx.recv().expect("Receive state");
-            eprintln!(
+            debug!(
                 "Received {:?} for game: \n{}\n",
                 &request,
                 game.to_string_repr()
@@ -91,7 +98,7 @@ fn cursive_human() -> ai::AiServer {
 
             loop {
                 if quit.load(std::sync::atomic::Ordering::SeqCst) {
-                    eprintln!("QUIT!");
+                    debug!("Quitting...");
                     break 'quit;
                 }
                 if let Some(instant) = instant {
@@ -110,7 +117,7 @@ fn cursive_human() -> ai::AiServer {
                 }
             }
         }
-        eprintln!("QUITTED!");
+        debug!("Quitted...");
     });
 
     server
