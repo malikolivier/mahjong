@@ -664,6 +664,16 @@ impl Game {
             false
         }
     }
+
+    fn can_ron(&self) -> bool {
+        if let Some(hai) = self.last_thrown_tile() {
+            // TODO: Check all yakus
+            false
+        } else {
+            // TODO: Take into account Shouminkan
+            false
+        }
+    }
 }
 
 struct StringifiedGameDebug<'a> {
