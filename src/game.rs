@@ -4,7 +4,7 @@ use rand::distributions::{Distribution, Standard};
 use rand::seq::SliceRandom;
 use rand::Rng;
 
-use super::ai::{PossibleCall, TurnResult, AI};
+use super::ai::{AiServer, Call, PossibleCall, TurnResult};
 use super::list::OrderedList;
 use super::tiles::{make_all_tiles, Fon, Hai, ParseHaiError, SuuHai, Values};
 
@@ -74,6 +74,28 @@ impl fmt::Debug for Game {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct GameRequest {
+    pub game: Game,
+    pub request: Request,
+}
+
+impl GameRequest {
+    fn new(game: &Game, request: Request) -> Self {
+        Self {
+            game: game.clone(),
+            request,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum Request {
+    Refresh,
+    Call(Vec<PossibleCall>),
+    DoTurn,
+}
+
 impl Game {
     pub fn new<R: Rng>(rng: &mut R) -> Self {
         let mut yama = [None; 136];
@@ -114,10 +136,10 @@ impl Game {
         tsumohai_i
     }
 
-    pub fn play(&mut self, players: &[Box<dyn AI>; 4], tx: std::sync::mpsc::Sender<Game>) {
+    pub fn play(&mut self, channels: [AiServer; 4]) {
         self.deal();
 
-        while self.next_turn(players, &tx) {}
+        while self.next_turn(&channels) {}
     }
 
     fn deal(&mut self) {
@@ -146,32 +168,71 @@ impl Game {
     }
 
     /// Returns a boolean whose value is false if this is the last turn
-    fn next_turn(
-        &mut self,
-        players: &[Box<dyn AI>; 4],
-        tx: &std::sync::mpsc::Sender<Game>,
-    ) -> bool {
-        tx.send(self.clone()).expect("Sent!");
+    fn tx_refresh(&self, channels: &[AiServer; 4]) {
+        for channel in channels {
+            channel
+                .tx
+                .send(GameRequest::new(self, Request::Refresh))
+                .expect("Sent!");
+        }
+    }
+
+    /// Returns a boolean whose value is false if this is the last turn
+    fn next_turn(&mut self, channels: &[AiServer; 4]) -> bool {
+        self.tx_refresh(channels);
 
         // Listen for chi/pon/kan/ron
-        let call1 =
-            players[self.turn as usize].call(self, self.turn, &self.allowed_calls(self.turn));
-        let call2 = players[self.turn.next() as usize].call(
-            self,
-            self.turn.next(),
-            &self.allowed_calls(self.turn.next()),
-        );
-        let call3 = players[self.turn.next().next() as usize].call(
-            self,
-            self.turn.next().next(),
-            &self.allowed_calls(self.turn.next().next()),
-        );
+        let mut call1 = None;
+        let mut call2 = None;
+        let mut call3 = None;
+
+        let allowed_calls1 = self.allowed_calls(self.turn);
+        if allowed_calls1.len() > 0 {
+            channels[self.turn as usize]
+                .tx
+                .send(GameRequest::new(self, Request::Call(allowed_calls1)))
+                .expect("Sent!");
+            call1 = channels[self.turn as usize]
+                .rx_call
+                .recv()
+                .expect("Received!");
+        }
+
+        let allowed_calls2 = self.allowed_calls(self.turn.next());
+        if allowed_calls2.len() > 0 {
+            channels[self.turn.next() as usize]
+                .tx
+                .send(GameRequest::new(self, Request::Call(allowed_calls2)))
+                .expect("Sent!");
+            call2 = channels[self.turn.next() as usize]
+                .rx_call
+                .recv()
+                .expect("Received!");
+        }
+
+        let allowed_calls3 = self.allowed_calls(self.turn);
+        if allowed_calls3.len() > 0 {
+            channels[self.turn.next().next() as usize]
+                .tx
+                .send(GameRequest::new(self, Request::Call(allowed_calls3)))
+                .expect("Sent!");
+            call3 = channels[self.turn.next().next() as usize]
+                .rx_call
+                .recv()
+                .expect("Received!");
+        }
 
         match [call1, call2, call3] {
             [None, None, None] => {
                 self.draw();
-                tx.send(self.clone()).expect("Sent!");
-                let result = players[self.turn as usize].do_turn(self, self.turn);
+                channels[self.turn as usize]
+                    .tx
+                    .send(GameRequest::new(self, Request::DoTurn))
+                    .expect("Sent!");
+                let result = channels[self.turn as usize]
+                    .rx_turn
+                    .recv()
+                    .expect("Received!");
                 match result {
                     TurnResult::Tsumo => self.agari(self.turn),
                     TurnResult::Kyusyukyuhai => self.ryukyoku(),

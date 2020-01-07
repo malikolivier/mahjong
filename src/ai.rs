@@ -1,12 +1,6 @@
-use super::game::Game;
-use super::tiles::Fon;
+use super::game::{GameRequest, Request};
 
-pub trait AI {
-    fn call(&self, game: &Game, player: Fon, allowed_calls: &[PossibleCall]) -> Option<Call>;
-    fn do_turn(&self, game: &Game, player: Fon) -> TurnResult;
-}
-
-#[derive(Copy, Eq, PartialEq, PartialOrd, Ord, Clone)]
+#[derive(Debug, Copy, Eq, PartialEq, PartialOrd, Ord, Clone)]
 pub enum Call {
     /// Call a Chi. Includes the index of a tile in the chi.
     Chi { index: usize },
@@ -18,6 +12,7 @@ pub enum Call {
     Ron,
 }
 
+#[derive(Debug, Copy, Eq, PartialEq, PartialOrd, Ord, Clone)]
 pub enum PossibleCall {
     Chi,
     Pon,
@@ -30,4 +25,58 @@ pub enum TurnResult {
     ThrowTsumoHai { riichi: bool },
     Tsumo,
     Kyusyukyuhai,
+}
+
+pub struct AiServer {
+    pub tx: std::sync::mpsc::Sender<GameRequest>,
+    pub rx_call: std::sync::mpsc::Receiver<Option<Call>>,
+    pub rx_turn: std::sync::mpsc::Receiver<TurnResult>,
+}
+pub struct AiClient {
+    pub rx: std::sync::mpsc::Receiver<GameRequest>,
+    pub tx_call: std::sync::mpsc::Sender<Option<Call>>,
+    pub tx_turn: std::sync::mpsc::Sender<TurnResult>,
+}
+
+pub fn channel() -> (AiServer, AiClient) {
+    let (tx_call, rx_call) = std::sync::mpsc::channel();
+    let (tx_turn, rx_turn) = std::sync::mpsc::channel();
+    let (tx, rx) = std::sync::mpsc::channel();
+    (
+        AiServer {
+            tx,
+            rx_call,
+            rx_turn,
+        },
+        AiClient {
+            rx,
+            tx_call,
+            tx_turn,
+        },
+    )
+}
+
+pub fn null_bot() -> AiServer {
+    let (server, client) = channel();
+    std::thread::spawn(move || loop {
+        let request = client.rx.recv().unwrap();
+        match request {
+            GameRequest {
+                request: Request::Call(..),
+                ..
+            } => {
+                client.tx_call.send(None).expect("Sent!");
+            }
+            GameRequest {
+                request: Request::DoTurn,
+                ..
+            } => client
+                .tx_turn
+                .send(TurnResult::ThrowTsumoHai { riichi: false })
+                .expect("Sent!"),
+            _ => {}
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    });
+    server
 }
