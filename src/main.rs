@@ -72,17 +72,33 @@ fn cursive_human() -> ai::AiServer {
                     });
 
                     for call in calls {
-                        let tx_call = tx_call.clone();
                         match call {
-                            ai::PossibleCall::Chi => {
-                                dialog = dialog.button("Chi", move |s| {
-                                    tx_call
-                                        .send(Some(ai::Call::Chi { index: 0 })) // TODO
-                                        .expect("Sent call result!");
-                                    s.quit();
-                                });
+                            ai::PossibleCall::Chi {
+                                indices: possible_chis,
+                            } => {
+                                for chi in possible_chis {
+                                    let tx_call = tx_call.clone();
+                                    let tile1 = game
+                                        .player_te(tiles::Fon::Ton)
+                                        .nth(chi[0])
+                                        .expect("Has tile");
+                                    let tile2 = game
+                                        .player_te(tiles::Fon::Ton)
+                                        .nth(chi[1])
+                                        .expect("Has tile");
+                                    dialog = dialog.button(
+                                        format!("Chi {}{}", tile1.to_string(), tile2.to_string()),
+                                        move |s| {
+                                            tx_call
+                                                .send(Some(ai::Call::Chi { index: chi }))
+                                                .expect("Sent call result!");
+                                            s.quit();
+                                        },
+                                    );
+                                }
                             }
                             ai::PossibleCall::Pon => {
+                                let tx_call = tx_call.clone();
                                 dialog = dialog.button("Pon", move |s| {
                                     tx_call
                                         .send(Some(ai::Call::Pon))
@@ -91,6 +107,7 @@ fn cursive_human() -> ai::AiServer {
                                 });
                             }
                             ai::PossibleCall::Kan => {
+                                let tx_call = tx_call.clone();
                                 dialog = dialog.button("Kan", move |s| {
                                     tx_call
                                         .send(Some(ai::Call::Kan))
@@ -99,6 +116,7 @@ fn cursive_human() -> ai::AiServer {
                                 });
                             }
                             ai::PossibleCall::Ron => {
+                                let tx_call = tx_call.clone();
                                 dialog = dialog.button("Ron", move |s| {
                                     tx_call
                                         .send(Some(ai::Call::Ron))

@@ -656,39 +656,43 @@ pub enum KantsuInner {
 }
 
 impl Game {
-    fn can_chi(&self) -> bool {
+    /// Return all possible chi on calling
+    fn can_chi(&self) -> Vec<[usize; 2]> {
         if let Some(hai) = self.last_thrown_tile() {
             match hai {
                 Hai::Suu(SuuHai { value, .. }) => {
-                    let left = [hai.next(), hai.next().next()];
+                    let right = [hai.prev().prev(), hai.prev()];
                     let middle = [hai.prev(), hai.next()];
-                    let right = [hai.next(), hai.next().next()];
+                    let left = [hai.next(), hai.next().next()];
 
                     let possible_patterns = match value {
                         Values::Ii => vec![left],
-                        Values::Ryan => vec![left, middle],
-                        Values::Paa => vec![middle, right],
+                        Values::Ryan => vec![middle, left],
+                        Values::Paa => vec![right, middle],
                         Values::Kyuu => vec![right],
-                        _ => vec![left, middle, right],
+                        _ => vec![right, middle, left],
                     };
 
-                    let mut out = false;
+                    let mut out = vec![];
                     for pattern in possible_patterns {
-                        if self.players[self.turn as usize]
-                            .te
-                            .hai
-                            .contains_all(&pattern)
-                        {
-                            out = true;
-                            break;
+                        let pos1 = self.players[self.turn as usize].te.hai.index(&pattern[0]);
+                        let pos2 = self.players[self.turn as usize].te.hai.index(&pattern[1]);
+                        match (pos1, pos2) {
+                            (Some(p1), Some(p2)) => {
+                                let new_match = [p1, p2];
+                                if !out.contains(&new_match) {
+                                    out.push(new_match);
+                                }
+                            }
+                            _ => {}
                         }
                     }
                     out
                 }
-                Hai::Ji(..) => false,
+                Hai::Ji(..) => vec![],
             }
         } else {
-            false
+            vec![]
         }
     }
 
@@ -733,8 +737,13 @@ impl Game {
 
     fn allowed_calls(&self, player: Fon) -> Vec<PossibleCall> {
         let mut allowed_calls = Vec::with_capacity(4);
-        if self.turn == player && self.can_chi() {
-            allowed_calls.push(PossibleCall::Chi);
+        if self.turn == player {
+            let possible_chi = self.can_chi();
+            if possible_chi.len() > 0 {
+                allowed_calls.push(PossibleCall::Chi {
+                    indices: possible_chi,
+                });
+            }
         }
         if self.can_pon(player) {
             allowed_calls.push(PossibleCall::Pon);
@@ -797,13 +806,15 @@ mod tests {
 
     #[test]
     fn test_chi_normal() {
+        use std::collections::HashSet;
+
         let game = Game::from_string_debug(StringifiedGameDebug {
             te: ["🀇🀈🀉🀊🀋🀌🀍🀎🀏🀙🀚🀛🀜🀝", "", "", ""],
             hoo: ["", "", "", "🀊"],
             dice: [Dice::One, Dice::Six],
         })
         .unwrap();
-        assert!(game.can_chi());
+        assert_eq!(game.can_chi(), vec![[1, 2], [2, 4], [4, 5]]);
     }
 
     #[test]
@@ -814,7 +825,7 @@ mod tests {
             dice: [Dice::One, Dice::Six],
         })
         .unwrap();
-        assert!(!game.can_chi());
+        assert!(game.can_chi().is_empty());
     }
 
     #[test]
@@ -825,7 +836,7 @@ mod tests {
             dice: [Dice::One, Dice::Six],
         })
         .unwrap();
-        assert!(!game.can_chi());
+        assert!(game.can_chi().is_empty());
     }
 
     #[test]
@@ -836,6 +847,6 @@ mod tests {
             dice: [Dice::One, Dice::Six],
         })
         .unwrap();
-        assert!(game.can_chi());
+        assert_eq!(game.can_chi(), vec![[9, 10]]);
     }
 }

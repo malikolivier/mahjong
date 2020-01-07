@@ -40,6 +40,10 @@ impl<T: PartialOrd> OrderedList<T> {
     pub fn contains(&self, element: &T) -> bool {
         self.container.contains(element)
     }
+
+    pub fn index(&self, element: &T) -> Option<usize> {
+        self.container.iter().position(|x| x == element)
+    }
 }
 
 impl<'x, T: 'x + PartialOrd> OrderedList<T> {

@@ -2,8 +2,8 @@ use super::game::{GameRequest, Request};
 
 #[derive(Debug, Copy, Eq, PartialEq, PartialOrd, Ord, Clone)]
 pub enum Call {
-    /// Call a Chi. Includes the index of a tile in the chi.
-    Chi { index: usize },
+    /// Call a Chi. Includes the index of the tiles in the chi.
+    Chi { index: [usize; 2] },
     /// Call a Pon
     Pon,
     /// Call a Kan
@@ -12,9 +12,9 @@ pub enum Call {
     Ron,
 }
 
-#[derive(Debug, Copy, Eq, PartialEq, PartialOrd, Ord, Clone)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Ord, Clone)]
 pub enum PossibleCall {
-    Chi,
+    Chi { indices: Vec<[usize; 2]> },
     Pon,
     Kan,
     Ron,
