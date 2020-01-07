@@ -36,12 +36,20 @@ pub enum JiHai {
     Sangen(Sangen),
 }
 
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
+#[derive(Debug, Ord, PartialOrd, Hash, Copy, Clone)]
 pub struct SuuHai {
     suu: Suu,
     value: Values,
     aka: bool,
 }
+
+impl PartialEq for SuuHai {
+    /// Ignore akadora during comparison
+    fn eq(&self, other: &Self) -> bool {
+        self.suu.eq(&other.suu) && self.value.eq(&other.value)
+    }
+}
+impl Eq for SuuHai {}
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum Fon {
@@ -60,6 +68,14 @@ impl Fon {
             Fon::Pee => Fon::Ton,
         }
     }
+    pub fn prev(self) -> Self {
+        match self {
+            Fon::Ton => Fon::Pee,
+            Fon::Nan => Fon::Ton,
+            Fon::Shaa => Fon::Nan,
+            Fon::Pee => Fon::Shaa,
+        }
+    }
 }
 
 const FON: [Fon; 4] = [Fon::Ton, Fon::Nan, Fon::Shaa, Fon::Pee];
@@ -72,10 +88,88 @@ pub enum Sangen {
 }
 const SANGEN: [Sangen; 3] = [Sangen::Haku, Sangen::Hatsu, Sangen::Chun];
 
+impl Sangen {
+    pub fn next(self) -> Self {
+        match self {
+            Sangen::Haku => Sangen::Hatsu,
+            Sangen::Hatsu => Sangen::Chun,
+            Sangen::Chun => Sangen::Haku,
+        }
+    }
+    pub fn prev(self) -> Self {
+        match self {
+            Sangen::Haku => Sangen::Chun,
+            Sangen::Hatsu => Sangen::Haku,
+            Sangen::Chun => Sangen::Hatsu,
+        }
+    }
+}
+
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum Hai {
     Suu(SuuHai),
     Ji(JiHai),
+}
+impl Values {
+    pub fn next(self) -> Self {
+        match self {
+            Values::Ii => Values::Ryan,
+            Values::Ryan => Values::San,
+            Values::San => Values::Suu,
+            Values::Suu => Values::Uu,
+            Values::Uu => Values::Roo,
+            Values::Roo => Values::Chii,
+            Values::Chii => Values::Paa,
+            Values::Paa => Values::Kyuu,
+            Values::Kyuu => Values::Ii,
+        }
+    }
+    pub fn prev(self) -> Self {
+        match self {
+            Values::Ii => Values::Kyuu,
+            Values::Ryan => Values::Ii,
+            Values::San => Values::Ryan,
+            Values::Suu => Values::San,
+            Values::Uu => Values::Suu,
+            Values::Roo => Values::Uu,
+            Values::Chii => Values::Roo,
+            Values::Paa => Values::Chii,
+            Values::Kyuu => Values::Paa,
+        }
+    }
+}
+
+impl Hai {
+    pub fn is_suuhai(self) -> bool {
+        match self {
+            Hai::Suu(..) => true,
+            Hai::Ji(..) => false,
+        }
+    }
+
+    pub fn next(self) -> Self {
+        match self {
+            Hai::Suu(SuuHai { suu, value, .. }) => Hai::Suu(SuuHai {
+                suu,
+                value: value.next(),
+                aka: false,
+            }),
+            Hai::Ji(JiHai::Fon(fon)) => Hai::Ji(JiHai::Fon(fon.next())),
+            Hai::Ji(JiHai::Sangen(sangen)) => Hai::Ji(JiHai::Sangen(sangen.next())),
+        }
+    }
+
+    pub fn prev(self) -> Self {
+        match self {
+            Hai::Suu(SuuHai { suu, value, .. }) => Hai::Suu(SuuHai {
+                suu,
+                value: value.prev(),
+                aka: false,
+            }),
+            Hai::Ji(JiHai::Fon(fon)) => Hai::Ji(JiHai::Fon(fon.prev())),
+            Hai::Ji(JiHai::Sangen(sangen)) => Hai::Ji(JiHai::Sangen(sangen.prev())),
+        }
+    }
 }
 
 impl Hai {

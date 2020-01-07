@@ -4,7 +4,7 @@ use rand::distributions::{Distribution, Standard};
 use rand::seq::SliceRandom;
 use rand::Rng;
 
-use super::ai::{Call, TurnResult, AI};
+use super::ai::{PossibleCall, TurnResult, AI};
 use super::list::OrderedList;
 use super::tiles::{make_all_tiles, Fon, Hai};
 
@@ -155,17 +155,22 @@ impl Game {
         let call1 = players[self.turn as usize].call(
             self,
             self.turn,
-            &[Call::Chi, Call::Pon, Call::Kan, Call::Ron],
+            &[
+                PossibleCall::Chi,
+                PossibleCall::Pon,
+                PossibleCall::Kan,
+                PossibleCall::Ron,
+            ],
         );
         let call2 = players[self.turn.next() as usize].call(
             self,
             self.turn.next(),
-            &[Call::Pon, Call::Kan, Call::Ron],
+            &[PossibleCall::Pon, PossibleCall::Kan, PossibleCall::Ron],
         );
         let call3 = players[self.turn.next().next() as usize].call(
             self,
             self.turn.next().next(),
-            &[Call::Pon, Call::Kan, Call::Ron],
+            &[PossibleCall::Pon, PossibleCall::Kan, PossibleCall::Ron],
         );
 
         match [call1, call2, call3] {
@@ -200,6 +205,15 @@ impl Game {
     fn agari(&mut self, _player: Fon) -> bool {
         // TODO
         false
+    }
+
+    fn last_thrown_tile(&self) -> Option<Hai> {
+        let player_who_threw_last_tile = self.turn.prev();
+        let player_index = player_who_threw_last_tile as usize;
+        self.hoo[player_index]
+            .river
+            .last()
+            .map(|sutehai| sutehai.hai())
     }
 
     pub fn throw_tsumo(&mut self, p: Fon, riichi: bool) {
@@ -508,6 +522,14 @@ pub enum SuteHai {
     Riichi(Hai),
 }
 
+impl SuteHai {
+    pub fn hai(self) -> Hai {
+        match self {
+            SuteHai::Normal(hai) | SuteHai::Riichi(hai) => hai,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Player {
     wind: Fon,
@@ -568,4 +590,65 @@ pub enum KantsuInner {
         taken: Hai,
         from: Direction,
     },
+}
+
+impl Game {
+    fn can_chi(&self) -> bool {
+        if let Some(hai) = self.last_thrown_tile() {
+            if hai.is_suuhai() {
+                // FIXME: 9, 1, 2 would be accepted...
+                let possible_patterns = &[
+                    [hai.prev().prev(), hai.prev(), hai],
+                    [hai.prev(), hai, hai.next()],
+                    [hai, hai.next(), hai.next().next()],
+                ];
+
+                let mut out = false;
+                for pattern in possible_patterns {
+                    if self.players[self.turn as usize]
+                        .te
+                        .hai
+                        .contains_all(pattern)
+                    {
+                        out = true;
+                        break;
+                    }
+                }
+                out
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    fn can_pon(&self) -> bool {
+        if let Some(hai) = self.last_thrown_tile() {
+            let mut cnt = 0;
+            for tehai in self.players[self.turn as usize].te.hai.iter() {
+                if tehai == &hai {
+                    cnt += 1;
+                }
+            }
+            cnt >= 2
+        } else {
+            false
+        }
+    }
+
+    fn can_kan(&self) -> bool {
+        if let Some(hai) = self.last_thrown_tile() {
+            let mut cnt = 0;
+            for tehai in self.players[self.turn as usize].te.hai.iter() {
+                if tehai == &hai {
+                    cnt += 1;
+                }
+            }
+            cnt >= 3
+        } else {
+            false
+        }
+        // TODO: Take into account Shouminkan
+    }
 }

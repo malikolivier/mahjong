@@ -106,7 +106,7 @@ impl ai::AI for CursiveHuman {
         &self,
         _game: &game::Game,
         _player: tiles::Fon,
-        _allowed_calls: &[ai::Call],
+        _allowed_calls: &[ai::PossibleCall],
     ) -> Option<ai::Call> {
         None
     }
@@ -119,7 +119,7 @@ impl ai::AI for NullBot {
         &self,
         _game: &game::Game,
         _player: tiles::Fon,
-        _allowed_calls: &[ai::Call],
+        _allowed_calls: &[ai::PossibleCall],
     ) -> Option<ai::Call> {
         None
     }
