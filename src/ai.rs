@@ -1,4 +1,5 @@
 use super::game::{GameRequest, Request};
+use log::trace;
 
 #[derive(Debug, Copy, Eq, PartialEq, PartialOrd, Ord, Clone)]
 pub enum Call {
@@ -60,6 +61,7 @@ pub fn null_bot() -> AiServer {
     let (server, client) = channel();
     std::thread::spawn(move || loop {
         let request = client.rx.recv().unwrap();
+        trace!("State: \n{}\n", &request.game.to_string_repr());
         match request {
             GameRequest {
                 request: Request::Call(..),

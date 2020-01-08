@@ -131,10 +131,27 @@ impl Game {
         break_point
     }
 
-    fn next_tsumohai_index(&self) -> usize {
+    fn next_tsumohai_index(&self) -> Option<usize> {
         let break_point = self.wall_break_index();
-        let tsumohai_i = (break_point + 4 * 14 + self.tsumo_cnt) % 136;
-        tsumohai_i
+        let tsumo_cnt_max = 16 * 4 + 1 - self.kan_count();
+        if self.tsumo_cnt > tsumo_cnt_max {
+            None
+        } else {
+            let tsumohai_i = (break_point + 4 * 14 + self.tsumo_cnt) % 136;
+            Some(tsumohai_i)
+        }
+    }
+
+    fn kan_count(&self) -> usize {
+        let mut cnt = 0;
+        for p in &self.players {
+            for fuuro in &p.te.fuuro {
+                if let Fuuro::Kantsu(_) = fuuro {
+                    cnt += 1;
+                }
+            }
+        }
+        cnt
     }
 
     pub fn play(&mut self, channels: [AiServer; 4]) {
@@ -160,12 +177,17 @@ impl Game {
     }
 
     /// Make turn player draw a tile
-    fn draw(&mut self) {
-        let tsumohai_i = self.next_tsumohai_index();
-        let tsumohai = self.yama[tsumohai_i];
-        self.yama[tsumohai_i] = None;
-        self.players[self.turn as usize].te.tsumo = tsumohai;
-        self.tsumo_cnt += 1;
+    /// Return true if a tile is drawn. Return false if there is no tile left.
+    fn draw(&mut self) -> bool {
+        if let Some(tsumohai_i) = self.next_tsumohai_index() {
+            let tsumohai = self.yama[tsumohai_i];
+            self.yama[tsumohai_i] = None;
+            self.players[self.turn as usize].te.tsumo = tsumohai;
+            self.tsumo_cnt += 1;
+            true
+        } else {
+            false
+        }
     }
 
     /// Returns a boolean whose value is false if this is the last turn
@@ -225,7 +247,10 @@ impl Game {
 
         match [call1, call2, call3] {
             [None, None, None] => {
-                self.draw();
+                if !self.draw() {
+                    self.ryukyoku();
+                    return false;
+                }
                 channels[self.turn as usize]
                     .tx
                     .send(GameRequest::new(self, Request::DoTurn))
@@ -506,7 +531,7 @@ impl Game {
             let hai = match sutehai {
                 SuteHai::Normal(hai) | SuteHai::Riichi(hai) => hai,
             };
-            grid[8 + i % 6][7 + i / 6] = hai.to_string();
+            grid[8 + i % 6][7 - i / 6] = hai.to_string();
         }
 
         // TODO: Add player 4
