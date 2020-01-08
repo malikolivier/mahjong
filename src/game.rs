@@ -96,6 +96,8 @@ pub enum Request {
     Call(Vec<PossibleCall>),
     DoTurn {
         can_tsumo: bool,
+        /// List of tiles that can be thrown so that the user can call riichi.
+        can_riichi: Vec<usize>,
         can_kyusyukyuhai: bool,
     },
 }
@@ -260,6 +262,7 @@ impl Game {
                         self,
                         Request::DoTurn {
                             can_tsumo: self.can_tsumo(),
+                            can_riichi: self.can_riichi(),
                             can_kyusyukyuhai: self.can_kyusyukyuhai(),
                         },
                     ))
@@ -773,6 +776,13 @@ impl Game {
         // TODO
         false
     }
+
+    fn can_riichi(&self) -> Vec<usize> {
+        let mut throwable_tiles = vec![];
+        for hai in self.players[self.turn as usize].te.hai.iter() {}
+        throwable_tiles
+    }
+
     /// Can call Kyusyukyuhai if this is the first turn and there is no fuuro
     fn can_kyusyukyuhai(&self) -> bool {
         let first_turn = self.tsumo_cnt <= 4;
@@ -821,6 +831,61 @@ impl Game {
         }
         allowed_calls
     }
+}
+
+fn is_tempai(te: &[Hai]) -> bool {
+    count_shanten(te) == 0
+}
+/// Thanks https://qiita.com/tomo_hxx/items/75b5f771285e1334c0a5 !
+fn count_shanten(te: &[Hai]) -> usize {
+    let some_chi = count_chitoitsu_shanten(te);
+    let some_koku = count_kokushimuso_shanten(te);
+    let normal = count_normal_shanten(te);
+    match (some_chi, some_koku) {
+        (None, None) => normal,
+        (Some(chi), None) => chi.min(normal),
+        (None, Some(koku)) => koku.min(normal),
+        (Some(chi), Some(koku)) => koku.min(chi).min(normal),
+    }
+}
+/// Only works for closed hands
+fn count_chitoitsu_shanten(te: &[Hai]) -> Option<usize> {
+    if te.len() == 13 {
+        let mut uniq = std::collections::HashSet::new();
+        for hai in te {
+            uniq.insert(hai);
+        }
+        let haisyu_count = uniq.len();
+        let mut toitsu_count = 0;
+        for uniq_hai in uniq {
+            let hai_count = te
+                .iter()
+                .filter(|hai| *hai == uniq_hai)
+                .collect::<Vec<_>>()
+                .len();
+            if hai_count >= 2 {
+                toitsu_count += 1;
+            }
+        }
+        Some(if haisyu_count < 7 {
+            7 - toitsu_count
+        } else {
+            6 - toitsu_count
+        })
+    } else {
+        None
+    }
+}
+/// Only works for closed hands
+fn count_kokushimuso_shanten(te: &[Hai]) -> Option<usize> {
+    if te.len() == 13 {
+        Some(0)
+    } else {
+        None
+    }
+}
+fn count_normal_shanten(te: &[Hai]) -> usize {
+    0
 }
 
 #[cfg(test)]

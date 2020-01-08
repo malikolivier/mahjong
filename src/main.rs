@@ -132,6 +132,7 @@ fn cursive_human() -> ai::AiServer {
                 }
                 game::Request::DoTurn {
                     can_tsumo,
+                    can_riichi,
                     can_kyusyukyuhai,
                 } => {
                     let mut dialog = Dialog::text("").title("Hand");
