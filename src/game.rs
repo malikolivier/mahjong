@@ -879,7 +879,17 @@ fn count_chitoitsu_shanten(te: &[Hai]) -> Option<usize> {
 /// Only works for closed hands
 fn count_kokushimuso_shanten(te: &[Hai]) -> Option<usize> {
     if te.len() == 13 {
-        Some(0)
+        let mut uniq = std::collections::HashSet::new();
+        let mut any_toitsu = false;
+        for hai in te {
+            if hai.is_jihai_or_1_9() {
+                if uniq.contains(hai) {
+                    any_toitsu = true;
+                }
+                uniq.insert(hai);
+            }
+        }
+        Some(13 - uniq.len() - if any_toitsu { 1 } else { 0 })
     } else {
         None
     }
@@ -1024,5 +1034,11 @@ mod tests {
     fn test_chitoitsu_shanten() {
         let te = te_from_string("🀇🀇🀈🀉🀏🀙🀀🀀🀁🀂🀃🀆🀅").unwrap();
         assert_eq!(count_chitoitsu_shanten(&te), Some(4));
+    }
+
+    #[test]
+    fn test_kokushimuso_shanten() {
+        let te = te_from_string("🀇🀏🀙🀡🀐🀘🀀🀀🀁🀂🀃🀆🀅").unwrap();
+        assert_eq!(count_kokushimuso_shanten(&te), Some(0));
     }
 }
