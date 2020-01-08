@@ -901,7 +901,7 @@ fn count_kokushimuso_shanten(te: &[Hai]) -> Option<usize> {
 
 fn count_normal_shanten(te: &[Hai]) -> usize {
     let open_mentsu_count = (14 - te.len()) / 3;
-    let root = GroupTree::generate(te, 0, 4 - open_mentsu_count);
+    let root = GroupTree::generate(te, 0, 4 - open_mentsu_count, 0, 0);
     for tree in root {
         println!("{}", tree);
     }
@@ -933,6 +933,14 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
                 for hai in &self.remaining_hai {
                     write!(f, "{}", hai.to_char())?;
                 }
+                write!(
+                    f,
+                    "\t{} mentsu\t{} taatsu",
+                    self.mentsu_count, self.taatsu_count
+                )?;
+                if self.has_head {
+                    write!(f, "\twith head")?;
+                }
             }
             write!(f, "\n")?;
             for child in &self.children {
@@ -949,6 +957,26 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
         children: Vec<GroupTree>,
         depth: usize,
         remaining_hai: Vec<Hai>,
+        /// Number of mentsu from top to bottom (this node included)
+        mentsu_count: usize,
+        /// Number of taatsu  from top to bottom (this node included)
+        taatsu_count: usize,
+        /// Head in remaining hai?
+        has_head: bool,
+    }
+
+    fn has_head(te: &[Hai]) -> bool {
+        for (i, h1) in te.iter().enumerate() {
+            for (j, h2) in te.iter().enumerate() {
+                if i >= j {
+                    continue;
+                }
+                if h1 == h2 {
+                    return true;
+                }
+            }
+        }
+        false
     }
 
     impl GroupTree {
@@ -961,7 +989,13 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
             false
         }
 
-        fn generate(te: &[Hai], depth: usize, max_depth: usize) -> Vec<Self> {
+        fn generate(
+            te: &[Hai],
+            depth: usize,
+            max_depth: usize,
+            mentsu_count: usize,
+            taatsu_count: usize,
+        ) -> Vec<Self> {
             let mut groups = vec![];
             if depth >= max_depth {
                 return groups;
@@ -983,11 +1017,22 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
                         }
                     }
                     if matched_mentsu {
+                        let has_head = has_head(&te_);
                         groups.push(GroupTree {
                             group,
-                            children: GroupTree::generate(&te_, depth + 1, max_depth),
+                            children: GroupTree::generate(
+                                &te_,
+                                depth + 1,
+                                max_depth,
+                                mentsu_count + 1,
+                                taatsu_count,
+                            ),
                             depth: depth,
                             remaining_hai: te_,
+
+                            mentsu_count: mentsu_count + 1,
+                            taatsu_count,
+                            has_head,
                         });
                     }
                 }
@@ -1007,11 +1052,21 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
                         }
                     }
                     if matched_taatsu {
+                        let has_head = has_head(&te_);
                         groups.push(GroupTree {
                             group,
-                            children: GroupTree::generate(&te_, depth + 1, max_depth),
+                            children: GroupTree::generate(
+                                &te_,
+                                depth + 1,
+                                max_depth,
+                                mentsu_count,
+                                taatsu_count + 1,
+                            ),
                             depth: depth,
                             remaining_hai: te_,
+                            mentsu_count,
+                            taatsu_count: taatsu_count + 1,
+                            has_head,
                         })
                     }
                 }
