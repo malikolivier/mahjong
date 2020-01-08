@@ -902,7 +902,7 @@ fn count_kokushimuso_shanten(te: &[Hai]) -> Option<usize> {
 fn count_normal_shanten(te: &[Hai]) -> usize {
     let open_mentsu_count = (14 - te.len()) / 3;
     let root = GroupTree::generate(te, 0, 4 - open_mentsu_count, 0, 0);
-    for tree in root {
+    for tree in &root {
         println!("{}", tree);
     }
 
@@ -940,7 +940,10 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
                 )?;
                 if self.has_head {
                     write!(f, "\twith head")?;
+                } else {
+                    write!(f, "\t")?;
                 }
+                write!(f, "\t{}-shanten", self.shanten)?;
             }
             write!(f, "\n")?;
             for child in &self.children {
@@ -963,6 +966,7 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
         taatsu_count: usize,
         /// Head in remaining hai?
         has_head: bool,
+        shanten: usize,
     }
 
     fn has_head(te: &[Hai]) -> bool {
@@ -980,6 +984,17 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
     }
 
     impl GroupTree {
+        fn shanten(trees: &[GroupTree]) -> usize {
+            let mut shanten = usize::max_value();
+            for tree in trees {
+                shanten = shanten.min(if tree.children.is_empty() {
+                    tree.shanten
+                } else {
+                    Self::shanten(&tree.children)
+                })
+            }
+            shanten
+        }
         fn has_group(trees: &[GroupTree], group: &Group) -> bool {
             for tree in trees {
                 if &tree.group == group {
@@ -1018,6 +1033,11 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
                     }
                     if matched_mentsu {
                         let has_head = has_head(&te_);
+                        let shanten = 8
+                            - (4 - max_depth)
+                            - 2 * (mentsu_count + 1)
+                            - (taatsu_count)
+                            - if has_head { 1 } else { 0 };
                         groups.push(GroupTree {
                             group,
                             children: GroupTree::generate(
@@ -1033,6 +1053,7 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
                             mentsu_count: mentsu_count + 1,
                             taatsu_count,
                             has_head,
+                            shanten,
                         });
                     }
                 }
@@ -1053,6 +1074,11 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
                     }
                     if matched_taatsu {
                         let has_head = has_head(&te_);
+                        let shanten = 8
+                            - (4 - max_depth)
+                            - 2 * (mentsu_count)
+                            - (taatsu_count + 1)
+                            - if has_head { 1 } else { 0 };
                         groups.push(GroupTree {
                             group,
                             children: GroupTree::generate(
@@ -1067,6 +1093,7 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
                             mentsu_count,
                             taatsu_count: taatsu_count + 1,
                             has_head,
+                            shanten,
                         })
                     }
                 }
@@ -1116,7 +1143,7 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
         }
     }
 
-    0
+    GroupTree::shanten(&root)
 }
 
 #[cfg(test)]
