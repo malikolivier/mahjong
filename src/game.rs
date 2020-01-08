@@ -851,7 +851,7 @@ fn count_shanten(te: &[Hai]) -> usize {
 }
 /// Only works for closed hands
 fn count_chitoitsu_shanten(te: &[Hai]) -> Option<usize> {
-    if te.len() == 13 {
+    if te.len() == 13 || te.len() == 14 {
         let mut uniq = std::collections::HashSet::new();
         for hai in te {
             uniq.insert(hai);
@@ -882,7 +882,7 @@ fn count_chitoitsu_shanten(te: &[Hai]) -> Option<usize> {
 }
 /// Only works for closed hands
 fn count_kokushimuso_shanten(te: &[Hai]) -> Option<usize> {
-    if te.len() == 13 {
+    if te.len() == 13 || te.len() == 14 {
         let mut uniq = std::collections::HashSet::new();
         let mut any_toitsu = false;
         for hai in te {
@@ -898,7 +898,169 @@ fn count_kokushimuso_shanten(te: &[Hai]) -> Option<usize> {
         None
     }
 }
+
 fn count_normal_shanten(te: &[Hai]) -> usize {
+    let open_mentsu_count = (14 - te.len()) / 3;
+    let root = GroupTree::generate(te, 0, 4 - open_mentsu_count);
+    for tree in root {
+        println!("{}", tree);
+    }
+
+    #[derive(Debug, Eq, PartialEq)]
+    enum Group {
+        Mentsu([Hai; 3]),
+        Taatsu([Hai; 2]),
+    }
+    impl fmt::Display for Group {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            match self {
+                Group::Mentsu([h1, h2, h3]) => {
+                    write!(f, "{}{}{}", h1.to_char(), h2.to_char(), h3.to_char())
+                }
+                Group::Taatsu([h1, h2]) => write!(f, "{}{}", h1.to_char(), h2.to_char()),
+            }
+        }
+    }
+    impl fmt::Display for GroupTree {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            for _ in 0..self.depth {
+                write!(f, "\t")?;
+            }
+            write!(f, "{}", &self.group)?;
+
+            if self.children.is_empty() {
+                write!(f, "\tLeft: ")?;
+                for hai in &self.remaining_hai {
+                    write!(f, "{}", hai.to_char())?;
+                }
+            }
+            write!(f, "\n")?;
+            for child in &self.children {
+                write!(f, "{}", child)?;
+            }
+
+            Ok(())
+        }
+    }
+
+    #[derive(Debug)]
+    struct GroupTree {
+        group: Group,
+        children: Vec<GroupTree>,
+        depth: usize,
+        remaining_hai: Vec<Hai>,
+    }
+
+    impl GroupTree {
+        fn has_group(trees: &[GroupTree], group: &Group) -> bool {
+            for tree in trees {
+                if &tree.group == group {
+                    return true;
+                }
+            }
+            false
+        }
+
+        fn generate(te: &[Hai], depth: usize, max_depth: usize) -> Vec<Self> {
+            let mut groups = vec![];
+            if depth >= max_depth {
+                return groups;
+            }
+
+            for hai in te {
+                for mentsu in possible_mentsu(*hai) {
+                    let group = Group::Mentsu(mentsu);
+                    if GroupTree::has_group(&groups, &group) {
+                        continue;
+                    }
+                    let mut te_ = te.to_owned();
+                    let mut matched_mentsu = true;
+                    for hai in &mentsu {
+                        if let Some(pos) = te_.iter().position(|x| x == hai) {
+                            te_.swap_remove(pos);
+                        } else {
+                            matched_mentsu = false;
+                        }
+                    }
+                    if matched_mentsu {
+                        groups.push(GroupTree {
+                            group,
+                            children: GroupTree::generate(&te_, depth + 1, max_depth),
+                            depth: depth,
+                            remaining_hai: te_,
+                        });
+                    }
+                }
+
+                for taatsu in possible_taatsu(*hai) {
+                    let group = Group::Taatsu(taatsu);
+                    if GroupTree::has_group(&groups, &group) {
+                        continue;
+                    }
+                    let mut te_ = te.to_owned();
+                    let mut matched_taatsu = true;
+                    for hai in &taatsu {
+                        if let Some(pos) = te_.iter().position(|x| x == hai) {
+                            te_.swap_remove(pos);
+                        } else {
+                            matched_taatsu = false;
+                        }
+                    }
+                    if matched_taatsu {
+                        groups.push(GroupTree {
+                            group,
+                            children: GroupTree::generate(&te_, depth + 1, max_depth),
+                            depth: depth,
+                            remaining_hai: te_,
+                        })
+                    }
+                }
+            }
+
+            groups
+        }
+    }
+
+    fn possible_mentsu(hai: Hai) -> Vec<[Hai; 3]> {
+        let kootsu = [hai, hai, hai];
+        match hai {
+            Hai::Suu(SuuHai { value, .. }) => {
+                let right = [hai.prev().prev(), hai.prev(), hai];
+                let middle = [hai.prev(), hai, hai.next()];
+                let left = [hai, hai.next(), hai.next().next()];
+
+                match value {
+                    Values::Ii => vec![kootsu, left],
+                    Values::Ryan => vec![kootsu, middle, left],
+                    Values::Paa => vec![kootsu, right, middle],
+                    Values::Kyuu => vec![kootsu, right],
+                    _ => vec![kootsu, right, middle, left],
+                }
+            }
+            Hai::Ji(..) => vec![kootsu],
+        }
+    }
+    fn possible_taatsu(hai: Hai) -> Vec<[Hai; 2]> {
+        let toitsu = [hai, hai];
+        match hai {
+            Hai::Suu(SuuHai { value, .. }) => {
+                let right = [hai.prev().prev(), hai];
+                let middle1 = [hai.prev(), hai];
+                let middle2 = [hai, hai.next()];
+                let left = [hai, hai.next().next()];
+
+                match value {
+                    Values::Ii => vec![toitsu, middle2, left],
+                    Values::Ryan => vec![toitsu, middle1, middle2, left],
+                    Values::Paa => vec![toitsu, right, middle1, middle2],
+                    Values::Kyuu => vec![toitsu, right, middle1],
+                    _ => vec![toitsu, right, middle1, middle2, left],
+                }
+            }
+            Hai::Ji(..) => vec![toitsu],
+        }
+    }
+
     0
 }
 
@@ -1050,5 +1212,17 @@ mod tests {
     fn test_kokushimuso_shanten() {
         let te = te_from_string("🀇🀏🀙🀡🀐🀘🀀🀀🀁🀂🀃🀆🀅").unwrap();
         assert_eq!(count_kokushimuso_shanten(&te), Some(0));
+    }
+
+    #[test]
+    fn test_normal_shanten() {
+        let te = te_from_string("🀇🀈🀊🀋🀝🀞🀟🀐🀑🀒🀔🀕🀗🀘").unwrap();
+        assert_eq!(count_normal_shanten(&te), 2);
+    }
+
+    #[test]
+    fn test_normal_shanten_pair() {
+        let te = te_from_string("🀇🀈🀊🀋🀝🀞🀟🀐🀑🀒🀔🀕🀗🀗").unwrap();
+        assert_eq!(count_normal_shanten(&te), 1);
     }
 }
