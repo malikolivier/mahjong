@@ -837,6 +837,7 @@ fn is_tempai(te: &[Hai]) -> bool {
     count_shanten(te) == 0
 }
 /// Thanks https://qiita.com/tomo_hxx/items/75b5f771285e1334c0a5 !
+/// http://ara.moo.jp/mjhmr/shanten.htm
 fn count_shanten(te: &[Hai]) -> usize {
     let some_chi = count_chitoitsu_shanten(te);
     let some_koku = count_kokushimuso_shanten(te);
@@ -867,11 +868,14 @@ fn count_chitoitsu_shanten(te: &[Hai]) -> Option<usize> {
                 toitsu_count += 1;
             }
         }
-        Some(if haisyu_count < 7 {
-            7 - toitsu_count
-        } else {
+        Some(
             6 - toitsu_count
-        })
+                + if haisyu_count < 7 {
+                    7 - haisyu_count
+                } else {
+                    0
+                },
+        )
     } else {
         None
     }
@@ -1034,6 +1038,12 @@ mod tests {
     fn test_chitoitsu_shanten() {
         let te = te_from_string("🀇🀇🀈🀉🀏🀙🀀🀀🀁🀂🀃🀆🀅").unwrap();
         assert_eq!(count_chitoitsu_shanten(&te), Some(4));
+    }
+
+    #[test]
+    fn test_chitoitsu_shanten_edge() {
+        let te = te_from_string("🀇🀇🀇🀇🀙🀙🀙🀙🀀🀀🀀🀀🀅").unwrap();
+        assert_eq!(count_chitoitsu_shanten(&te), Some(6));
     }
 
     #[test]
