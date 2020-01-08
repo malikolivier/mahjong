@@ -1276,7 +1276,7 @@ mod tests {
     }
 
     #[test]
-    fn test_normal_shanten_pair() {
+    fn test_normal_shanten_head() {
         let te = te_from_string("🀇🀈🀊🀋🀝🀞🀟🀐🀑🀒🀔🀕🀗🀗").unwrap();
         assert_eq!(count_normal_shanten(&te), 1);
     }
