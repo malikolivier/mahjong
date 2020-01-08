@@ -933,4 +933,16 @@ mod tests {
         .unwrap();
         assert!(game.can_kyusyukyuhai());
     }
+
+    #[test]
+    fn test_kyusyukyuhai_8() {
+        let game = Game::from_string_debug(StringifiedGameDebug {
+            te: ["🀇🀇🀈🀉🀉🀉🀙🀀🀀🀁🀂🀃🀆🀅", "", "", ""],
+            tsumo: ["🀇", "", "", ""],
+            hoo: ["", "", "", ""],
+            dice: [Dice::One, Dice::Six],
+        })
+        .unwrap();
+        assert!(!game.can_kyusyukyuhai());
+    }
 }
