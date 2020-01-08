@@ -823,56 +823,56 @@ impl Game {
     }
 }
 
-struct StringifiedGameDebug<'a> {
-    te: [&'a str; 4],
-    tsumo: [&'a str; 4],
-    hoo: [&'a str; 4],
-    dice: [Dice; 2],
-}
-
-impl Game {
-    fn from_string_debug(data: StringifiedGameDebug) -> Result<Self, ParseHaiError> {
-        let mut players = [
-            Player::new(Fon::Ton),
-            Player::new(Fon::Nan),
-            Player::new(Fon::Shaa),
-            Player::new(Fon::Pee),
-        ];
-        let mut hoo = [Hoo::new(), Hoo::new(), Hoo::new(), Hoo::new()];
-
-        for i in 0..4 {
-            for c in data.te[i].chars() {
-                let hai = c.to_string().parse()?;
-                players[i].te.hai.insert(hai);
-            }
-            if let Some(c) = data.tsumo[i].chars().next() {
-                let hai = c.to_string().parse()?;
-                players[i].te.tsumo = Some(hai);
-            }
-            for c in data.hoo[i].chars() {
-                // FIXME: Ignore riichi
-                let hai = c.to_string().parse()?;
-                hoo[i].river.push(SuteHai::Normal(hai));
-            }
-        }
-
-        Ok(Self {
-            wind: Fon::Ton,
-            turn: Fon::Ton,
-            honba: 0,
-            tsumo_cnt: 0,
-            players,
-            yama: [None; 136],
-            hoo,
-            dice: data.dice,
-        })
-    }
-}
-
 #[cfg(test)]
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::*;
+
+    struct StringifiedGameDebug<'a> {
+        te: [&'a str; 4],
+        tsumo: [&'a str; 4],
+        hoo: [&'a str; 4],
+        dice: [Dice; 2],
+    }
+
+    impl Game {
+        fn from_string_debug(data: StringifiedGameDebug) -> Result<Self, ParseHaiError> {
+            let mut players = [
+                Player::new(Fon::Ton),
+                Player::new(Fon::Nan),
+                Player::new(Fon::Shaa),
+                Player::new(Fon::Pee),
+            ];
+            let mut hoo = [Hoo::new(), Hoo::new(), Hoo::new(), Hoo::new()];
+
+            for i in 0..4 {
+                for c in data.te[i].chars() {
+                    let hai = c.to_string().parse()?;
+                    players[i].te.hai.insert(hai);
+                }
+                if let Some(c) = data.tsumo[i].chars().next() {
+                    let hai = c.to_string().parse()?;
+                    players[i].te.tsumo = Some(hai);
+                }
+                for c in data.hoo[i].chars() {
+                    // FIXME: Ignore riichi
+                    let hai = c.to_string().parse()?;
+                    hoo[i].river.push(SuteHai::Normal(hai));
+                }
+            }
+
+            Ok(Self {
+                wind: Fon::Ton,
+                turn: Fon::Ton,
+                honba: 0,
+                tsumo_cnt: 0,
+                players,
+                yama: [None; 136],
+                hoo,
+                dice: data.dice,
+            })
+        }
+    }
 
     #[test]
     fn test_chi_normal() {
