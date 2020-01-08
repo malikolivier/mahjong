@@ -939,6 +939,15 @@ mod tests {
         }
     }
 
+    fn te_from_string(data: &str) -> Result<Vec<Hai>, ParseHaiError> {
+        let mut te = vec![];
+        for c in data.chars() {
+            let hai = c.to_string().parse()?;
+            te.push(hai);
+        }
+        Ok(te)
+    }
+
     #[test]
     fn test_chi_normal() {
         let game = Game::from_string_debug(StringifiedGameDebug {
@@ -1009,5 +1018,11 @@ mod tests {
         })
         .unwrap();
         assert!(!game.can_kyusyukyuhai());
+    }
+
+    #[test]
+    fn test_chitoitsu_shanten() {
+        let te = te_from_string("🀇🀇🀈🀉🀏🀙🀀🀀🀁🀂🀃🀆🀅").unwrap();
+        assert_eq!(count_chitoitsu_shanten(&te), Some(4));
     }
 }
