@@ -773,9 +773,31 @@ impl Game {
         // TODO
         false
     }
+    /// Can call Kyusyukyuhai if this is the first turn and there is no fuuro
     fn can_kyusyukyuhai(&self) -> bool {
-        // TODO
-        false
+        let first_turn = self.tsumo_cnt <= 4;
+        let mut no_fuuro = true;
+        for p in &self.players {
+            if !p.te.fuuro.is_empty() {
+                no_fuuro = false;
+            }
+        }
+        if first_turn && no_fuuro {
+            let mut set = std::collections::HashSet::new();
+            for hai in self.players[self.turn as usize].te.hai.iter() {
+                if hai.is_jihai_or_1_9() {
+                    set.insert(*hai);
+                }
+            }
+            if let Some(tsumohai) = self.players[self.turn as usize].te.tsumo {
+                if tsumohai.is_jihai_or_1_9() {
+                    set.insert(tsumohai);
+                }
+            }
+            set.len() >= 9
+        } else {
+            false
+        }
     }
 
     fn allowed_calls(&self, player: Fon) -> Vec<PossibleCall> {
@@ -803,6 +825,7 @@ impl Game {
 
 struct StringifiedGameDebug<'a> {
     te: [&'a str; 4],
+    tsumo: [&'a str; 4],
     hoo: [&'a str; 4],
     dice: [Dice; 2],
 }
@@ -821,6 +844,10 @@ impl Game {
             for c in data.te[i].chars() {
                 let hai = c.to_string().parse()?;
                 players[i].te.hai.insert(hai);
+            }
+            if let Some(c) = data.tsumo[i].chars().next() {
+                let hai = c.to_string().parse()?;
+                players[i].te.tsumo = Some(hai);
             }
             for c in data.hoo[i].chars() {
                 // FIXME: Ignore riichi
@@ -849,10 +876,9 @@ mod tests {
 
     #[test]
     fn test_chi_normal() {
-        use std::collections::HashSet;
-
         let game = Game::from_string_debug(StringifiedGameDebug {
             te: ["🀇🀈🀉🀊🀋🀌🀍🀎🀏🀙🀚🀛🀜🀝", "", "", ""],
+            tsumo: ["", "", "", ""],
             hoo: ["", "", "", "🀊"],
             dice: [Dice::One, Dice::Six],
         })
@@ -863,7 +889,8 @@ mod tests {
     #[test]
     fn test_chi_cannot_call_from_wrong_river() {
         let game = Game::from_string_debug(StringifiedGameDebug {
-            te: ["🀇🀈🀉🀊🀋🀌🀍🀎🀏🀙🀚🀛🀜🀝", "", "", ""],
+            te: ["🀇🀈🀉🀊🀋🀌🀍🀎🀏🀙🀚🀛🀜", "", "", ""],
+            tsumo: ["", "", "", ""],
             hoo: ["", "", "🀊", ""],
             dice: [Dice::One, Dice::Six],
         })
@@ -874,7 +901,8 @@ mod tests {
     #[test]
     fn test_chi_wrong_sutehai() {
         let game = Game::from_string_debug(StringifiedGameDebug {
-            te: ["🀇🀈🀉🀊🀋🀌🀍🀎🀏🀙🀚🀛🀜🀝", "", "", ""],
+            te: ["🀇🀈🀉🀊🀋🀌🀍🀎🀏🀙🀚🀛🀜", "", "", ""],
+            tsumo: ["", "", "", ""],
             hoo: ["", "", "", "🀟"],
             dice: [Dice::One, Dice::Six],
         })
@@ -885,11 +913,24 @@ mod tests {
     #[test]
     fn test_chi_middle() {
         let game = Game::from_string_debug(StringifiedGameDebug {
-            te: ["🀇🀈🀉🀊🀋🀌🀍🀎🀏🀙🀛🀀🀀🀀", "", "", ""],
+            te: ["🀇🀈🀉🀊🀋🀌🀍🀎🀏🀙🀛🀀🀀", "", "", ""],
+            tsumo: ["", "", "", ""],
             hoo: ["", "", "", "🀚"],
             dice: [Dice::One, Dice::Six],
         })
         .unwrap();
         assert_eq!(game.can_chi(), vec![[9, 10]]);
+    }
+
+    #[test]
+    fn test_kyusyukyuhai() {
+        let game = Game::from_string_debug(StringifiedGameDebug {
+            te: ["🀇🀇🀈🀉🀏🀙🀀🀀🀁🀂🀃🀆🀅", "", "", ""],
+            tsumo: ["🀇", "", "", ""],
+            hoo: ["", "", "", ""],
+            dice: [Dice::One, Dice::Six],
+        })
+        .unwrap();
+        assert!(game.can_kyusyukyuhai());
     }
 }

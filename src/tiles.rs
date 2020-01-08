@@ -149,6 +149,24 @@ impl Hai {
         }
     }
 
+    pub fn is_jihai(self) -> bool {
+        !self.is_suuhai()
+    }
+
+    pub fn is_jihai_or_1_9(self) -> bool {
+        match self {
+            Hai::Suu(SuuHai {
+                value: Values::Ii, ..
+            })
+            | Hai::Suu(SuuHai {
+                value: Values::Kyuu,
+                ..
+            })
+            | Hai::Ji(..) => true,
+            _ => false,
+        }
+    }
+
     pub fn next(self) -> Self {
         match self {
             Hai::Suu(SuuHai { suu, value, .. }) => Hai::Suu(SuuHai {
