@@ -70,7 +70,7 @@ pub fn null_bot() -> AiServer {
                 client.tx_call.send(None).expect("Sent!");
             }
             GameRequest {
-                request: Request::DoTurn,
+                request: Request::DoTurn { .. },
                 ..
             } => client
                 .tx_turn

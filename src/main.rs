@@ -130,8 +130,29 @@ fn cursive_human() -> ai::AiServer {
 
                     instant = None;
                 }
-                game::Request::DoTurn => {
+                game::Request::DoTurn {
+                    can_tsumo,
+                    can_kyusyukyuhai,
+                } => {
                     let mut dialog = Dialog::text("").title("Hand");
+                    if can_tsumo {
+                        let tx_turn = tx_turn.clone();
+                        dialog = dialog.button("Tsumo", move |s| {
+                            tx_turn
+                                .send(ai::TurnResult::Tsumo)
+                                .expect("Sent turn result!");
+                            s.quit();
+                        })
+                    }
+                    if can_kyusyukyuhai {
+                        let tx_turn = tx_turn.clone();
+                        dialog = dialog.button("Kyushukyuhai", move |s| {
+                            tx_turn
+                                .send(ai::TurnResult::Kyusyukyuhai)
+                                .expect("Sent turn result!");
+                            s.quit();
+                        })
+                    }
                     for (i, hai) in game.player_te(tiles::Fon::Ton).enumerate() {
                         let tx_turn = tx_turn.clone();
                         dialog = dialog.button(hai.to_string(), move |s| {

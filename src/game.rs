@@ -94,7 +94,10 @@ impl GameRequest {
 pub enum Request {
     Refresh,
     Call(Vec<PossibleCall>),
-    DoTurn,
+    DoTurn {
+        can_tsumo: bool,
+        can_kyusyukyuhai: bool,
+    },
 }
 
 impl Game {
@@ -253,7 +256,13 @@ impl Game {
                 }
                 channels[self.turn as usize]
                     .tx
-                    .send(GameRequest::new(self, Request::DoTurn))
+                    .send(GameRequest::new(
+                        self,
+                        Request::DoTurn {
+                            can_tsumo: self.can_tsumo(),
+                            can_kyusyukyuhai: self.can_kyusyukyuhai(),
+                        },
+                    ))
                     .expect("Sent!");
                 let result = channels[self.turn as usize]
                     .rx_turn
@@ -758,6 +767,15 @@ impl Game {
             // TODO: Take into account Shouminkan
             false
         }
+    }
+
+    fn can_tsumo(&self) -> bool {
+        // TODO
+        false
+    }
+    fn can_kyusyukyuhai(&self) -> bool {
+        // TODO
+        false
     }
 
     fn allowed_calls(&self, player: Fon) -> Vec<PossibleCall> {
