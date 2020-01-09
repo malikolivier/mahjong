@@ -1033,11 +1033,11 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
                     }
                     if matched_mentsu {
                         let has_head = has_head(&te_);
-                        let shanten = 8
-                            - (4 - max_depth)
-                            - 2 * (mentsu_count + 1)
-                            - (taatsu_count)
-                            - if has_head { 1 } else { 0 };
+                        let mut shanten =
+                            8 - (4 - max_depth) - 2 * (mentsu_count + 1) - (taatsu_count);
+                        if shanten != 0 && has_head {
+                            shanten -= 1;
+                        }
                         groups.push(GroupTree {
                             group,
                             children: GroupTree::generate(
@@ -1074,11 +1074,11 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
                     }
                     if matched_taatsu {
                         let has_head = has_head(&te_);
-                        let shanten = 8
-                            - (4 - max_depth)
-                            - 2 * (mentsu_count)
-                            - (taatsu_count + 1)
-                            - if has_head { 1 } else { 0 };
+                        let mut shanten =
+                            8 - (4 - max_depth) - 2 * (mentsu_count) - (taatsu_count + 1);
+                        if shanten != 0 && has_head {
+                            shanten -= 1;
+                        }
                         groups.push(GroupTree {
                             group,
                             children: GroupTree::generate(
@@ -1306,5 +1306,11 @@ mod tests {
     fn test_normal_shanten_head() {
         let te = te_from_string("🀇🀈🀊🀋🀝🀞🀟🀐🀑🀒🀔🀕🀗🀗").unwrap();
         assert_eq!(count_normal_shanten(&te), 1);
+    }
+
+    #[test]
+    fn test_normal_shanten_head_0() {
+        let te = te_from_string("🀇🀈🀉🀊🀋🀌🀍🀎🀏🀙🀚🀛🀗🀗").unwrap();
+        assert_eq!(count_normal_shanten(&te), 0);
     }
 }
