@@ -168,7 +168,7 @@ impl Game {
     fn deal(&mut self) {
         let break_point = self.wall_break_index();
 
-        for i in 0..=13 {
+        for i in 0..13 {
             for p in 0..4 {
                 let tsumohai_i = (break_point + i + p * 14) % 136;
                 if let Some(tsumohai) = self.yama[tsumohai_i] {
