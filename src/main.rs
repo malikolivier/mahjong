@@ -1,5 +1,6 @@
 use env_logger;
 use log::debug;
+use ron;
 
 use cursive::views::Dialog;
 use cursive::views::TextView;
@@ -55,6 +56,7 @@ fn cursive_human() -> ai::AiServer {
                 &request,
                 game.to_string_repr()
             );
+            snapshot(&game);
 
             siv.add_layer(TextView::new(game.to_string_repr()));
 
@@ -261,4 +263,15 @@ fn test_print_all_chars() {
     print!("{}", game::Dice::Four.into_char());
     print!("{}", game::Dice::Five.into_char());
     println!("{}", game::Dice::Six.into_char());
+}
+
+fn snapshot(game: &game::Game) {
+    use std::io::Write;
+
+    let time = std::time::SystemTime::now();
+    if let Ok(mut f) = std::fs::File::create(format!("snapshot/{:?}.ron", time)) {
+        if let Ok(s) = ron::ser::to_string(&game) {
+            let _ = f.write_all(s.as_bytes());
+        }
+    }
 }

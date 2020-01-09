@@ -4,12 +4,13 @@ use log::debug;
 use rand::distributions::{Distribution, Standard};
 use rand::seq::SliceRandom;
 use rand::Rng;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use super::ai::{AiServer, PossibleCall, TurnResult};
 use super::list::OrderedList;
 use super::tiles::{make_all_tiles, Fon, Hai, SuuHai, Values};
 
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone, Serialize, Deserialize)]
 pub enum Dice {
     One = 1,
     Two = 2,
@@ -72,6 +73,59 @@ impl fmt::Debug for Game {
             .field("hoo", &self.hoo)
             .field("dice", &self.dice)
             .finish()
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct GameSerde {
+    wind: Fon,
+    pub turn: Fon,
+    honba: usize,
+    tsumo_cnt: usize,
+    players: [Player; 4],
+    yama: Vec<Option<Hai>>,
+    hoo: [Hoo; 4],
+    dice: [Dice; 2],
+}
+
+impl Serialize for Game {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        let game = GameSerde {
+            wind: self.wind,
+            turn: self.turn,
+            honba: self.honba,
+            tsumo_cnt: self.tsumo_cnt,
+            players: self.players.clone(),
+            yama: self.yama.iter().cloned().collect(),
+            hoo: self.hoo.clone(),
+            dice: self.dice,
+        };
+        game.serialize(serializer)
+    }
+}
+impl<'de> Deserialize<'de> for Game {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let game = GameSerde::deserialize(deserializer)?;
+
+        assert!(game.yama.len() == 136);
+        let mut yama = [None; 136];
+        for i in 0..136 {
+            yama[i] = game.yama[i];
+        }
+
+        Ok(Game {
+            wind: game.wind,
+            turn: game.turn,
+            honba: game.honba,
+            players: game.players,
+            tsumo_cnt: game.tsumo_cnt,
+            yama,
+            hoo: game.hoo,
+            dice: game.dice,
+        })
     }
 }
 
@@ -605,7 +659,7 @@ impl Game {
     }
 }
 
-#[derive(Default, Debug, Clone)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct Hoo {
     river: Vec<SuteHai>,
 }
@@ -616,7 +670,7 @@ impl Hoo {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum SuteHai {
     Normal(Hai),
     Riichi(Hai),
@@ -630,7 +684,7 @@ impl SuteHai {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Player {
     wind: Fon,
     te: Te,
@@ -645,21 +699,21 @@ impl Player {
     }
 }
 
-#[derive(Default, Debug, Eq, PartialEq, Clone)]
+#[derive(Default, Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Te {
     hai: OrderedList<Hai>,
     fuuro: Vec<Fuuro>,
     tsumo: Option<Hai>,
 }
 
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone, Serialize, Deserialize)]
 pub enum Direction {
     Left,
     Front,
     Right,
 }
 
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub enum Fuuro {
     Shuntsu {
         own: [Hai; 2],
@@ -674,7 +728,7 @@ pub enum Fuuro {
     Kantsu(KantsuInner),
 }
 
-#[derive(Debug, Eq, PartialEq, Clone)]
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub enum KantsuInner {
     Ankan {
         own: [Hai; 4],

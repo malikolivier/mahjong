@@ -1,3 +1,5 @@
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct OrderedList<T> {
     container: Vec<T>,
@@ -54,5 +56,21 @@ impl<'x, T: 'x + PartialOrd> OrderedList<T> {
             }
         }
         true
+    }
+}
+
+impl<T: Serialize> Serialize for OrderedList<T> {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.container.serialize(serializer)
+    }
+}
+
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for OrderedList<T> {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let container: Vec<T> = Vec::deserialize(deserializer)?;
+        Ok(Self { container })
     }
 }

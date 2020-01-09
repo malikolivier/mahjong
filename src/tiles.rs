@@ -1,3 +1,4 @@
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::str::FromStr;
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
@@ -289,6 +290,37 @@ impl FromStr for Hai {
             })
         } else {
             Err(ParseHaiError::EmptyString)
+        }
+    }
+}
+
+impl Serialize for Hai {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_char(self.to_char())
+    }
+}
+impl Serialize for Fon {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        Hai::Ji(JiHai::Fon(*self)).serialize(serializer)
+    }
+}
+
+impl<'de> Deserialize<'de> for Hai {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        unimplemented!()
+    }
+}
+impl<'de> Deserialize<'de> for Fon {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        match Hai::deserialize(deserializer)? {
+            Hai::Ji(JiHai::Fon(fon)) => Ok(fon),
+            _ => panic!("Expected fon!"),
         }
     }
 }
