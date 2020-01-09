@@ -97,7 +97,7 @@ pub enum Request {
     DoTurn {
         can_tsumo: bool,
         /// List of tiles that can be thrown so that the user can call riichi.
-        can_riichi: Vec<usize>,
+        can_riichi: Vec<ThrowableOnRiichi>,
         can_kyusyukyuhai: bool,
     },
 }
@@ -777,9 +777,34 @@ impl Game {
         false
     }
 
-    fn can_riichi(&self) -> Vec<usize> {
+    fn can_riichi(&self) -> Vec<ThrowableOnRiichi> {
         let mut throwable_tiles = vec![];
-        for hai in self.players[self.turn as usize].te.hai.iter() {}
+
+        if !self.players[self.turn as usize].te.fuuro.is_empty() {
+            if let Some(tsumohai) = self.players[self.turn as usize].te.tsumo {
+                let mut te = vec![];
+                te.extend(self.players[self.turn as usize].te.hai.iter().cloned());
+                te.push(tsumohai);
+
+                if is_tempai(&te) {
+                    // Find tiles which can be thrown on saying riichi
+                    for i in 0..te.len() {
+                        let mut te_ = te.clone();
+                        te_.swap_remove(i);
+                        if is_tempai(&te_) {
+                            throwable_tiles.push(
+                                if i == self.players[self.turn as usize].te.hai.len() - 1 {
+                                    ThrowableOnRiichi::Tsumohai
+                                } else {
+                                    ThrowableOnRiichi::Te(i)
+                                },
+                            );
+                        }
+                    }
+                }
+            }
+        }
+
         throwable_tiles
     }
 
@@ -831,6 +856,12 @@ impl Game {
         }
         allowed_calls
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum ThrowableOnRiichi {
+    Te(usize),
+    Tsumohai,
 }
 
 fn is_tempai(te: &[Hai]) -> bool {

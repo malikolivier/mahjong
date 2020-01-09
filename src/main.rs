@@ -154,6 +154,46 @@ fn cursive_human() -> ai::AiServer {
                             s.quit();
                         })
                     }
+                    if !can_riichi.is_empty() {
+                        for throwable in can_riichi {
+                            let tx_turn = tx_turn.clone();
+                            match throwable {
+                                game::ThrowableOnRiichi::Te(index) => {
+                                    let tile = game
+                                        .player_te(tiles::Fon::Ton)
+                                        .nth(index)
+                                        .expect("Has tile");
+                                    dialog = dialog.button(
+                                        format!("Riichi {}", tile.to_string()),
+                                        move |s| {
+                                            tx_turn
+                                                .send(ai::TurnResult::ThrowHai {
+                                                    index,
+                                                    riichi: true,
+                                                })
+                                                .expect("Sent turn result!");
+                                            s.quit();
+                                        },
+                                    )
+                                }
+                                game::ThrowableOnRiichi::Tsumohai => {
+                                    let tile =
+                                        game.player_tsumo(tiles::Fon::Ton).expect("Has tsumohai");
+                                    dialog = dialog.button(
+                                        format!("Riichi {}", tile.to_string()),
+                                        move |s| {
+                                            tx_turn
+                                                .send(ai::TurnResult::ThrowTsumoHai {
+                                                    riichi: true,
+                                                })
+                                                .expect("Sent turn result!");
+                                            s.quit();
+                                        },
+                                    )
+                                }
+                            };
+                        }
+                    }
                     for (i, hai) in game.player_te(tiles::Fon::Ton).enumerate() {
                         let tx_turn = tx_turn.clone();
                         dialog = dialog.button(hai.to_string(), move |s| {
