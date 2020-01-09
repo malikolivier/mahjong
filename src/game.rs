@@ -7,7 +7,7 @@ use rand::Rng;
 
 use super::ai::{AiServer, PossibleCall, TurnResult};
 use super::list::OrderedList;
-use super::tiles::{make_all_tiles, Fon, Hai, ParseHaiError, SuuHai, Values};
+use super::tiles::{make_all_tiles, Fon, Hai, SuuHai, Values};
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum Dice {
@@ -1149,6 +1149,7 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
 #[cfg(test)]
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
+    use super::super::tiles::ParseHaiError;
     use super::*;
 
     struct StringifiedGameDebug<'a> {
