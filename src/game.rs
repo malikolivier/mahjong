@@ -229,7 +229,8 @@ impl Game {
                     self.players[p].te.hai.insert(tsumohai);
                     self.yama[tsumohai_i] = None;
                 } else {
-                    unreachable!()
+                    debug!("Already dealt!");
+                    return;
                 }
             }
         }

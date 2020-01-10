@@ -16,11 +16,12 @@ fn main() {
     let mut log_builder = env_logger::Builder::from_default_env();
     log_builder.target(env_logger::Target::Stderr).init();
 
-    let mut rng: StdRng = SeedableRng::from_seed([0; 32]);
-
     test_print_all_chars();
 
+    let mut rng: StdRng = SeedableRng::from_seed([0; 32]);
     let mut game = game::Game::new(&mut rng);
+    // let mut game: game::Game =
+    //     ron::de::from_reader(std::fs::File::open("in.ron").unwrap()).unwrap();
     game.play([
         cursive_human(),
         ai::null_bot(),
@@ -56,12 +57,12 @@ fn cursive_human() -> ai::AiServer {
                 &request,
                 game.to_string_repr()
             );
-            snapshot(&game);
 
             siv.add_layer(TextView::new(game.to_string_repr()));
 
             match request {
                 game::Request::Refresh => {
+                    snapshot(&game);
                     instant = Some(std::time::Instant::now());
                 }
                 game::Request::Call(calls) => {

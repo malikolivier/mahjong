@@ -310,7 +310,8 @@ impl<'de> Deserialize<'de> for Hai {
     where
         D: Deserializer<'de>,
     {
-        unimplemented!()
+        let c = char::deserialize(deserializer)?;
+        Ok(Hai::from_str(&c.to_string()).unwrap())
     }
 }
 impl<'de> Deserialize<'de> for Fon {
