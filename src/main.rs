@@ -197,17 +197,19 @@ fn cursive_human() -> ai::AiServer {
                             };
                         }
                     }
-                    for (i, hai) in game.player_te(tiles::Fon::Ton).enumerate() {
-                        let tx_turn = tx_turn.clone();
-                        dialog = dialog.button(hai.to_string(), move |s| {
-                            tx_turn
-                                .send(ai::TurnResult::ThrowHai {
-                                    index: i,
-                                    riichi: false,
-                                })
-                                .expect("Sent turn result!");
-                            s.quit();
-                        })
+                    if !game.player_riichi(tiles::Fon::Ton) {
+                        for (i, hai) in game.player_te(tiles::Fon::Ton).enumerate() {
+                            let tx_turn = tx_turn.clone();
+                            dialog = dialog.button(hai.to_string(), move |s| {
+                                tx_turn
+                                    .send(ai::TurnResult::ThrowHai {
+                                        index: i,
+                                        riichi: false,
+                                    })
+                                    .expect("Sent turn result!");
+                                s.quit();
+                            })
+                        }
                     }
                     if let Some(hai) = game.player_tsumo(tiles::Fon::Ton) {
                         let tx_turn = tx_turn.clone();

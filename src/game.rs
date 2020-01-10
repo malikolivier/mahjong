@@ -660,6 +660,9 @@ impl Game {
     pub fn player_tsumo(&self, p: Fon) -> Option<Hai> {
         self.players[p as usize].te.tsumo
     }
+    pub fn player_riichi(&self, p: Fon) -> bool {
+        self.players[p as usize].riichi
+    }
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
