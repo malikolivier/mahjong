@@ -835,7 +835,7 @@ impl Game {
     fn can_riichi(&self) -> Vec<ThrowableOnRiichi> {
         let mut throwable_tiles = vec![];
 
-        if !self.players[self.turn as usize].te.fuuro.is_empty() {
+        if self.players[self.turn as usize].te.fuuro.is_empty() {
             if let Some(tsumohai) = self.players[self.turn as usize].te.tsumo {
                 let mut te = vec![];
                 te.extend(self.players[self.turn as usize].te.hai.iter().cloned());
@@ -848,7 +848,7 @@ impl Game {
                         te_.swap_remove(i);
                         if is_tempai(&te_) {
                             throwable_tiles.push(
-                                if i == self.players[self.turn as usize].te.hai.len() - 1 {
+                                if i == self.players[self.turn as usize].te.hai.len() {
                                     ThrowableOnRiichi::Tsumohai
                                 } else {
                                     ThrowableOnRiichi::Te(i)
