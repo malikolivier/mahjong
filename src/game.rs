@@ -913,7 +913,7 @@ impl Game {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum ThrowableOnRiichi {
     Te(usize),
     Tsumohai,
@@ -1399,5 +1399,14 @@ mod tests {
     fn test_normal_shanten_head_0() {
         let te = te_from_string("🀇🀈🀉🀊🀋🀌🀍🀎🀏🀙🀚🀛🀗🀗").unwrap();
         assert_eq!(count_normal_shanten(&te), 0);
+    }
+
+    use ron;
+
+    #[test]
+    fn test_riichi() {
+        let game: Game =
+            ron::de::from_reader(std::fs::File::open("riichi.ron").unwrap()).unwrap();
+        assert_eq!(game.can_riichi(), vec![ThrowableOnRiichi::Tsumohai]);
     }
 }
