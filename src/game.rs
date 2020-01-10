@@ -1,6 +1,6 @@
 use std::fmt;
 
-use log::debug;
+use log::{debug, trace};
 use rand::distributions::{Distribution, Standard};
 use rand::seq::SliceRandom;
 use rand::Rng;
@@ -372,6 +372,7 @@ impl Game {
             .expect("Has tsumohai");
         debug!("Throw tsumohai {}", hai.to_string());
         self.hoo[p as usize].river.push(if riichi {
+            self.players[p as usize].riichi = true;
             SuteHai::Riichi(hai)
         } else {
             SuteHai::Normal(hai)
@@ -386,6 +387,7 @@ impl Game {
         }
         debug!("Throw tehai {}", hai.to_string());
         self.hoo[p as usize].river.push(if riichi {
+            self.players[p as usize].riichi = true;
             SuteHai::Riichi(hai)
         } else {
             SuteHai::Normal(hai)
@@ -689,6 +691,7 @@ impl SuteHai {
 pub struct Player {
     wind: Fon,
     te: Te,
+    riichi: bool,
 }
 
 impl Player {
@@ -696,6 +699,7 @@ impl Player {
         Self {
             wind,
             te: Default::default(),
+            riichi: false,
         }
     }
 }
@@ -750,6 +754,10 @@ pub enum KantsuInner {
 impl Game {
     /// Return all possible chi on calling
     fn can_chi(&self) -> Vec<[usize; 2]> {
+        // Cannot call chi if in riichi
+        if self.players[self.turn as usize].riichi {
+            return vec![];
+        }
         if let Some(hai) = self.last_thrown_tile() {
             match hai {
                 Hai::Suu(SuuHai { value, .. }) => {
@@ -789,6 +797,10 @@ impl Game {
     }
 
     fn can_pon(&self, player: Fon) -> bool {
+        // Cannot call pon if in riichi
+        if self.players[player as usize].riichi {
+            return false;
+        }
         if let Some(hai) = self.last_thrown_tile() {
             let mut cnt = 0;
             for tehai in self.players[player as usize].te.hai.iter() {
@@ -803,7 +815,11 @@ impl Game {
     }
 
     fn can_kan(&self, player: Fon) -> bool {
+        // Cannot call kan if in riichi
         if let Some(hai) = self.last_thrown_tile() {
+            if self.players[player as usize].riichi {
+                return false;
+            }
             let mut cnt = 0;
             for tehai in self.players[player as usize].te.hai.iter() {
                 if tehai == &hai {
@@ -835,10 +851,11 @@ impl Game {
     fn can_riichi(&self) -> Vec<ThrowableOnRiichi> {
         let mut throwable_tiles = vec![];
 
-        if self.players[self.turn as usize].te.fuuro.is_empty() {
-            if let Some(tsumohai) = self.players[self.turn as usize].te.tsumo {
+        let player = &self.players[self.turn as usize];
+        if !player.riichi && player.te.fuuro.is_empty() {
+            if let Some(tsumohai) = player.te.tsumo {
                 let mut te = vec![];
-                te.extend(self.players[self.turn as usize].te.hai.iter().cloned());
+                te.extend(player.te.hai.iter().cloned());
                 te.push(tsumohai);
 
                 if is_tempai(&te) {
@@ -847,13 +864,11 @@ impl Game {
                         let mut te_ = te.clone();
                         te_.swap_remove(i);
                         if is_tempai(&te_) {
-                            throwable_tiles.push(
-                                if i == self.players[self.turn as usize].te.hai.len() {
-                                    ThrowableOnRiichi::Tsumohai
-                                } else {
-                                    ThrowableOnRiichi::Te(i)
-                                },
-                            );
+                            throwable_tiles.push(if i == player.te.hai.len() {
+                                ThrowableOnRiichi::Tsumohai
+                            } else {
+                                ThrowableOnRiichi::Te(i)
+                            });
                         }
                     }
                 }
@@ -989,7 +1004,7 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
     let open_mentsu_count = (14 - te.len()) / 3;
     let root = GroupTree::generate(te, 0, 4 - open_mentsu_count, 0, 0);
     for tree in &root {
-        println!("{}", tree);
+        trace!("{}", tree);
     }
 
     #[derive(Debug, Eq, PartialEq)]
@@ -1405,8 +1420,7 @@ mod tests {
 
     #[test]
     fn test_riichi() {
-        let game: Game =
-            ron::de::from_reader(std::fs::File::open("riichi.ron").unwrap()).unwrap();
+        let game: Game = ron::de::from_reader(std::fs::File::open("riichi.ron").unwrap()).unwrap();
         assert_eq!(game.can_riichi(), vec![ThrowableOnRiichi::Tsumohai]);
     }
 }
