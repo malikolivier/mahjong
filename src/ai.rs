@@ -29,6 +29,7 @@ pub enum TurnResult {
     Ankan { index: TehaiIndex },
 }
 
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum TehaiIndex {
     Tehai(usize),
     Tsumohai,

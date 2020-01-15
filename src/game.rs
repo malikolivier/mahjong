@@ -644,6 +644,9 @@ impl Game {
     pub fn player_te(&self, p: Fon) -> impl Iterator<Item = &Hai> {
         self.players[p as usize].te.hai.iter()
     }
+    pub fn player_te_(&self, p: Fon) -> &Te {
+        &self.players[p as usize].te
+    }
     pub fn player_tsumo(&self, p: Fon) -> Option<Hai> {
         self.players[p as usize].te.tsumo
     }
