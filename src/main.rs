@@ -217,6 +217,21 @@ fn cursive_human() -> ai::AiServer {
                             })
                         }
                     }
+                    if !can_shominkan.is_empty() {
+                        for hai in can_shominkan {
+                            let tx_turn = tx_turn.clone();
+                            let index = game
+                                .player_te_(tiles::Fon::Ton)
+                                .index(hai)
+                                .expect("Has ankan tile");
+                            dialog = dialog.button(format!("Kakan {}", hai.to_string()), move |s| {
+                                tx_turn
+                                    .send(ai::TurnResult::Kakan { index })
+                                    .expect("Sent turn result!");
+                                s.quit();
+                            })
+                        }
+                    }
                     if !game.player_riichi(tiles::Fon::Ton) {
                         for (i, hai) in game.player_te(tiles::Fon::Ton).enumerate() {
                             let tx_turn = tx_turn.clone();

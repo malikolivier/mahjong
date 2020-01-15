@@ -386,6 +386,7 @@ impl Game {
             TurnResult::Tsumo => self.agari(self.turn),
             TurnResult::Kyusyukyuhai => self.ryukyoku(),
             TurnResult::Ankan { index } => self.announce_ankan(index, channels),
+            TurnResult::Kakan { index } => self.announce_kakan(index, channels),
             TurnResult::ThrowHai { index, riichi } => {
                 self.throw_tile(self.turn, index, riichi);
                 self.turn = self.turn.next();
@@ -427,6 +428,14 @@ impl Game {
     pub fn announce_ankan(&mut self, i: TehaiIndex, channels: &[AiServer; 4]) -> bool {
         let te = &mut self.players[self.turn as usize].te;
         te.ankan(i);
+        self.kan_after(self.turn, channels)
+    }
+
+    /// Returns a boolean whose value is false if this is the last turn
+    pub fn announce_kakan(&mut self, i: TehaiIndex, channels: &[AiServer; 4]) -> bool {
+        let te = &mut self.players[self.turn as usize].te;
+        te.kakan(i);
+        // TODO: Add chankan check!
         self.kan_after(self.turn, channels)
     }
 
@@ -796,6 +805,35 @@ impl Te {
         self.fuuro.push(Fuuro::Kantsu(KantsuInner::Ankan {
             own: [hai1, hai2, hai3, hai4],
         }));
+    }
+
+    fn find_kootsu_with_hai_mut(&mut self, hai: Hai) -> Option<&mut Fuuro> {
+        for fuuro in &mut self.fuuro {
+            if let Fuuro::Kootsu { own: [hai1, _], .. } = fuuro {
+                if *hai1 == hai {
+                    return Some(fuuro);
+                }
+            }
+        }
+        None
+    }
+
+    /// Make an kakan in this te
+    pub fn kakan(&mut self, i: TehaiIndex) {
+        let hai = self.remove(i);
+        let fuuro = self
+            .find_kootsu_with_hai_mut(hai)
+            .expect("Has kootsu to kakan");
+        if let Fuuro::Kootsu { own, taken, from } = *fuuro {
+            *fuuro = Fuuro::Kantsu(KantsuInner::ShouMinkan {
+                own,
+                added: hai,
+                taken,
+                from,
+            })
+        } else {
+            unreachable!("Expect kootsu!");
+        }
     }
 
     pub fn kan_count(&self) -> usize {
