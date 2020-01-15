@@ -274,6 +274,7 @@ impl Game {
 
         let allowed_calls1 = self.allowed_calls(self.turn);
         if allowed_calls1.len() > 0 {
+            trace!("1. Player {} can {:?}!", self.turn as usize, allowed_calls1);
             channels[self.turn as usize]
                 .tx
                 .send(GameRequest::new(self, Request::Call(allowed_calls1)))
@@ -286,6 +287,11 @@ impl Game {
 
         let allowed_calls2 = self.allowed_calls(self.turn.next());
         if allowed_calls2.len() > 0 {
+            trace!(
+                "2. Player {} can {:?}!",
+                self.turn.next() as usize,
+                allowed_calls2
+            );
             channels[self.turn.next() as usize]
                 .tx
                 .send(GameRequest::new(self, Request::Call(allowed_calls2)))
