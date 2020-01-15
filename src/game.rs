@@ -1,6 +1,6 @@
 use std::fmt;
 
-use log::{debug, trace};
+use log::{debug, info, trace};
 use rand::distributions::{Distribution, Standard};
 use rand::seq::SliceRandom;
 use rand::Rng;
@@ -204,16 +204,23 @@ impl Game {
         }
     }
 
+    /// Return total number of kans
     fn kan_count(&self) -> usize {
-        let mut cnt = 0;
+        self.players.iter().fold(0, |acc, p| acc + p.te.kan_count())
+    }
+
+    /// Return true if all kans are from the same player
+    fn kan_same_player(&self) -> bool {
+        let mut any_kan = false;
         for p in &self.players {
-            for fuuro in &p.te.fuuro {
-                if let Fuuro::Kantsu(_) = fuuro {
-                    cnt += 1;
-                }
+            if any_kan {
+                return false;
+            }
+            if p.te.kan_count() > 0 {
+                any_kan = true;
             }
         }
-        cnt
+        true
     }
 
     pub fn play(&mut self, channels: [AiServer; 4]) {
@@ -232,7 +239,7 @@ impl Game {
                     self.players[p].te.hai.insert(tsumohai);
                     self.yama[tsumohai_i] = None;
                 } else {
-                    debug!("Already dealt!");
+                    info!("Already dealt!");
                     return;
                 }
             }
@@ -265,6 +272,11 @@ impl Game {
 
     /// Returns a boolean whose value is false if this is the last turn
     fn next_turn(&mut self, channels: &[AiServer; 4]) -> bool {
+        // TODO: Ryukyoku conditions:
+        //   - 4 riichi;
+        //   - 4 kan from different players;
+        //   - same wind thrown 4 times on first turn.
+
         self.tx_refresh(channels);
 
         // Listen for chi/pon/kan/ron
@@ -345,6 +357,10 @@ impl Game {
                 match result {
                     TurnResult::Tsumo => self.agari(self.turn),
                     TurnResult::Kyusyukyuhai => self.ryukyoku(),
+                    TurnResult::Ankan { index } => {
+                        self.announce_ankan(index);
+                        true
+                    }
                     TurnResult::ThrowHai { index, riichi } => {
                         self.throw_tile(self.turn, index, riichi);
                         self.turn = self.turn.next();
@@ -383,6 +399,16 @@ impl Game {
         } else {
             SuteHai::Normal(hai)
         })
+    }
+
+    pub fn announce_ankan(&mut self, i: TehaiIndex) {
+        let te = &mut self.players[self.turn as usize].te;
+        te.ankan(i);
+        self.kan_after();
+    }
+
+    pub fn kan_after(&mut self) {
+        // TODO: Draw from mont intouchable and do a standard turn
     }
 
     pub fn to_string_repr(&self) -> String {
@@ -721,6 +747,26 @@ impl Te {
     pub fn set_tsumohai(&mut self, hai: Hai) {
         assert!(self.tsumo.is_none(), "Expect empty tsumohai");
         self.tsumo = Some(hai);
+    }
+
+    /// Make an ankan in this te
+    pub fn ankan(&mut self, i: TehaiIndex) {
+        let hai1 = self.remove(i);
+        let hai2_i = self.index(hai1).expect("Has second kan tile");
+        let hai2 = self.remove(hai2_i);
+        let hai3_i = self.index(hai1).expect("Has third kan tile");
+        let hai3 = self.remove(hai3_i);
+        let hai4_i = self.index(hai1).expect("Has forth kan tile");
+        let hai4 = self.remove(hai4_i);
+        self.fuuro.push(Fuuro::Kantsu(KantsuInner::Ankan {
+            own: [hai1, hai2, hai3, hai4],
+        }));
+    }
+
+    pub fn kan_count(&self) -> usize {
+        self.fuuro.iter().fold(0, |acc, fuuro| {
+            acc + if let Fuuro::Kantsu(_) = fuuro { 1 } else { 0 }
+        })
     }
 }
 

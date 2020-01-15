@@ -25,6 +25,8 @@ pub enum TurnResult {
     ThrowHai { index: TehaiIndex, riichi: bool },
     Tsumo,
     Kyusyukyuhai,
+    // Kakan { index: TehaiIndex },
+    Ankan { index: TehaiIndex },
 }
 
 pub enum TehaiIndex {
