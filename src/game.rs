@@ -388,12 +388,19 @@ impl Game {
                             caller as usize, calls[pon_kan_player_i]
                         );
                         match calls[pon_kan_player_i] {
-                            Some(Call::Pon) => self.call_pon(caller),
-                            Some(Call::Kan) => self.call_kan(caller),
+                            Some(Call::Pon) => {
+                                self.call_pon(caller);
+                                self.do_turn(channels)
+                            }
+                            Some(Call::Kan) => self.call_kan(caller, channels),
                             _ => unreachable!("Expect kan or pon"),
                         }
+                    } else if let Some(Call::Chi { index }) = call1 {
+                        // Do chi
+                        unimplemented!()
+                    } else {
+                        unreachable!("Impossible state!");
                     }
-                    self.do_turn(channels)
                 }
             }
         }
@@ -498,10 +505,29 @@ impl Game {
         self.turn = p;
     }
 
-    pub fn call_kan(&mut self, p: Fon) {
-        self.turn = p;
-        let te = &mut self.players[self.turn as usize].te;
-        // TODO
+    /// Returns a boolean whose value is false if this is the last turn
+    pub fn call_kan(&mut self, p: Fon, channels: &[AiServer; 4]) -> bool {
+        let hai = self.remove_last_thrown_tile();
+        debug!(
+            "Kan called by player {}. Last thrown tile: {}, thrown by player {}",
+            p as usize,
+            hai.to_char(),
+            self.turn.prev() as usize
+        );
+        let te = &mut self.players[p as usize].te;
+        let player_diff = p as isize - self.turn.prev() as isize;
+        let direction = match player_diff {
+            -3 => Direction::Right,
+            -2 => Direction::Front,
+            -1 => Direction::Left,
+            0 => unreachable!("Caller and callee cannot be the same player!"),
+            1 => Direction::Right,
+            2 => Direction::Front,
+            3 => Direction::Left,
+            _ => unreachable!("Modulo 4"),
+        };
+        te.daikantsu(hai, direction);
+        self.kan_after(p, channels)
     }
 
     /// Returns a boolean whose value is false if this is the last turn
@@ -886,6 +912,22 @@ impl Te {
         };
         trace!("Make new fuuro: {:?}", &new_kootsu);
         self.fuuro.push(new_kootsu);
+    }
+
+    pub fn daikantsu(&mut self, hai: Hai, direction: Direction) {
+        let hai2_i = self.index(hai).expect("Has second kan tile");
+        let hai2 = self.remove(hai2_i);
+        let hai3_i = self.index(hai).expect("Has third kan tile");
+        let hai3 = self.remove(hai3_i);
+        let hai4_i = self.index(hai).expect("Has forth kan tile");
+        let hai4 = self.remove(hai4_i);
+        let new_kantsu = Fuuro::Kantsu(KantsuInner::DaiMinkan {
+            own: [hai2, hai3, hai4],
+            taken: hai,
+            from: direction,
+        });
+        trace!("Make new fuuro: {:?}", &new_kantsu);
+        self.fuuro.push(new_kantsu);
     }
 
     /// Make an ankan in this te
