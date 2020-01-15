@@ -281,7 +281,7 @@ fn snapshot(game: &game::Game) {
 
     let time = std::time::SystemTime::now();
     if let Ok(mut f) = std::fs::File::create(format!("snapshot/{:?}.ron", time)) {
-        if let Ok(s) = ron::ser::to_string(&game) {
+        if let Ok(s) = ron::ser::to_string_pretty(&game, Default::default()) {
             let _ = f.write_all(s.as_bytes());
         }
     }
