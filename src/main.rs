@@ -137,6 +137,8 @@ fn cursive_human() -> ai::AiServer {
                     can_tsumo,
                     can_riichi,
                     can_kyusyukyuhai,
+                    can_shominkan,
+                    can_ankan,
                 } => {
                     let mut dialog = Dialog::text("").title("Hand");
                     if can_tsumo {

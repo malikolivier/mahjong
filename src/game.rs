@@ -153,6 +153,9 @@ pub enum Request {
         /// List of tiles that can be thrown so that the user can call riichi.
         can_riichi: Vec<ThrowableOnRiichi>,
         can_kyusyukyuhai: bool,
+        /// Can call kan on one of these tiles during own turn
+        can_shominkan: Vec<Hai>,
+        can_ankan: Vec<Hai>,
     },
 }
 
@@ -319,6 +322,8 @@ impl Game {
                             can_tsumo: self.can_tsumo(),
                             can_riichi: self.can_riichi(),
                             can_kyusyukyuhai: self.can_kyusyukyuhai(),
+                            can_shominkan: self.can_shominkan(),
+                            can_ankan: self.can_ankan(),
                         },
                     ))
                     .expect("Sent!");
@@ -817,6 +822,7 @@ impl Game {
         }
     }
 
+    /// Can call kan during opponent's turn (Daiminkan)
     fn can_kan(&self, player: Fon) -> bool {
         // Cannot call kan if in riichi
         if let Some(hai) = self.last_thrown_tile() {
@@ -831,7 +837,6 @@ impl Game {
             }
             cnt >= 3
         } else {
-            // TODO: Take into account Shouminkan
             false
         }
     }
@@ -906,6 +911,64 @@ impl Game {
         } else {
             false
         }
+    }
+
+    /// Can call Kan on one of these tiles during one's own turn
+    fn can_shominkan(&self) -> Vec<Hai> {
+        fn can_make_shominkan(all_fuuro: &[Fuuro], hai: Hai) -> bool {
+            for fuuro in all_fuuro {
+                if let Fuuro::Kootsu { taken, .. } = fuuro {
+                    if *taken == hai {
+                        return true;
+                    }
+                }
+            }
+            false
+        }
+
+        let mut candidates = vec![];
+        let te = &self.players[self.turn as usize].te;
+        for hai in te.hai.iter() {
+            if can_make_shominkan(&te.fuuro, *hai) {
+                candidates.push(*hai);
+            }
+        }
+        if let Some(hai) = te.tsumo {
+            if can_make_shominkan(&te.fuuro, hai) {
+                candidates.push(hai);
+            }
+        }
+        candidates
+    }
+
+    /// Can call Kan on one of these tiles during one's own turn
+    fn can_ankan(&self) -> Vec<Hai> {
+        use std::collections::{hash_map::Entry, HashMap};
+
+        fn count(cnt_map: &mut HashMap<Hai, usize>, hai: Hai) {
+            match cnt_map.entry(hai) {
+                Entry::Vacant(cnt) => {
+                    cnt.insert(1);
+                }
+                Entry::Occupied(mut cnt) => {
+                    *cnt.get_mut() += 1;
+                }
+            }
+        }
+
+        let mut cnt_map = HashMap::new();
+        for hai in self.players[self.turn as usize].te.hai.iter() {
+            count(&mut cnt_map, *hai);
+        }
+        if let Some(hai) = self.players[self.turn as usize].te.tsumo {
+            count(&mut cnt_map, hai);
+        }
+
+        cnt_map
+            .iter()
+            .filter(|(_, &cnt)| cnt == 4)
+            .map(|(hai, _)| *hai)
+            .collect()
     }
 
     fn allowed_calls(&self, player: Fon) -> Vec<PossibleCall> {
