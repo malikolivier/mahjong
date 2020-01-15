@@ -243,9 +243,9 @@ impl Game {
     /// Return true if a tile is drawn. Return false if there is no tile left.
     fn draw(&mut self) -> bool {
         if let Some(tsumohai_i) = self.next_tsumohai_index() {
-            let tsumohai = self.yama[tsumohai_i];
+            let tsumohai = self.yama[tsumohai_i].expect("Yama has tile");
             self.yama[tsumohai_i] = None;
-            self.players[self.turn as usize].te.tsumo = tsumohai;
+            self.players[self.turn as usize].te.set_tsumohai(tsumohai);
             self.tsumo_cnt += 1;
             true
         } else {
@@ -376,26 +376,7 @@ impl Game {
     }
 
     pub fn throw_tile(&mut self, p: Fon, i: TehaiIndex, riichi: bool) {
-        let hai = match i {
-            TehaiIndex::Tehai(i) => {
-                let hai = self.players[p as usize].te.hai.remove(i);
-                if let Some(tsumohai) = self.players[p as usize].te.tsumo.take() {
-                    debug!("Insert tsumohai {}", tsumohai.to_string());
-                    self.players[p as usize].te.hai.insert(tsumohai);
-                }
-                debug!("Throw tehai {}", hai.to_string());
-                hai
-            }
-            TehaiIndex::Tsumohai => {
-                let hai = self.players[p as usize]
-                    .te
-                    .tsumo
-                    .take()
-                    .expect("Has tsumohai");
-                debug!("Throw tsumohai {}", hai.to_string());
-                hai
-            }
-        };
+        let hai = self.players[p as usize].te.throw_and_insert(i);
         self.hoo[p as usize].river.push(if riichi {
             self.players[p as usize].riichi = true;
             SuteHai::Riichi(hai)
@@ -692,6 +673,55 @@ pub struct Te {
     hai: OrderedList<Hai>,
     fuuro: Vec<Fuuro>,
     tsumo: Option<Hai>,
+}
+
+impl Te {
+    pub fn contains(&self, hai: Hai) -> bool {
+        self.hai.contains(&hai) || self.tsumo == Some(hai)
+    }
+    pub fn index(&self, hai: Hai) -> Option<TehaiIndex> {
+        self.hai.index(&hai).map(TehaiIndex::Tehai).or_else(|| {
+            if self.tsumo == Some(hai) {
+                Some(TehaiIndex::Tsumohai)
+            } else {
+                None
+            }
+        })
+    }
+    pub fn remove(&mut self, i: TehaiIndex) -> Hai {
+        match i {
+            TehaiIndex::Tehai(i) => self.hai.remove(i),
+            TehaiIndex::Tsumohai => self.tsumo.take().expect("Has tsumohai"),
+        }
+    }
+    /// Do a standard turn: either
+    ///   - throw tsumohai; or
+    ///   - insert tsumohai in te throw a tile in te
+    ///
+    /// Return thrown tile
+    pub fn throw_and_insert(&mut self, i: TehaiIndex) -> Hai {
+        match i {
+            TehaiIndex::Tehai(i) => {
+                let hai = self.hai.remove(i);
+                if let Some(tsumohai) = self.tsumo.take() {
+                    debug!("Insert tsumohai {}", tsumohai.to_string());
+                    self.hai.insert(tsumohai);
+                }
+                debug!("Throw tehai {}", hai.to_string());
+                hai
+            }
+            TehaiIndex::Tsumohai => {
+                let hai = self.tsumo.take().expect("Has tsumohai");
+                debug!("Throw tsumohai {}", hai.to_string());
+                hai
+            }
+        }
+    }
+
+    pub fn set_tsumohai(&mut self, hai: Hai) {
+        assert!(self.tsumo.is_none(), "Expect empty tsumohai");
+        self.tsumo = Some(hai);
+    }
 }
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone, Serialize, Deserialize)]
