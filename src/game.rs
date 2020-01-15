@@ -260,6 +260,26 @@ impl Game {
         }
     }
 
+    fn draw_from_rinshan(&mut self, p: Fon) {
+        let break_point = self.wall_break_index();
+
+        fn previous_tile_index(i: usize) -> usize {
+            if i == 0 {
+                135
+            } else {
+                i - 1
+            }
+        }
+
+        let mut tile_index = previous_tile_index(break_point);
+        while self.yama[tile_index].is_none() {
+            tile_index = previous_tile_index(tile_index);
+        }
+        let tsumohai = self.yama[tile_index].expect("Yama has tile");
+        self.yama[tile_index] = None;
+        self.players[p as usize].te.set_tsumohai(tsumohai);
+    }
+
     /// Returns a boolean whose value is false if this is the last turn
     fn tx_refresh(&self, channels: &[AiServer; 4]) {
         for channel in channels {
@@ -337,38 +357,40 @@ impl Game {
                     self.ryukyoku();
                     return false;
                 }
-                channels[self.turn as usize]
-                    .tx
-                    .send(GameRequest::new(
-                        self,
-                        Request::DoTurn {
-                            can_tsumo: self.can_tsumo(),
-                            can_riichi: self.can_riichi(),
-                            can_kyusyukyuhai: self.can_kyusyukyuhai(),
-                            can_shominkan: self.can_shominkan(),
-                            can_ankan: self.can_ankan(),
-                        },
-                    ))
-                    .expect("Sent!");
-                let result = channels[self.turn as usize]
-                    .rx_turn
-                    .recv()
-                    .expect("Received!");
-                match result {
-                    TurnResult::Tsumo => self.agari(self.turn),
-                    TurnResult::Kyusyukyuhai => self.ryukyoku(),
-                    TurnResult::Ankan { index } => {
-                        self.announce_ankan(index);
-                        true
-                    }
-                    TurnResult::ThrowHai { index, riichi } => {
-                        self.throw_tile(self.turn, index, riichi);
-                        self.turn = self.turn.next();
-                        true
-                    }
-                }
+                self.do_turn(channels)
             }
             _ => unimplemented!("Someone called!"),
+        }
+    }
+
+    /// Returns a boolean whose value is false if this is the last turn
+    fn do_turn(&mut self, channels: &[AiServer; 4]) -> bool {
+        channels[self.turn as usize]
+            .tx
+            .send(GameRequest::new(
+                self,
+                Request::DoTurn {
+                    can_tsumo: self.can_tsumo(),
+                    can_riichi: self.can_riichi(),
+                    can_kyusyukyuhai: self.can_kyusyukyuhai(),
+                    can_shominkan: self.can_shominkan(),
+                    can_ankan: self.can_ankan(),
+                },
+            ))
+            .expect("Sent!");
+        let result = channels[self.turn as usize]
+            .rx_turn
+            .recv()
+            .expect("Received!");
+        match result {
+            TurnResult::Tsumo => self.agari(self.turn),
+            TurnResult::Kyusyukyuhai => self.ryukyoku(),
+            TurnResult::Ankan { index } => self.announce_ankan(index, channels),
+            TurnResult::ThrowHai { index, riichi } => {
+                self.throw_tile(self.turn, index, riichi);
+                self.turn = self.turn.next();
+                true
+            }
         }
     }
 
@@ -401,14 +423,24 @@ impl Game {
         })
     }
 
-    pub fn announce_ankan(&mut self, i: TehaiIndex) {
+    /// Returns a boolean whose value is false if this is the last turn
+    pub fn announce_ankan(&mut self, i: TehaiIndex, channels: &[AiServer; 4]) -> bool {
         let te = &mut self.players[self.turn as usize].te;
         te.ankan(i);
-        self.kan_after();
+        self.kan_after(self.turn, channels)
     }
 
-    pub fn kan_after(&mut self) {
-        // TODO: Draw from mont intouchable and do a standard turn
+    /// Returns a boolean whose value is false if this is the last turn
+    pub fn kan_after(&mut self, p: Fon, channels: &[AiServer; 4]) -> bool {
+        let te = &mut self.players[p as usize].te;
+        // Insert tsumohai in te, if any
+        if let Some(tsumohai) = te.tsumo.take() {
+            te.hai.insert(tsumohai);
+        }
+        // Draw from mont intouchable and do a standard turn
+        self.draw_from_rinshan(p);
+        self.turn = p;
+        self.do_turn(channels)
     }
 
     pub fn to_string_repr(&self) -> String {
