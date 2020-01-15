@@ -296,8 +296,13 @@ impl Game {
                 .expect("Received!");
         }
 
-        let allowed_calls3 = self.allowed_calls(self.turn);
+        let allowed_calls3 = self.allowed_calls(self.turn.next().next());
         if allowed_calls3.len() > 0 {
+            trace!(
+                "3. Player {} can {:?}!",
+                self.turn.next().next() as usize,
+                allowed_calls3
+            );
             channels[self.turn.next().next() as usize]
                 .tx
                 .send(GameRequest::new(self, Request::Call(allowed_calls3)))
