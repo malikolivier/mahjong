@@ -396,8 +396,8 @@ impl Game {
                             _ => unreachable!("Expect kan or pon"),
                         }
                     } else if let Some(Call::Chi { index }) = call1 {
-                        // Do chi
-                        unimplemented!()
+                        self.call_chi(self.turn, index);
+                        self.do_turn(channels)
                     } else {
                         unreachable!("Impossible state!");
                     }
@@ -478,6 +478,31 @@ impl Game {
         } else {
             SuteHai::Normal(hai)
         })
+    }
+
+    /// p: Wind of the caller.
+    pub fn call_chi(&mut self, p: Fon, index: [usize; 2]) {
+        let hai = self.remove_last_thrown_tile();
+        debug!(
+            "Chi called by player {}. Last thrown tile: {}, thrown by player {}",
+            p as usize,
+            hai.to_char(),
+            self.turn.prev() as usize
+        );
+        let te = &mut self.players[p as usize].te;
+        let player_diff = p as isize - self.turn.prev() as isize;
+        let direction = match player_diff {
+            -3 => Direction::Right,
+            -2 => Direction::Front,
+            -1 => Direction::Left,
+            0 => unreachable!("Caller and callee cannot be the same player!"),
+            1 => Direction::Right,
+            2 => Direction::Front,
+            3 => Direction::Left,
+            _ => unreachable!("Modulo 4"),
+        };
+        te.open_shuntsu(hai, index);
+        self.turn = p;
     }
 
     /// p: Wind of the caller.
@@ -897,6 +922,19 @@ impl Te {
     pub fn set_tsumohai(&mut self, hai: Hai) {
         assert!(self.tsumo.is_none(), "Expect empty tsumohai");
         self.tsumo = Some(hai);
+    }
+
+    /// Make a chi in this te
+    pub fn open_shuntsu(&mut self, hai: Hai, index: [usize; 2]) {
+        let hai2 = self.remove(TehaiIndex::Tehai(index[0]));
+        let hai3 = self.remove(TehaiIndex::Tehai(index[1]));
+        let new_shuntsu = Fuuro::Shuntsu {
+            own: [hai2, hai3],
+            taken: hai,
+            from: Direction::Right,
+        };
+        trace!("Make new fuuro: {:?}", &new_shuntsu);
+        self.fuuro.push(new_shuntsu);
     }
 
     /// Make a pon in this te
