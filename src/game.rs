@@ -6,7 +6,7 @@ use rand::seq::SliceRandom;
 use rand::Rng;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use super::ai::{AiServer, PossibleCall, TehaiIndex, TurnResult};
+use super::ai::{AiServer, Call, PossibleCall, TehaiIndex, TurnResult};
 use super::list::OrderedList;
 use super::tiles::{make_all_tiles, Fon, Hai, SuuHai, Values};
 
@@ -280,7 +280,6 @@ impl Game {
         self.players[p as usize].te.set_tsumohai(tsumohai);
     }
 
-    /// Returns a boolean whose value is false if this is the last turn
     fn tx_refresh(&self, channels: &[AiServer; 4]) {
         for channel in channels {
             channel
@@ -351,7 +350,9 @@ impl Game {
                 .expect("Received!");
         }
 
-        match [call1, call2, call3] {
+        let calls = [call1, call2, call3];
+        trace!("Calls: {:?}", &calls);
+        match calls {
             [None, None, None] => {
                 if !self.draw() {
                     self.ryukyoku();
@@ -359,10 +360,47 @@ impl Game {
                 }
                 self.do_turn(channels)
             }
-            _ => unimplemented!("Someone called!"),
+            _ => {
+                // If any has Ron do single, double or triple ron score calculation.
+                // If any has Kan or Pon, do it.
+                // If any has Chi do it. In this order.
+                let ron_calls: Vec<_> = calls
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, call)| {
+                        if let Some(Call::Ron) = call {
+                            Some(self.turn.next_nth(i))
+                        } else {
+                            None
+                        }
+                    })
+                    .collect();
+                if !ron_calls.is_empty() {
+                    self.agari(ron_calls)
+                } else {
+                    if let Some(pon_kan_player_i) = calls.iter().position(|call| match call {
+                        Some(Call::Pon) | Some(Call::Kan) => true,
+                        _ => false,
+                    }) {
+                        let caller = self.turn.next_nth(pon_kan_player_i);
+                        info!(
+                            "Player {} called {:?}",
+                            caller as usize, calls[pon_kan_player_i]
+                        );
+                        match calls[pon_kan_player_i] {
+                            Some(Call::Pon) => self.call_pon(caller),
+                            Some(Call::Kan) => self.call_kan(caller),
+                            _ => unreachable!("Expect kan or pon"),
+                        }
+                    }
+                    self.do_turn(channels)
+                }
+            }
         }
     }
 
+    /// Ask client for what to do then do it.
+    ///
     /// Returns a boolean whose value is false if this is the last turn
     fn do_turn(&mut self, channels: &[AiServer; 4]) -> bool {
         channels[self.turn as usize]
@@ -383,7 +421,7 @@ impl Game {
             .recv()
             .expect("Received!");
         match result {
-            TurnResult::Tsumo => self.agari(self.turn),
+            TurnResult::Tsumo => self.agari(vec![self.turn]),
             TurnResult::Kyusyukyuhai => self.ryukyoku(),
             TurnResult::Ankan { index } => self.announce_ankan(index, channels),
             TurnResult::Kakan { index } => self.announce_kakan(index, channels),
@@ -400,7 +438,8 @@ impl Game {
         false
     }
 
-    fn agari(&mut self, _player: Fon) -> bool {
+    /// Ends a game player with the given players winning.
+    fn agari(&mut self, players: Vec<Fon>) -> bool {
         // TODO
         false
     }
@@ -414,6 +453,16 @@ impl Game {
             .map(|sutehai| sutehai.hai())
     }
 
+    fn remove_last_thrown_tile(&mut self) -> Hai {
+        let player_who_threw_last_tile = self.turn.prev();
+        let player_index = player_who_threw_last_tile as usize;
+        self.hoo[player_index]
+            .river
+            .pop()
+            .expect("Has last thrown tile")
+            .hai()
+    }
+
     pub fn throw_tile(&mut self, p: Fon, i: TehaiIndex, riichi: bool) {
         let hai = self.players[p as usize].te.throw_and_insert(i);
         self.hoo[p as usize].river.push(if riichi {
@@ -422,6 +471,37 @@ impl Game {
         } else {
             SuteHai::Normal(hai)
         })
+    }
+
+    /// p: Wind of the caller.
+    pub fn call_pon(&mut self, p: Fon) {
+        let hai = self.remove_last_thrown_tile();
+        debug!(
+            "Pon called by player {}. Last thrown tile: {}, thrown by player {}",
+            p as usize,
+            hai.to_char(),
+            self.turn.prev() as usize
+        );
+        let te = &mut self.players[p as usize].te;
+        let player_diff = p as isize - self.turn.prev() as isize;
+        let direction = match player_diff {
+            -3 => Direction::Right,
+            -2 => Direction::Front,
+            -1 => Direction::Left,
+            0 => unreachable!("Caller and callee cannot be the same player!"),
+            1 => Direction::Right,
+            2 => Direction::Front,
+            3 => Direction::Left,
+            _ => unreachable!("Modulo 4"),
+        };
+        te.open_kootsu(hai, direction);
+        self.turn = p;
+    }
+
+    pub fn call_kan(&mut self, p: Fon) {
+        self.turn = p;
+        let te = &mut self.players[self.turn as usize].te;
+        // TODO
     }
 
     /// Returns a boolean whose value is false if this is the last turn
@@ -791,6 +871,21 @@ impl Te {
     pub fn set_tsumohai(&mut self, hai: Hai) {
         assert!(self.tsumo.is_none(), "Expect empty tsumohai");
         self.tsumo = Some(hai);
+    }
+
+    /// Make a pon in this te
+    pub fn open_kootsu(&mut self, hai: Hai, direction: Direction) {
+        let hai2_i = self.index(hai).expect("Has second pon tile");
+        let hai2 = self.remove(hai2_i);
+        let hai3_i = self.index(hai).expect("Has third pon tile");
+        let hai3 = self.remove(hai3_i);
+        let new_kootsu = Fuuro::Kootsu {
+            own: [hai2, hai3],
+            taken: hai,
+            from: direction,
+        };
+        trace!("Make new fuuro: {:?}", &new_kootsu);
+        self.fuuro.push(new_kootsu);
     }
 
     /// Make an ankan in this te

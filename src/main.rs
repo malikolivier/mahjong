@@ -68,7 +68,6 @@ fn cursive_human() -> ai::AiServer {
                     instant = Some(std::time::Instant::now());
                 }
                 game::Request::Call(calls) => {
-                    tx_call.send(None).expect("Sent call!");
                     let mut dialog = Dialog::text("").title("Call?");
                     let tx_call_ = tx_call.clone();
                     dialog = dialog.button("Pass", move |s| {
@@ -105,6 +104,7 @@ fn cursive_human() -> ai::AiServer {
                             ai::PossibleCall::Pon => {
                                 let tx_call = tx_call.clone();
                                 dialog = dialog.button("Pon", move |s| {
+                                    debug!("Send pon call");
                                     tx_call
                                         .send(Some(ai::Call::Pon))
                                         .expect("Sent call result!");

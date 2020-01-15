@@ -79,6 +79,14 @@ impl Fon {
             Fon::Pee => Fon::Shaa,
         }
     }
+
+    pub fn next_nth(self, i: usize) -> Self {
+        if i == 0 {
+            self
+        } else {
+            self.next().next_nth(i - 1)
+        }
+    }
 }
 
 const FON: [Fon; 4] = [Fon::Ton, Fon::Nan, Fon::Shaa, Fon::Pee];
