@@ -470,6 +470,12 @@ impl Game {
         if let Some(hai) = top_player.te.tsumo {
             grid[0][top_player.te.hai.len() + 1 + offset + 5] = hai.to_string();
         }
+        for (i, sutehai) in self.hoo[2].river.iter().enumerate() {
+            let hai = match sutehai {
+                SuteHai::Normal(hai) | SuteHai::Riichi(hai) => hai,
+            };
+            grid[6 - i / 6][14 - i % 6] = hai.to_string();
+        }
 
         // Player 1
         let bottom_player = &self.players[0];
