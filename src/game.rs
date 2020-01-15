@@ -227,7 +227,7 @@ impl Game {
 
         for i in 0..13 {
             for p in 0..4 {
-                let tsumohai_i = (break_point + i + p * 14) % 136;
+                let tsumohai_i = (break_point + i + p * 13) % 136;
                 if let Some(tsumohai) = self.yama[tsumohai_i] {
                     self.players[p].te.hai.insert(tsumohai);
                     self.yama[tsumohai_i] = None;
