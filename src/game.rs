@@ -199,7 +199,7 @@ impl Game {
         if self.tsumo_cnt > tsumo_cnt_max {
             None
         } else {
-            let tsumohai_i = (break_point + 4 * 14 + self.tsumo_cnt) % 136;
+            let tsumohai_i = (break_point + 4 * 13 + self.tsumo_cnt) % 136;
             Some(tsumohai_i)
         }
     }
