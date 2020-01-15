@@ -12,6 +12,8 @@ mod game;
 mod list;
 mod tiles;
 
+use ai::TehaiIndex;
+
 fn main() {
     let mut log_builder = env_logger::Builder::from_default_env();
     log_builder.target(env_logger::Target::Stderr).init();
@@ -173,7 +175,7 @@ fn cursive_human() -> ai::AiServer {
                                         move |s| {
                                             tx_turn
                                                 .send(ai::TurnResult::ThrowHai {
-                                                    index,
+                                                    index: TehaiIndex::Tehai(index),
                                                     riichi: true,
                                                 })
                                                 .expect("Sent turn result!");
@@ -188,7 +190,8 @@ fn cursive_human() -> ai::AiServer {
                                         format!("Riichi {}", tile.to_string()),
                                         move |s| {
                                             tx_turn
-                                                .send(ai::TurnResult::ThrowTsumoHai {
+                                                .send(ai::TurnResult::ThrowHai {
+                                                    index: TehaiIndex::Tsumohai,
                                                     riichi: true,
                                                 })
                                                 .expect("Sent turn result!");
@@ -205,7 +208,7 @@ fn cursive_human() -> ai::AiServer {
                             dialog = dialog.button(hai.to_string(), move |s| {
                                 tx_turn
                                     .send(ai::TurnResult::ThrowHai {
-                                        index: i,
+                                        index: TehaiIndex::Tehai(i),
                                         riichi: false,
                                     })
                                     .expect("Sent turn result!");
@@ -217,7 +220,10 @@ fn cursive_human() -> ai::AiServer {
                         let tx_turn = tx_turn.clone();
                         dialog = dialog.button(hai.to_string(), move |s| {
                             tx_turn
-                                .send(ai::TurnResult::ThrowTsumoHai { riichi: false })
+                                .send(ai::TurnResult::ThrowHai {
+                                    index: TehaiIndex::Tsumohai,
+                                    riichi: false,
+                                })
                                 .expect("Sent turn result!");
                             s.quit();
                         });

@@ -22,10 +22,14 @@ pub enum PossibleCall {
 }
 
 pub enum TurnResult {
-    ThrowHai { index: usize, riichi: bool },
-    ThrowTsumoHai { riichi: bool },
+    ThrowHai { index: TehaiIndex, riichi: bool },
     Tsumo,
     Kyusyukyuhai,
+}
+
+pub enum TehaiIndex {
+    Tehai(usize),
+    Tsumohai,
 }
 
 pub struct AiServer {
@@ -74,7 +78,10 @@ pub fn null_bot() -> AiServer {
                 ..
             } => client
                 .tx_turn
-                .send(TurnResult::ThrowTsumoHai { riichi: false })
+                .send(TurnResult::ThrowHai {
+                    index: TehaiIndex::Tsumohai,
+                    riichi: false,
+                })
                 .expect("Sent!"),
             _ => {}
         }

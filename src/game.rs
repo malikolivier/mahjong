@@ -6,7 +6,7 @@ use rand::seq::SliceRandom;
 use rand::Rng;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use super::ai::{AiServer, PossibleCall, TurnResult};
+use super::ai::{AiServer, PossibleCall, TehaiIndex, TurnResult};
 use super::list::OrderedList;
 use super::tiles::{make_all_tiles, Fon, Hai, SuuHai, Values};
 
@@ -350,11 +350,6 @@ impl Game {
                         self.turn = self.turn.next();
                         true
                     }
-                    TurnResult::ThrowTsumoHai { riichi } => {
-                        self.throw_tsumo(self.turn, riichi);
-                        self.turn = self.turn.next();
-                        true
-                    }
                 }
             }
             _ => unimplemented!("Someone called!"),
@@ -380,28 +375,27 @@ impl Game {
             .map(|sutehai| sutehai.hai())
     }
 
-    pub fn throw_tsumo(&mut self, p: Fon, riichi: bool) {
-        let hai = self.players[p as usize]
-            .te
-            .tsumo
-            .take()
-            .expect("Has tsumohai");
-        debug!("Throw tsumohai {}", hai.to_string());
-        self.hoo[p as usize].river.push(if riichi {
-            self.players[p as usize].riichi = true;
-            SuteHai::Riichi(hai)
-        } else {
-            SuteHai::Normal(hai)
-        })
-    }
-
-    pub fn throw_tile(&mut self, p: Fon, i: usize, riichi: bool) {
-        let hai = self.players[p as usize].te.hai.remove(i);
-        if let Some(tsumohai) = self.players[p as usize].te.tsumo.take() {
-            debug!("Insert tsumohai {}", tsumohai.to_string());
-            self.players[p as usize].te.hai.insert(tsumohai);
-        }
-        debug!("Throw tehai {}", hai.to_string());
+    pub fn throw_tile(&mut self, p: Fon, i: TehaiIndex, riichi: bool) {
+        let hai = match i {
+            TehaiIndex::Tehai(i) => {
+                let hai = self.players[p as usize].te.hai.remove(i);
+                if let Some(tsumohai) = self.players[p as usize].te.tsumo.take() {
+                    debug!("Insert tsumohai {}", tsumohai.to_string());
+                    self.players[p as usize].te.hai.insert(tsumohai);
+                }
+                debug!("Throw tehai {}", hai.to_string());
+                hai
+            }
+            TehaiIndex::Tsumohai => {
+                let hai = self.players[p as usize]
+                    .te
+                    .tsumo
+                    .take()
+                    .expect("Has tsumohai");
+                debug!("Throw tsumohai {}", hai.to_string());
+                hai
+            }
+        };
         self.hoo[p as usize].river.push(if riichi {
             self.players[p as usize].riichi = true;
             SuteHai::Riichi(hai)
