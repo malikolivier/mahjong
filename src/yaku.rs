@@ -402,4 +402,10 @@ mod tests {
         let comb = try_chiitoitsu(&te);
         assert!(comb.is_none());
     }
+
+    #[test]
+    fn test_kokushimuso_agari() {
+        let te = te_from_string("🀇🀏🀙🀡🀐🀘🀀🀀🀁🀂🀃🀆🀅🀄").unwrap();
+        assert!(try_kokushimuso(&te).is_some());
+    }
 }
