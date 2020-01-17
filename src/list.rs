@@ -13,6 +13,12 @@ impl<T> Default for OrderedList<T> {
     }
 }
 
+impl<T> AsRef<[T]> for OrderedList<T> {
+    fn as_ref(&self) -> &[T] {
+        &self.container
+    }
+}
+
 impl<T: PartialOrd> OrderedList<T> {
     pub fn insert(&mut self, element: T) {
         let mut index = 0;

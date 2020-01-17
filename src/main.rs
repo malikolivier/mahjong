@@ -11,6 +11,7 @@ mod ai;
 mod game;
 mod list;
 mod tiles;
+mod yaku;
 
 use ai::TehaiIndex;
 

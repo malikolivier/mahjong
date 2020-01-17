@@ -1016,7 +1016,16 @@ impl Te {
             acc + if let Fuuro::Kantsu(_) = fuuro { 1 } else { 0 }
         })
     }
+
+    pub fn hai(&self) -> &[Hai] {
+        self.hai.as_ref()
+    }
+    pub fn fuuro(&self) -> &[Fuuro] {
+        self.fuuro.as_ref()
+    }
 }
+
+use super::yaku::{AgariTe, WinningMethod};
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone, Serialize, Deserialize)]
 pub enum Direction {
@@ -1613,7 +1622,7 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::super::tiles::ParseHaiError;
     use super::*;
@@ -1664,7 +1673,7 @@ mod tests {
         }
     }
 
-    fn te_from_string(data: &str) -> Result<Vec<Hai>, ParseHaiError> {
+    pub fn te_from_string(data: &str) -> Result<Vec<Hai>, ParseHaiError> {
         let mut te = vec![];
         for c in data.chars() {
             let hai = c.to_string().parse()?;
