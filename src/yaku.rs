@@ -223,6 +223,7 @@ impl<'t, 'g> AgariTe<'t, 'g> {
     }
 }
 
+#[derive(Debug, Clone)]
 struct AgariTeHaiIter<'t> {
     te: std::slice::Iter<'t, Hai>,
     agarihai: Option<&'t Hai>,
@@ -251,12 +252,55 @@ fn winning_combinations(te: &[Hai]) -> Vec<WinningCombination> {
         out.push(WinningCombination::Kokushimusou(comb));
     }
 
-    #[derive(Debug)]
-    struct Head {
-        head: [Hai; 2],
-        remaining: Vec<Hai>,
-    }
+    // Find all possible kootsu with a given te
+    // Find all possible shuntsu with a given te
 
+    out
+}
+
+#[derive(PartialEq, Eq, PartialOrd, Ord)]
+struct Mentsu {
+    mentsu: Vec<[Hai; 3]>,
+    remaining: Vec<Hai>,
+}
+
+impl Mentsu {
+    fn normalize(&mut self) {
+        self.mentsu.sort();
+        self.remaining.sort();
+    }
+}
+
+use std::fmt;
+impl fmt::Debug for Mentsu {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let mut mentsu_list = Vec::with_capacity(self.mentsu.len());
+        for mentsu in &self.mentsu {
+            mentsu_list.push(format!(
+                "{}{}{}",
+                mentsu[0].to_char(),
+                mentsu[1].to_char(),
+                mentsu[2].to_char()
+            ));
+        }
+        let mut remaining = String::new();
+        for hai in &self.remaining {
+            remaining.push(hai.to_char());
+        }
+        f.debug_struct("Mentsu")
+            .field("mentsu", &mentsu_list)
+            .field("remaining", &remaining)
+            .finish()
+    }
+}
+
+#[derive(Debug)]
+struct Head {
+    head: [Hai; 2],
+    remaining: Vec<Hai>,
+}
+
+fn all_heads(te: &[Hai]) -> Vec<Head> {
     // Find all possible heads
     let mut heads = vec![];
     for hai in te {
@@ -275,37 +319,121 @@ fn winning_combinations(te: &[Hai]) -> Vec<WinningCombination> {
             });
         }
     }
+    heads
+}
 
-    struct Kootsu {
-        kootsu: Vec<[Hai; 3]>,
+fn all_kootsu(te: &[Hai]) -> Mentsu {
+    let mut kootsu = vec![];
+    let mut remaining = te.to_owned();
+    for hai in te {
+        let mut te_ = remaining.clone();
+        if let Some(pos) = te_.iter().position(|x| x == hai) {
+            te_.swap_remove(pos);
+        } else {
+            unreachable!("Hai should be there");
+        }
+
+        if let Some(pos) = te_.iter().position(|x| x == hai) {
+            let hai2 = te_.swap_remove(pos);
+            if let Some(pos) = te_.iter().position(|x| x == hai) {
+                let hai3 = te_.swap_remove(pos);
+                kootsu.push([*hai, hai2, hai3]);
+                remaining = te_;
+            }
+        }
+    }
+    Mentsu {
+        mentsu: kootsu,
+        remaining,
+    }
+}
+
+fn all_shuntsu(te: &[Hai]) -> Vec<Mentsu> {
+    fn possible_shuntsu(hai: Hai) -> Vec<[Hai; 3]> {
+        use super::tiles::{SuuHai, Values};
+        match hai {
+            Hai::Suu(SuuHai { value, .. }) => {
+                let right = [hai.prev().prev(), hai.prev(), hai];
+                let middle = [hai.prev(), hai, hai.next()];
+                let left = [hai, hai.next(), hai.next().next()];
+
+                match value {
+                    Values::Ii => vec![left],
+                    Values::Ryan => vec![middle, left],
+                    Values::Paa => vec![right, middle],
+                    Values::Kyuu => vec![right],
+                    _ => vec![right, middle, left],
+                }
+            }
+            Hai::Ji(..) => vec![],
+        }
+    }
+
+    #[derive(Debug)]
+    struct ShuntsuList {
+        shuntsu: [Hai; 3],
+        next: Vec<ShuntsuList>,
         remaining: Vec<Hai>,
     }
 
-    fn all_kootsu(te: &[Hai]) -> Kootsu {
-        let mut kootsu = vec![];
-        let mut remaining = te.to_owned();
+    fn find_shuntsu(te: &[Hai]) -> Vec<ShuntsuList> {
+        let mut out_shuntsu = vec![];
         for hai in te {
-            let mut te_ = remaining.clone();
-            if let Some(pos) = te_.iter().position(|x| x == hai) {
-                te_.swap_remove(pos);
-            } else {
-                unreachable!("Hai should be there");
-            }
-
-            if let Some(pos) = te_.iter().position(|x| x == hai) {
-                let hai2 = te_.swap_remove(pos);
-                if let Some(pos) = te_.iter().position(|x| x == hai) {
-                    let hai3 = te_.swap_remove(pos);
-                    kootsu.push([*hai, hai2, hai3]);
-                    remaining = te_;
+            for shuntsu in possible_shuntsu(*hai) {
+                let mut te_ = te.to_owned();
+                let mut matched_shuntsu = true;
+                for hai in &shuntsu {
+                    if let Some(pos) = te_.iter().position(|x| x == hai) {
+                        te_.swap_remove(pos);
+                    } else {
+                        matched_shuntsu = false;
+                    }
+                }
+                if matched_shuntsu {
+                    let next = find_shuntsu(&te_);
+                    out_shuntsu.push(ShuntsuList {
+                        shuntsu,
+                        next,
+                        remaining: te_,
+                    });
                 }
             }
         }
-        Kootsu { kootsu, remaining }
+        out_shuntsu
     }
 
-    // Find all possible kootsu with a given te
-    // Find all possible shuntsu with a given te
+    fn shuntsu_list_to_mentsu(head: ShuntsuList) -> Vec<Mentsu> {
+        if head.next.is_empty() {
+            vec![Mentsu {
+                mentsu: vec![head.shuntsu],
+                remaining: head.remaining,
+            }]
+        } else {
+            let mut out = vec![];
+            for li in head.next {
+                let mentsu_li = shuntsu_list_to_mentsu(li);
+                for mentsu in mentsu_li {
+                    let mut shuntsu_list = vec![head.shuntsu];
+                    shuntsu_list.extend(mentsu.mentsu);
+                    out.push(Mentsu {
+                        mentsu: shuntsu_list,
+                        remaining: mentsu.remaining,
+                    })
+                }
+            }
+            out
+        }
+    }
+
+    let mut out = vec![];
+    for shuntsu in find_shuntsu(te) {
+        out.extend(shuntsu_list_to_mentsu(shuntsu));
+    }
+    for i in out.iter_mut() {
+        i.normalize()
+    }
+    out.sort();
+    out.dedup();
 
     out
 }
@@ -407,5 +535,12 @@ mod tests {
     fn test_kokushimuso_agari() {
         let te = te_from_string("🀇🀏🀙🀡🀐🀘🀀🀀🀁🀂🀃🀆🀅🀄").unwrap();
         assert!(try_kokushimuso(&te).is_some());
+    }
+
+    #[test]
+    fn test_all_shuntsu() {
+        let te = te_from_string("🀇🀇🀈🀈🀉🀉🀊🀋🀌🀍🀎🀏").unwrap();
+        dbg!(all_shuntsu(&te));
+        assert!(false);
     }
 }
