@@ -539,8 +539,29 @@ mod tests {
 
     #[test]
     fn test_all_shuntsu() {
-        let te = te_from_string("🀇🀇🀈🀈🀉🀉🀊🀋🀌🀍🀎🀏").unwrap();
-        dbg!(all_shuntsu(&te));
-        assert!(false);
+        let te = te_from_string("🀇🀇🀈🀈🀉🀉🀊🀋🀌🀎🀎🀎").unwrap();
+        let result = all_shuntsu(&te);
+        assert_eq!(
+            result,
+            vec![
+                mentsu_from_str(&["🀇🀈🀉", "🀇🀈🀉", "🀊🀋🀌"], "🀎🀎🀎").unwrap(),
+                mentsu_from_str(&["🀇🀈🀉", "🀈🀉🀊"], "🀇🀋🀌🀎🀎🀎").unwrap(),
+                mentsu_from_str(&["🀇🀈🀉", "🀉🀊🀋"], "🀇🀈🀌🀎🀎🀎").unwrap(),
+            ]
+        );
+    }
+
+    use super::super::tiles::ParseHaiError;
+    fn mentsu_from_str(mentsu: &[&str], remaining: &str) -> Result<Mentsu, ParseHaiError> {
+        let mut mentsu_out = vec![];
+        for m in mentsu {
+            let m = te_from_string(m)?;
+            assert_eq!(m.len(), 3);
+            mentsu_out.push([m[0], m[1], m[2]]);
+        }
+        Ok(Mentsu {
+            mentsu: mentsu_out,
+            remaining: te_from_string(remaining)?,
+        })
     }
 }
