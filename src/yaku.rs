@@ -421,7 +421,11 @@ fn all_heads(te: &[Hai]) -> Vec<Head> {
 }
 
 fn all_kootsu(te: &[Hai]) -> Vec<Mentsu> {
-    let mut kootsu = vec![];
+    let mut kootsu = vec![Mentsu {
+        // Include the trivial mentsu (all remainining and no mentsu)
+        mentsu: vec![],
+        remaining: te.to_owned(),
+    }];
     for hai in te {
         let mut te_ = te.to_owned();
         if let Some(pos) = te_.iter().position(|x| x == hai) {
@@ -535,7 +539,11 @@ fn all_shuntsu(te: &[Hai]) -> Vec<Mentsu> {
         out
     }
 
-    let mut out = vec![];
+    let mut out = vec![Mentsu {
+        // Include the trivial mentsu (all remainining and no mentsu)
+        mentsu: vec![],
+        remaining: te.to_owned(),
+    }];
     for shuntsu in find_shuntsu(te) {
         out.extend(shuntsu_list_to_mentsu(shuntsu));
     }
@@ -654,6 +662,7 @@ mod tests {
         assert_eq!(
             result,
             vec![
+                mentsu_from_str(&[], "🀇🀇🀇🀈🀈🀉🀊🀋🀌🀎🀎🀎").unwrap(),
                 mentsu_from_str(&["🀇🀇🀇"], "🀈🀈🀉🀊🀋🀌🀎🀎🀎").unwrap(),
                 mentsu_from_str(&["🀇🀇🀇", "🀎🀎🀎"], "🀈🀈🀉🀊🀋🀌").unwrap(),
                 mentsu_from_str(&["🀎🀎🀎"], "🀇🀇🀇🀈🀈🀉🀊🀋🀌").unwrap(),
@@ -668,6 +677,7 @@ mod tests {
         assert_eq!(
             result,
             vec![
+                mentsu_from_str(&[], "🀇🀇🀈🀈🀉🀉🀊🀋🀌🀎🀎🀎").unwrap(),
                 mentsu_from_str(&["🀇🀈🀉"], "🀇🀈🀉🀊🀋🀌🀎🀎🀎").unwrap(),
                 mentsu_from_str(&["🀇🀈🀉", "🀇🀈🀉"], "🀊🀋🀌🀎🀎🀎").unwrap(),
                 mentsu_from_str(&["🀇🀈🀉", "🀇🀈🀉", "🀊🀋🀌"], "🀎🀎🀎").unwrap(),
