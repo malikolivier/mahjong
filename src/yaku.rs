@@ -180,6 +180,20 @@ pub enum YakuValue {
     Yakuman(usize),
 }
 
+impl std::ops::Add for YakuValue {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        use YakuValue::*;
+        match (self, other) {
+            (Han(han1), Han(han2)) => Han(han1 + han2),
+            (Yakuman(yakuman), Han(_)) => Yakuman(yakuman),
+            (Han(_), Yakuman(yakuman)) => Yakuman(yakuman),
+            (Yakuman(yakuman1), Yakuman(yakuman2)) => Yakuman(yakuman1 + yakuman2),
+        }
+    }
+}
+
 #[derive(Clone, PartialEq)]
 pub enum WinningCombination {
     Chiitoitsu([[Hai; 2]; 7]),
@@ -231,15 +245,6 @@ impl fmt::Debug for WinningCombination {
 }
 
 impl<'t, 'g> AgariTe<'t, 'g> {
-    pub fn fu(&self) -> usize {
-        // TODO: Check if this is correct!
-        let win_bonus = match self.method {
-            WinningMethod::Ron => 30,
-            WinningMethod::Tsumo => 20,
-        };
-        win_bonus
-    }
-
     pub fn from_te(
         te: &'t Te,
         game: &'g Game,
@@ -260,6 +265,88 @@ impl<'t, 'g> AgariTe<'t, 'g> {
             te: self.hai.iter(),
             agarihai: Some(&self.agarihai),
         }
+    }
+
+    fn combinations(&self) -> Vec<AgariTeCombination<'_, 't, 'g>> {
+        let te: Vec<_> = self.hai().collect();
+        let max = match self.fuuro.len() {
+            0 => 4,
+            1 => 3,
+            2 => 2,
+            3 => 1,
+            4 => 0,
+            _ => unreachable!("Cannot have more than 4 fuuro!"),
+        };
+        let mut out = vec![];
+        for combination in winning_combinations(&te, max) {
+            out.push(AgariTeCombination {
+                agari_te: self,
+                combination,
+            });
+        }
+        out
+    }
+
+    fn best_combination(&self) -> Option<AgariTeCombination<'_, 't, 'g>> {
+        self.combinations()
+            .into_iter()
+            .max_by_key(AgariTeCombination::points)
+    }
+
+    fn points(&self) -> (Vec<Yaku>, YakuValue, usize) {
+        if let Some(comb) = self.best_combination() {
+            (comb.yaku(), comb.han(), comb.fu())
+        } else {
+            (vec![], YakuValue::Han(0), 0)
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct AgariTeCombination<'a, 't: 'a, 'g: 't> {
+    agari_te: &'a AgariTe<'t, 'g>,
+    combination: WinningCombination,
+}
+
+impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
+    fn yaku(&self) -> Vec<Yaku> {
+        let mut yakus = vec![];
+
+        if self.menzentsumo() {
+            yakus.push(Yaku::Menzentsumo);
+        }
+        // TODO (other yakus)
+
+        yakus
+    }
+
+    fn han(&self) -> YakuValue {
+        let closed = self.closed();
+        // TODO: Add dora and uradora
+        self.yaku()
+            .iter()
+            .fold(YakuValue::Han(0), |acc, yaku| acc + yaku.han(closed))
+    }
+
+    fn fu(&self) -> usize {
+        // TODO: Check if this is correct and complete!
+        let win_bonus = match self.agari_te.method {
+            WinningMethod::Ron => 30,
+            WinningMethod::Tsumo => 20,
+        };
+        win_bonus
+    }
+
+    fn points(&self) -> (YakuValue, usize) {
+        (self.han(), self.fu())
+    }
+
+    fn closed(&self) -> bool {
+        self.agari_te.fuuro.is_empty()
+    }
+
+    fn menzentsumo(&self) -> bool {
+        self.closed() && self.agari_te.method == WinningMethod::Tsumo
     }
 }
 
