@@ -443,26 +443,23 @@ fn all_shuntsu(te: &[Hai]) -> Vec<Mentsu> {
     }
 
     fn shuntsu_list_to_mentsu(head: ShuntsuList) -> Vec<Mentsu> {
-        if head.next.is_empty() {
-            vec![Mentsu {
-                mentsu: vec![head.shuntsu],
-                remaining: head.remaining,
-            }]
-        } else {
-            let mut out = vec![];
-            for li in head.next {
-                let mentsu_li = shuntsu_list_to_mentsu(li);
-                for mentsu in mentsu_li {
-                    let mut shuntsu_list = vec![head.shuntsu];
-                    shuntsu_list.extend(mentsu.mentsu);
-                    out.push(Mentsu {
-                        mentsu: shuntsu_list,
-                        remaining: mentsu.remaining,
-                    })
-                }
+        let mut out = vec![];
+        out.push(Mentsu {
+            mentsu: vec![head.shuntsu],
+            remaining: head.remaining,
+        });
+        for li in head.next {
+            let mentsu_li = shuntsu_list_to_mentsu(li);
+            for mentsu in mentsu_li {
+                let mut shuntsu_list = vec![head.shuntsu];
+                shuntsu_list.extend(mentsu.mentsu);
+                out.push(Mentsu {
+                    mentsu: shuntsu_list,
+                    remaining: mentsu.remaining,
+                })
             }
-            out
         }
+        out
     }
 
     let mut out = vec![];
@@ -598,9 +595,15 @@ mod tests {
         assert_eq!(
             result,
             vec![
+                mentsu_from_str(&["🀇🀈🀉"], "🀇🀈🀉🀊🀋🀌🀎🀎🀎").unwrap(),
+                mentsu_from_str(&["🀇🀈🀉", "🀇🀈🀉"], "🀊🀋🀌🀎🀎🀎").unwrap(),
                 mentsu_from_str(&["🀇🀈🀉", "🀇🀈🀉", "🀊🀋🀌"], "🀎🀎🀎").unwrap(),
                 mentsu_from_str(&["🀇🀈🀉", "🀈🀉🀊"], "🀇🀋🀌🀎🀎🀎").unwrap(),
                 mentsu_from_str(&["🀇🀈🀉", "🀉🀊🀋"], "🀇🀈🀌🀎🀎🀎").unwrap(),
+                mentsu_from_str(&["🀇🀈🀉", "🀊🀋🀌"], "🀇🀈🀉🀎🀎🀎").unwrap(),
+                mentsu_from_str(&["🀈🀉🀊"], "🀇🀇🀈🀉🀋🀌🀎🀎🀎").unwrap(),
+                mentsu_from_str(&["🀉🀊🀋"], "🀇🀇🀈🀈🀉🀌🀎🀎🀎").unwrap(),
+                mentsu_from_str(&["🀊🀋🀌"], "🀇🀇🀈🀈🀉🀉🀎🀎🀎").unwrap(),
             ]
         );
     }
