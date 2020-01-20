@@ -180,13 +180,14 @@ pub enum YakuValue {
     Yakuman(usize),
 }
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum WinningCombination {
     Chiitoitsu([[Hai; 2]; 7]),
     Kokushimusou([Hai; 14]),
     Normal {
         toitsu: [Hai; 2],
-        mentsu: [[Hai; 3]; 4],
+        /// Usually 4 mentsu, unless the hand is open
+        mentsu: Vec<[Hai; 3]>,
     },
 }
 
@@ -281,7 +282,7 @@ impl<'t> Iterator for AgariTeHaiIter<'t> {
     }
 }
 
-fn winning_combinations(te: &[Hai]) -> Vec<WinningCombination> {
+fn winning_combinations(te: &[Hai], max: usize) -> Vec<WinningCombination> {
     let mut out = vec![];
 
     if let Some(comb) = try_chiitoitsu(te) {
@@ -290,15 +291,15 @@ fn winning_combinations(te: &[Hai]) -> Vec<WinningCombination> {
     if let Some(comb) = try_kokushimuso(te) {
         out.push(WinningCombination::Kokushimusou(comb));
     }
-    out.extend(try_normal_combinations(te));
+    out.extend(try_normal_combinations(te, max));
 
     out
 }
 
-fn try_normal_combinations(te: &[Hai]) -> Vec<WinningCombination> {
+fn try_normal_combinations(te: &[Hai], max: usize) -> Vec<WinningCombination> {
     let mut combs = vec![];
     for head in all_heads(te) {
-        for comb in pickup_mentsu_comb(&head.remaining) {
+        for comb in pickup_mentsu_comb(&head.remaining, max) {
             combs.push(WinningCombination::Normal {
                 toitsu: head.head,
                 mentsu: comb,
@@ -308,7 +309,7 @@ fn try_normal_combinations(te: &[Hai]) -> Vec<WinningCombination> {
     combs
 }
 
-fn pickup_mentsu_comb(remaining: &[Hai]) -> Vec<[[Hai; 3]; 4]> {
+fn pickup_mentsu_comb(remaining: &[Hai], max: usize) -> Vec<Vec<[Hai; 3]>> {
     let mut out = vec![];
 
     // Find all possible kootsu with a given te
@@ -316,14 +317,14 @@ fn pickup_mentsu_comb(remaining: &[Hai]) -> Vec<[[Hai; 3]; 4]> {
     for kootsu in all_kootsu_ {
         // Find all possible shuntsu with a given te
         for shuntsu in all_shuntsu(&kootsu.remaining) {
-            if kootsu.mentsu.len() + shuntsu.mentsu.len() == 4 {
-                let mut mentsu_4 = Vec::with_capacity(4);
+            if kootsu.mentsu.len() + shuntsu.mentsu.len() == max {
+                let mut mentsu_4 = Vec::with_capacity(max);
                 for mentsu in kootsu.mentsu.iter().chain(shuntsu.mentsu.iter()) {
                     mentsu_4.push(*mentsu);
                 }
                 // Sort tiles to have a pretty result
                 mentsu_4.sort();
-                out.push([mentsu_4[0], mentsu_4[1], mentsu_4[2], mentsu_4[3]]);
+                out.push(mentsu_4);
             }
         }
     }
@@ -332,13 +333,13 @@ fn pickup_mentsu_comb(remaining: &[Hai]) -> Vec<[[Hai; 3]; 4]> {
     let all_shuntsu_ = all_shuntsu(remaining);
     for shuntsu in all_shuntsu_ {
         for kootsu in all_kootsu(&shuntsu.remaining) {
-            if kootsu.mentsu.len() + shuntsu.mentsu.len() == 4 {
-                let mut mentsu_4 = Vec::with_capacity(4);
+            if kootsu.mentsu.len() + shuntsu.mentsu.len() == max {
+                let mut mentsu_4 = Vec::with_capacity(max);
                 for mentsu in kootsu.mentsu.iter().chain(shuntsu.mentsu.iter()) {
                     mentsu_4.push(*mentsu);
                 }
                 mentsu_4.sort();
-                out.push([mentsu_4[0], mentsu_4[1], mentsu_4[2], mentsu_4[3]]);
+                out.push(mentsu_4);
             }
         }
     }
@@ -683,7 +684,7 @@ mod tests {
     #[test]
     fn test_find_winning_comb_normal() {
         let te = te_from_string("🀇🀇🀈🀈🀉🀉🀊🀋🀌🀌🀌🀎🀎🀎").unwrap();
-        let result = winning_combinations(&te);
+        let result = winning_combinations(&te, 4);
         assert_eq!(
             result,
             vec![normal_winning_combination_from_str("🀌🀌", ["🀇🀈🀉", "🀇🀈🀉", "🀊🀋🀌", "🀎🀎🀎"]).unwrap()]
@@ -720,7 +721,7 @@ mod tests {
         }
         Ok(WinningCombination::Normal {
             toitsu: toitsu_out,
-            mentsu: [mentsu_out[0], mentsu_out[1], mentsu_out[2], mentsu_out[3]],
+            mentsu: mentsu_out,
         })
     }
 }
