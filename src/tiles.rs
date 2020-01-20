@@ -176,6 +176,14 @@ impl Hai {
         }
     }
 
+    pub fn is_yakuhai(self, ba: Fon, player: Fon) -> bool {
+        match self {
+            Hai::Ji(JiHai::Fon(fon)) => fon == ba || fon == player,
+            Hai::Ji(JiHai::Sangen(_)) => true,
+            _ => false,
+        }
+    }
+
     pub fn next(self) -> Self {
         match self {
             Hai::Suu(SuuHai { suu, value, .. }) => Hai::Suu(SuuHai {

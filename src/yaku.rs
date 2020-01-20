@@ -1,5 +1,5 @@
-use super::game::{Fuuro, Game, Te};
-use super::tiles::Hai;
+use super::game::{Fuuro, Game, KantsuInner, Te};
+use super::tiles::{Fon, Hai};
 
 #[derive(Debug, Copy, Clone)]
 pub struct AgariTe<'t, 'g> {
@@ -8,6 +8,7 @@ pub struct AgariTe<'t, 'g> {
     fuuro: &'t [Fuuro],
     agarihai: Hai,
     method: WinningMethod,
+    wind: Fon,
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
@@ -250,6 +251,7 @@ impl<'t, 'g> AgariTe<'t, 'g> {
         game: &'g Game,
         agarihai: Hai,
         method: WinningMethod,
+        wind: Fon,
     ) -> AgariTe<'t, 'g> {
         AgariTe {
             game,
@@ -257,6 +259,7 @@ impl<'t, 'g> AgariTe<'t, 'g> {
             fuuro: te.fuuro(),
             agarihai,
             method,
+            wind,
         }
     }
 
@@ -328,13 +331,94 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             .fold(YakuValue::Han(0), |acc, yaku| acc + yaku.han(closed))
     }
 
+    /// From https://majandofu.com/fu-calculation#001
     fn fu(&self) -> usize {
-        // TODO: Check if this is correct and complete!
-        let win_bonus = match self.agari_te.method {
-            WinningMethod::Ron => 30,
-            WinningMethod::Tsumo => 20,
-        };
-        win_bonus
+        if self.pinfu() && self.menzentsumo() {
+            20
+        } else if self.chiitoitsu() {
+            25
+        } else {
+            let fuutei = 20;
+            let agari_fu = match self.agari_te.method {
+                WinningMethod::Ron => 10,
+                WinningMethod::Tsumo => 2,
+            };
+
+            let mut mentsu_fu = 0;
+            for fuuro in self.agari_te.fuuro {
+                match fuuro {
+                    Fuuro::Kootsu { taken, .. } => {
+                        mentsu_fu += if taken.is_jihai_or_1_9() { 4 } else { 2 };
+                    }
+                    Fuuro::Kantsu(KantsuInner::Ankan {
+                        own: [hai, _, _, _],
+                    }) => {
+                        mentsu_fu += if hai.is_jihai_or_1_9() { 32 } else { 16 };
+                    }
+                    Fuuro::Kantsu(KantsuInner::DaiMinkan { taken, .. })
+                    | Fuuro::Kantsu(KantsuInner::ShouMinkan { taken, .. }) => {
+                        mentsu_fu += if taken.is_jihai_or_1_9() { 16 } else { 8 };
+                    }
+                    _ => {}
+                }
+            }
+            if let WinningCombination::Normal { mentsu, .. } = &self.combination {
+                for m in mentsu {
+                    // FIXME: If the agari_hai in case of ron is used for a kootsu,
+                    // then the kootsu is considered to be an minkoo, not ankoo.
+                    if is_kootsu(m) {
+                        mentsu_fu += if m[0].is_jihai_or_1_9() { 8 } else { 4 };
+                    }
+                }
+            }
+
+            let mut atama_fu = 0;
+            if let WinningCombination::Normal { toitsu, .. } = &self.combination {
+                if toitsu[0].is_yakuhai(self.agari_te.game.wind, self.agari_te.wind) {
+                    atama_fu = 2;
+                }
+            }
+
+            let machi_fu = match self.machi() {
+                Machi::Tanki | Machi::Penchan | Machi::Kanchan => 2,
+                Machi::Ryanmen
+                | Machi::Shanpon
+                | Machi::KokushimusouNormal
+                | Machi::KokushimusouJuusanmen => 0,
+            };
+
+            let fu = fuutei + agari_fu + mentsu_fu + atama_fu + machi_fu;
+            // Round up to the next decade
+            ((fu + 9) / 10) * 10
+        }
+    }
+
+    fn machi(&self) -> Machi {
+        match &self.combination {
+            WinningCombination::Normal { toitsu, mentsu } => {
+                if self.pinfu() {
+                    // If the pinfu yaku is realized,
+                    // use the machi that returns the less fu (Ryanmen)
+                    // to get more han.
+                    Machi::Ryanmen
+                } else {
+                    let machis = machi(*toitsu, mentsu, self.agari_te.agarihai);
+                    // Return the machi with the highest fu count
+                    machis.into_iter().min().expect("Has machi")
+                }
+            }
+            WinningCombination::Kokushimusou(_) => {
+                if self.agari_te.hai.contains(&self.agari_te.agarihai) {
+                    Machi::KokushimusouJuusanmen
+                } else {
+                    Machi::KokushimusouNormal
+                }
+            }
+            WinningCombination::Chiitoitsu(_) => {
+                // A chiitoitsu can only result in a tanki machi
+                Machi::Tanki
+            }
+        }
     }
 
     fn points(&self) -> (YakuValue, usize) {
@@ -348,6 +432,73 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     fn menzentsumo(&self) -> bool {
         self.closed() && self.agari_te.method == WinningMethod::Tsumo
     }
+
+    fn pinfu(&self) -> bool {
+        // TODO
+        false
+    }
+
+    fn chiitoitsu(&self) -> bool {
+        if let WinningCombination::Chiitoitsu(_) = self.combination {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+fn is_kootsu(mentsu: &[Hai; 3]) -> bool {
+    mentsu[0] == mentsu[1] && mentsu[1] == mentsu[2]
+}
+
+/// Find all the machi for this winning hand (normal 4 mentsu 1 toitsu te only).
+fn machi(toitsu: [Hai; 2], mentsu: &[[Hai; 3]], agari_hai: Hai) -> Vec<Machi> {
+    let mut machis = vec![];
+    if toitsu.contains(&agari_hai) {
+        machis.push(Machi::Tanki);
+    } else {
+        for m in mentsu {
+            let mut m = m.to_owned();
+            m.sort();
+            if m.contains(&agari_hai) {
+                if is_kootsu(&m) {
+                    machis.push(Machi::Shanpon);
+                } else {
+                    if m[0] == agari_hai {
+                        if m[2].is_jihai_or_1_9() {
+                            machis.push(Machi::Penchan);
+                        } else {
+                            machis.push(Machi::Ryanmen);
+                        }
+                    } else if m[1] == agari_hai {
+                        machis.push(Machi::Kanchan);
+                    } else if m[2] == agari_hai {
+                        if m[0].is_jihai_or_1_9() {
+                            machis.push(Machi::Penchan);
+                        } else {
+                            machis.push(Machi::Ryanmen);
+                        }
+                    } else {
+                        unreachable!("Contains agari hai");
+                    }
+                }
+            }
+        }
+    }
+    machis
+}
+
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Copy, Clone)]
+pub enum Machi {
+    Tanki,
+    Penchan,
+    Kanchan,
+    Ryanmen,
+    Shanpon,
+    // Nobetan can be considered as Tanki + Ryanmen
+    // Nobetan,
+    KokushimusouNormal,
+    KokushimusouJuusanmen,
 }
 
 #[derive(Debug, Clone)]

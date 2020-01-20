@@ -41,7 +41,8 @@ impl Distribution<Dice> for Standard {
 
 #[derive(Clone)]
 pub struct Game {
-    wind: Fon,
+    /// 場の風
+    pub wind: Fon,
     /// Current player that should draw
     pub turn: Fon,
     honba: usize,
