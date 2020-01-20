@@ -434,8 +434,15 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     }
 
     fn pinfu(&self) -> bool {
-        // TODO
-        false
+        if let WinningCombination::Normal { toitsu, mentsu } = &self.combination {
+            let machis = machi(*toitsu, mentsu, self.agari_te.agarihai);
+            self.closed()
+                && machis.contains(&Machi::Ryanmen)
+                && !toitsu[0].is_yakuhai(self.agari_te.game.wind, self.agari_te.wind)
+                && mentsu.iter().all(|m| !is_kootsu(m))
+        } else {
+            false
+        }
     }
 
     fn chiitoitsu(&self) -> bool {
