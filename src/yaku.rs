@@ -701,6 +701,20 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_find_winning_comb_normal_many() {
+        let te = te_from_string("🀇🀇🀇🀈🀈🀈🀉🀉🀉🀊🀋🀌🀌🀌").unwrap();
+        let result = winning_combinations(&te, 4);
+        assert_eq!(
+            result,
+            vec![
+                normal_winning_combination_from_str("🀉🀉", ["🀇🀇🀇", "🀈🀈🀈", "🀉🀊🀋", "🀌🀌🀌"]).unwrap(),
+                normal_winning_combination_from_str("🀌🀌", ["🀇🀇🀇", "🀈🀈🀈", "🀉🀉🀉", "🀊🀋🀌"]).unwrap(),
+                normal_winning_combination_from_str("🀌🀌", ["🀇🀈🀉", "🀇🀈🀉", "🀇🀈🀉", "🀊🀋🀌"]).unwrap(),
+            ]
+        );
+    }
+
     use super::super::tiles::ParseHaiError;
     fn mentsu_from_str(mentsu: &[&str], remaining: &str) -> Result<Mentsu, ParseHaiError> {
         let mut mentsu_out = vec![];
