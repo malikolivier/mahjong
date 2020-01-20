@@ -318,6 +318,13 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.menzentsumo() {
             yakus.push(Yaku::Menzentsumo);
         }
+        if self.riichi() {
+            yakus.push(Yaku::Riichi);
+        }
+        // TODO: ippatsu, tanyao
+        if self.pinfu() {
+            yakus.push(Yaku::Pinfu);
+        }
         // TODO (other yakus)
 
         yakus
@@ -431,6 +438,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
 
     fn menzentsumo(&self) -> bool {
         self.closed() && self.agari_te.method == WinningMethod::Tsumo
+    }
+
+    fn riichi(&self) -> bool {
+        self.agari_te.game.player_riichi(self.agari_te.wind)
     }
 
     fn pinfu(&self) -> bool {
