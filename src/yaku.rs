@@ -347,11 +347,10 @@ fn all_heads(te: &[Hai]) -> Vec<Head> {
     heads
 }
 
-fn all_kootsu(te: &[Hai]) -> Mentsu {
+fn all_kootsu(te: &[Hai]) -> Vec<Mentsu> {
     let mut kootsu = vec![];
-    let mut remaining = te.to_owned();
     for hai in te {
-        let mut te_ = remaining.clone();
+        let mut te_ = te.to_owned();
         if let Some(pos) = te_.iter().position(|x| x == hai) {
             te_.swap_remove(pos);
         } else {
@@ -362,15 +361,31 @@ fn all_kootsu(te: &[Hai]) -> Mentsu {
             let hai2 = te_.swap_remove(pos);
             if let Some(pos) = te_.iter().position(|x| x == hai) {
                 let hai3 = te_.swap_remove(pos);
-                kootsu.push([*hai, hai2, hai3]);
-                remaining = te_;
+                let this_kootsu = [*hai, hai2, hai3];
+                let all_remaining_kootsu = all_kootsu(&te_);
+                kootsu.push(Mentsu {
+                    mentsu: vec![this_kootsu],
+                    remaining: te_,
+                });
+                for remaining_kootsu in all_remaining_kootsu {
+                    let mut mentsu = vec![this_kootsu];
+                    mentsu.extend(remaining_kootsu.mentsu);
+                    kootsu.push(Mentsu {
+                        mentsu,
+                        remaining: remaining_kootsu.remaining,
+                    })
+                }
             }
         }
     }
-    Mentsu {
-        mentsu: kootsu,
-        remaining,
+
+    for i in kootsu.iter_mut() {
+        i.normalize()
     }
+    kootsu.sort();
+    kootsu.dedup();
+
+    kootsu
 }
 
 fn all_shuntsu(te: &[Hai]) -> Vec<Mentsu> {
@@ -560,6 +575,20 @@ mod tests {
     fn test_kokushimuso_agari() {
         let te = te_from_string("🀇🀏🀙🀡🀐🀘🀀🀀🀁🀂🀃🀆🀅🀄").unwrap();
         assert!(try_kokushimuso(&te).is_some());
+    }
+
+    #[test]
+    fn test_all_kootsu() {
+        let te = te_from_string("🀇🀇🀇🀈🀈🀉🀊🀋🀌🀎🀎🀎").unwrap();
+        let result = all_kootsu(&te);
+        assert_eq!(
+            result,
+            vec![
+                mentsu_from_str(&["🀇🀇🀇"], "🀈🀈🀉🀊🀋🀌🀎🀎🀎").unwrap(),
+                mentsu_from_str(&["🀇🀇🀇", "🀎🀎🀎"], "🀈🀈🀉🀊🀋🀌").unwrap(),
+                mentsu_from_str(&["🀎🀎🀎"], "🀇🀇🀇🀈🀈🀉🀊🀋🀌").unwrap(),
+            ]
+        );
     }
 
     #[test]
