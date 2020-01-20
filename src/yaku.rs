@@ -180,7 +180,7 @@ pub enum YakuValue {
     Yakuman(usize),
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum WinningCombination {
     Chiitoitsu([[Hai; 2]; 7]),
     Kokushimusou([Hai; 14]),
@@ -188,6 +188,45 @@ pub enum WinningCombination {
         toitsu: [Hai; 2],
         mentsu: [[Hai; 3]; 4],
     },
+}
+
+impl fmt::Debug for WinningCombination {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            WinningCombination::Chiitoitsu(toitsu7) => {
+                let mut toitsu_list = Vec::with_capacity(7);
+                for toitsu in toitsu7 {
+                    toitsu_list.push(format!("{}{}", toitsu[0].to_char(), toitsu[1].to_char()));
+                }
+                f.debug_tuple("Chiitoitsu").field(&toitsu_list).finish()
+            }
+            WinningCombination::Kokushimusou(hai14) => {
+                let mut hai_list = String::with_capacity(14);
+                for hai in hai14 {
+                    hai_list.push(hai.to_char());
+                }
+                f.debug_tuple("Kokushimusou").field(&hai_list).finish()
+            }
+            WinningCombination::Normal { toitsu, mentsu } => {
+                let mut mentsu_list = Vec::with_capacity(4);
+                for m in mentsu {
+                    mentsu_list.push(format!(
+                        "{}{}{}",
+                        m[0].to_char(),
+                        m[1].to_char(),
+                        m[2].to_char(),
+                    ));
+                }
+                f.debug_struct("Normal")
+                    .field(
+                        "toitsu",
+                        &format!("{}{}", toitsu[0].to_char(), toitsu[1].to_char()),
+                    )
+                    .field("mentsu", &mentsu_list)
+                    .finish()
+            }
+        }
+    }
 }
 
 impl<'t, 'g> AgariTe<'t, 'g> {
@@ -304,6 +343,10 @@ fn pickup_mentsu_comb(remaining: &[Hai]) -> Vec<[[Hai; 3]; 4]> {
         }
     }
 
+    // Normalize
+    out.sort();
+    out.dedup();
+
     out
 }
 
@@ -343,7 +386,7 @@ impl fmt::Debug for Mentsu {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
 struct Head {
     head: [Hai; 2],
     remaining: Vec<Hai>,
@@ -368,6 +411,11 @@ fn all_heads(te: &[Hai]) -> Vec<Head> {
             });
         }
     }
+
+    // Normalize
+    heads.sort();
+    heads.dedup();
+
     heads
 }
 
@@ -636,7 +684,10 @@ mod tests {
     fn test_find_winning_comb_normal() {
         let te = te_from_string("🀇🀇🀈🀈🀉🀉🀊🀋🀌🀌🀌🀎🀎🀎").unwrap();
         let result = winning_combinations(&te);
-        assert_eq!(result, vec![]);
+        assert_eq!(
+            result,
+            vec![normal_winning_combination_from_str("🀌🀌", ["🀇🀈🀉", "🀇🀈🀉", "🀊🀋🀌", "🀎🀎🀎"]).unwrap()]
+        );
     }
 
     use super::super::tiles::ParseHaiError;
@@ -650,6 +701,26 @@ mod tests {
         Ok(Mentsu {
             mentsu: mentsu_out,
             remaining: te_from_string(remaining)?,
+        })
+    }
+
+    fn normal_winning_combination_from_str(
+        toitsu: &str,
+        mentsu: [&str; 4],
+    ) -> Result<WinningCombination, ParseHaiError> {
+        let toitsu = te_from_string(toitsu)?;
+        assert_eq!(toitsu.len(), 2);
+        let toitsu_out = [toitsu[0], toitsu[1]];
+
+        let mut mentsu_out = Vec::with_capacity(4);
+        for m in &mentsu {
+            let m = te_from_string(m)?;
+            assert_eq!(m.len(), 3);
+            mentsu_out.push([m[0], m[1], m[2]]);
+        }
+        Ok(WinningCombination::Normal {
+            toitsu: toitsu_out,
+            mentsu: [mentsu_out[0], mentsu_out[1], mentsu_out[2], mentsu_out[3]],
         })
     }
 }
