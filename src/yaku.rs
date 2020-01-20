@@ -251,10 +251,35 @@ fn winning_combinations(te: &[Hai]) -> Vec<WinningCombination> {
     if let Some(comb) = try_kokushimuso(te) {
         out.push(WinningCombination::Kokushimusou(comb));
     }
+    out.extend(try_normal_combinations(te));
 
+    out
+}
+
+fn try_normal_combinations(te: &[Hai]) -> Vec<WinningCombination> {
+    let mut combs = vec![];
+    for head in all_heads(te) {
+        for comb in pickup_mentsu_comb(&head.remaining) {
+            combs.push(WinningCombination::Normal {
+                toitsu: head.head,
+                mentsu: comb,
+            })
+        }
+    }
+    combs
+}
+
+fn pickup_mentsu_comb(remaining: &[Hai]) -> Vec<[[Hai; 3]; 4]> {
+    // TODO
+    let mut out = vec![];
+
+    let mut mentsu_4: Vec<[Hai; 3]> = Vec::with_capacity(4);
     // Find all possible kootsu with a given te
-    // Find all possible shuntsu with a given te
+    // let all_kootsu = all_kootsu(remaining);
+    // for kootsu in all_kootsu.mentsu {
+    //}
 
+    // Find all possible shuntsu with a given te
     out
 }
 
