@@ -715,6 +715,22 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_find_winning_comb_ryanpeikou() {
+        let te = te_from_string("🀇🀇🀈🀈🀉🀉🀊🀊🀋🀋🀌🀌🀍🀍").unwrap();
+        let result = winning_combinations(&te, 4);
+        assert_eq!(
+            result,
+            vec![
+                chiitoitsu_winning_combination_from_str(["🀇🀇", "🀈🀈", "🀉🀉", "🀊🀊", "🀋🀋", "🀌🀌", "🀍🀍"])
+                    .unwrap(),
+                normal_winning_combination_from_str("🀇🀇", ["🀈🀉🀊", "🀈🀉🀊", "🀋🀌🀍", "🀋🀌🀍"]).unwrap(),
+                normal_winning_combination_from_str("🀊🀊", ["🀇🀈🀉", "🀇🀈🀉", "🀋🀌🀍", "🀋🀌🀍"]).unwrap(),
+                normal_winning_combination_from_str("🀍🀍", ["🀇🀈🀉", "🀇🀈🀉", "🀊🀋🀌", "🀊🀋🀌"]).unwrap(),
+            ]
+        );
+    }
+
     use super::super::tiles::ParseHaiError;
     fn mentsu_from_str(mentsu: &[&str], remaining: &str) -> Result<Mentsu, ParseHaiError> {
         let mut mentsu_out = vec![];
@@ -727,6 +743,26 @@ mod tests {
             mentsu: mentsu_out,
             remaining: te_from_string(remaining)?,
         })
+    }
+
+    fn chiitoitsu_winning_combination_from_str(
+        toitsu: [&str; 7],
+    ) -> Result<WinningCombination, ParseHaiError> {
+        let mut toitsu_out = Vec::with_capacity(7);
+        for t in &toitsu {
+            let t = te_from_string(t)?;
+            assert_eq!(t.len(), 2);
+            toitsu_out.push([t[0], t[1]]);
+        }
+        Ok(WinningCombination::Chiitoitsu([
+            toitsu_out[0],
+            toitsu_out[1],
+            toitsu_out[2],
+            toitsu_out[3],
+            toitsu_out[4],
+            toitsu_out[5],
+            toitsu_out[6],
+        ]))
     }
 
     fn normal_winning_combination_from_str(
