@@ -296,7 +296,7 @@ impl<'t, 'g> AgariTe<'t, 'g> {
             .max_by_key(AgariTeCombination::points)
     }
 
-    fn points(&self) -> (Vec<Yaku>, YakuValue, usize) {
+    pub fn points(&self) -> (Vec<Yaku>, YakuValue, usize) {
         if let Some(comb) = self.best_combination() {
             (comb.yaku(), comb.han(), comb.fu())
         } else {

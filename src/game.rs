@@ -9,6 +9,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use super::ai::{AiServer, Call, PossibleCall, TehaiIndex, TurnResult};
 use super::list::OrderedList;
 use super::tiles::{make_all_tiles, Fon, Hai, SuuHai, Values};
+use super::yaku::{AgariTe, WinningMethod};
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone, Serialize, Deserialize)]
 pub enum Dice {
@@ -1026,8 +1027,6 @@ impl Te {
     }
 }
 
-use super::yaku::{AgariTe, WinningMethod};
-
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone, Serialize, Deserialize)]
 pub enum Direction {
     Left,
@@ -1152,17 +1151,30 @@ impl Game {
 
     fn can_ron(&self, player: Fon) -> bool {
         if let Some(hai) = self.last_thrown_tile() {
-            // TODO: Check all yakus
-            false
+            // FIXME: Take furiten into account
+            let agari_te = AgariTe::from_te(
+                &self.players[player as usize].te,
+                self,
+                hai,
+                WinningMethod::Ron,
+                player,
+            );
+            let (yaku, _, _) = agari_te.points();
+            !yaku.is_empty()
         } else {
-            // TODO: Take into account Shouminkan
             false
         }
     }
 
     fn can_tsumo(&self) -> bool {
-        // TODO
-        false
+        let te = &self.players[self.turn as usize].te;
+        if let Some(tsumo_hai) = te.tsumo {
+            let agari_te = AgariTe::from_te(te, self, tsumo_hai, WinningMethod::Tsumo, self.turn);
+            let (yaku, _, _) = agari_te.points();
+            !yaku.is_empty()
+        } else {
+            false
+        }
     }
 
     fn can_riichi(&self) -> Vec<ThrowableOnRiichi> {
