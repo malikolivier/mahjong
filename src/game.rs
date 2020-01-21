@@ -1401,8 +1401,17 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
 fn find_machi(te: &[Hai]) -> Vec<Hai> {
     let open_mentsu_count = (14 - te.len()) / 3;
     let root = solver::GroupTree::generate(te, 0, 4 - open_mentsu_count, 0, 0);
+    let root = solver::GroupTree::shanten0(root);
 
-    vec![]
+    let mut machi = vec![];
+    for groups in solver::GroupTree::possible_groups_tree(&root) {
+        machi.extend(groups.machi());
+    }
+
+    machi.sort();
+    machi.dedup();
+
+    machi
 }
 
 mod solver {
@@ -1410,7 +1419,7 @@ mod solver {
     use std::fmt;
 
     #[derive(Debug, Eq, PartialEq, Copy, Clone)]
-    enum Group {
+    pub enum Group {
         Mentsu([Hai; 3]),
         Taatsu([Hai; 2]),
     }
@@ -1421,6 +1430,47 @@ mod solver {
                     write!(f, "{}{}{}", h1.to_char(), h2.to_char(), h3.to_char())
                 }
                 Group::Taatsu([h1, h2]) => write!(f, "{}{}", h1.to_char(), h2.to_char()),
+            }
+        }
+    }
+
+    impl Group {
+        pub fn machi(&self) -> Vec<Hai> {
+            match self {
+                Group::Mentsu(_) => vec![],
+                Group::Taatsu([hai1, hai2]) => {
+                    if hai1 == hai2 {
+                        vec![*hai1]
+                    } else if let (
+                        Hai::Suu(SuuHai { value: value1, .. }),
+                        Hai::Suu(SuuHai { value: value2, .. }),
+                    ) = (hai1, hai2)
+                    {
+                        // Assume that the suuhai are the same color
+                        match (value1, value2) {
+                            // Penchan machi
+                            (Values::Ii, Values::Ryan) => vec![hai2.next()],
+                            (Values::Ryan, Values::Ii) => vec![hai1.next()],
+                            (Values::Paa, Values::Kyuu) => vec![hai1.prev()],
+                            (Values::Kyuu, Values::Paa) => vec![hai2.prev()],
+                            _ => {
+                                let val1 = *value1 as isize;
+                                let val2 = *value2 as isize;
+                                match val2 - val1 {
+                                    // Kanchan machi
+                                    2 => vec![hai1.next()],
+                                    -2 => vec![hai2.next()],
+                                    // Ryanmen machi
+                                    1 => vec![hai1.prev(), hai2.next()],
+                                    -1 => vec![hai2.prev(), hai1.next()],
+                                    _ => unimplemented!("Unhandled group: {}", self),
+                                }
+                            }
+                        }
+                    } else {
+                        unreachable!("Unexpected group: {}", self)
+                    }
+                }
             }
         }
     }
@@ -1473,7 +1523,7 @@ mod solver {
     }
 
     #[derive(Debug, Clone)]
-    struct Combination {
+    pub struct Combination {
         mentsu_candidates: Vec<Group>,
         remaining: Vec<Hai>,
     }
@@ -1507,6 +1557,19 @@ mod solver {
         }
     }
 
+    impl Combination {
+        pub fn machi(&self) -> Vec<Hai> {
+            let mut machi = vec![];
+            for group in &self.mentsu_candidates {
+                machi.extend(group.machi());
+            }
+
+            // TODO: Add tanki machi
+
+            machi
+        }
+    }
+
     fn has_head(te: &[Hai]) -> bool {
         for (i, h1) in te.iter().enumerate() {
             for (j, h2) in te.iter().enumerate() {
@@ -1532,6 +1595,13 @@ mod solver {
                 })
             }
             shanten
+        }
+        pub fn possible_groups_tree(trees: &[GroupTree]) -> Vec<Combination> {
+            let mut possible_groups = vec![];
+            for tree in trees {
+                possible_groups.extend(Self::possible_groups(tree));
+            }
+            possible_groups
         }
         fn possible_groups(&self) -> Vec<Combination> {
             let mut possible_groups = if self.children.is_empty() {
@@ -1562,12 +1632,11 @@ mod solver {
         }
         /// Find all possibilities in 0-shanten by culling all branches
         /// that are not 0-shanten
-        fn shanten0(trees: &[GroupTree]) -> Vec<GroupTree> {
+        pub fn shanten0(trees: Vec<GroupTree>) -> Vec<GroupTree> {
             let mut trees_out = vec![];
-            for tree in trees {
+            for mut tree in trees {
                 if tree.has_shanten0() {
-                    let mut tree = tree.clone();
-                    let children = Self::shanten0(&tree.children);
+                    let children = Self::shanten0(tree.children);
                     tree.children = children;
                     trees_out.push(tree);
                 }
@@ -1890,6 +1959,12 @@ pub mod tests {
     fn test_normal_shanten_head_0() {
         let te = te_from_string("🀇🀈🀉🀊🀋🀌🀍🀎🀏🀙🀚🀛🀗🀗").unwrap();
         assert_eq!(count_normal_shanten(&te), 0);
+    }
+
+    #[test]
+    fn test_find_machi_head_0() {
+        let te = te_from_string("🀇🀈🀉🀊🀋🀍🀎🀏🀙🀚🀛🀗🀗").unwrap();
+        assert_eq!(find_machi(&te), te_from_string("🀉🀌").unwrap());
     }
 
     use ron;
