@@ -57,6 +57,31 @@ pub struct Game {
     dice: [Dice; 2],
 }
 
+impl Default for Game {
+    fn default() -> Self {
+        let mut yama = [None; 136];
+        for (i, hai) in make_all_tiles().iter().cloned().enumerate() {
+            yama[i] = Some(hai);
+        }
+
+        Self {
+            wind: Fon::Ton,
+            turn: Fon::Ton,
+            honba: 0,
+            tsumo_cnt: 0,
+            players: [
+                Player::new(Fon::Ton),
+                Player::new(Fon::Nan),
+                Player::new(Fon::Shaa),
+                Player::new(Fon::Pee),
+            ],
+            yama,
+            hoo: Default::default(),
+            dice: [Dice::One, Dice::Six],
+        }
+    }
+}
+
 impl fmt::Debug for Game {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut yama = f.debug_list();
@@ -163,30 +188,13 @@ pub enum Request {
 
 impl Game {
     pub fn new<R: Rng>(rng: &mut R) -> Self {
-        let mut yama = [None; 136];
-        for (i, hai) in make_all_tiles().iter().cloned().enumerate() {
-            yama[i] = Some(hai);
-        }
+        let mut game = Self::default();
 
-        yama.shuffle(rng);
-        let dice1 = rng.gen();
-        let dice2 = rng.gen();
+        game.yama.shuffle(rng);
+        game.dice[0] = rng.gen();
+        game.dice[1] = rng.gen();
 
-        Self {
-            wind: Fon::Ton,
-            turn: Fon::Ton,
-            honba: 0,
-            tsumo_cnt: 0,
-            players: [
-                Player::new(Fon::Ton),
-                Player::new(Fon::Nan),
-                Player::new(Fon::Shaa),
-                Player::new(Fon::Pee),
-            ],
-            yama,
-            hoo: Default::default(),
-            dice: [dice1, dice2],
-        }
+        game
     }
 
     fn wall_break_index(&self) -> usize {
@@ -867,6 +875,9 @@ impl Game {
     pub fn player_te_(&self, p: Fon) -> &Te {
         &self.players[p as usize].te
     }
+    pub fn player_te_mut(&mut self, p: Fon) -> &mut Te {
+        &mut self.players[p as usize].te
+    }
     pub fn player_tsumo(&self, p: Fon) -> Option<Hai> {
         self.players[p as usize].te.tsumo
     }
@@ -929,7 +940,7 @@ impl Player {
 
 #[derive(Default, Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Te {
-    hai: OrderedList<Hai>,
+    pub hai: OrderedList<Hai>,
     fuuro: Vec<Fuuro>,
     tsumo: Option<Hai>,
 }

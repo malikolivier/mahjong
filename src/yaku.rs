@@ -364,6 +364,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.pinfu() {
             yakus.push(Yaku::Pinfu);
         }
+        if self.iipeikou() {
+            yakus.push(Yaku::Iipeikou);
+        }
         // TODO (other yakus)
 
         yakus
@@ -498,6 +501,32 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
 
     fn tanyao(&self) -> bool {
         self.agari_te.hai_all().all(|hai| !hai.is_jihai_or_1_9())
+    }
+
+    fn iipeikou(&self) -> bool {
+        if self.closed() {
+            if let WinningCombination::Normal { mentsu, .. } = &self.combination {
+                use std::collections::hash_map::Entry;
+                let mut cnt = std::collections::HashMap::new();
+                for m in mentsu {
+                    if !is_kootsu(m) {
+                        match cnt.entry(m) {
+                            Entry::Occupied(mut e) => {
+                                *e.get_mut() += 1;
+                            }
+                            Entry::Vacant(e) => {
+                                e.insert(1);
+                            }
+                        }
+                    }
+                }
+                cnt.iter().filter(|(_, n)| **n >= 2).count() == 1
+            } else {
+                false
+            }
+        } else {
+            false
+        }
     }
 
     fn pinfu(&self) -> bool {
@@ -1043,6 +1072,12 @@ mod tests {
         );
     }
 
+    #[test]
+    fn test_iipeikou() {
+        let yaku = yaku_from_str("🀇🀇🀈🀈🀉🀉🀊🀋🀌🀍🀙🀚🀛", "🀍").unwrap();
+        assert_eq!(yaku, vec![Yaku::Iipeikou]);
+    }
+
     use super::super::tiles::ParseHaiError;
     fn mentsu_from_str(mentsu: &[&str], remaining: &str) -> Result<Mentsu, ParseHaiError> {
         let mut mentsu_out = vec![];
@@ -1095,5 +1130,24 @@ mod tests {
             toitsu: toitsu_out,
             mentsu: mentsu_out,
         })
+    }
+
+    fn yaku_from_str(tehai: &str, hupai: &str) -> Result<Vec<Yaku>, ParseHaiError> {
+        let player_wind = Fon::Ton;
+        let mut game = Game::default();
+        {
+            let te = game.player_te_mut(player_wind);
+            for hai in te_from_string(tehai)? {
+                te.hai.insert(hai);
+            }
+        }
+        let te = game.player_te_(player_wind);
+        let hupai = te_from_string(hupai)?;
+        assert_eq!(hupai.len(), 1);
+        let agarihai = hupai[0];
+        let method = WinningMethod::Ron;
+
+        let (yaku, _, _) = AgariTe::from_te(te, &game, agarihai, method, Fon::Ton).points();
+        Ok(yaku)
     }
 }
