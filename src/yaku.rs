@@ -263,11 +263,45 @@ impl<'t, 'g> AgariTe<'t, 'g> {
         }
     }
 
+    /// Iterate over hidden tiles.
     fn hai(&self) -> impl Iterator<Item = Hai> + '_ {
         AgariTeHaiIter {
             te: self.hai.iter(),
             agarihai: Some(&self.agarihai),
         }
+    }
+
+    /// Iterate over all tiles, including called ones.
+    fn hai_all(&self) -> impl Iterator<Item = Hai> + '_ {
+        let mut open_hai = Vec::with_capacity(4 * self.fuuro.len());
+        for fuuro in self.fuuro {
+            match fuuro {
+                Fuuro::Shuntsu { own, taken, .. } | Fuuro::Kootsu { own, taken, .. } => {
+                    open_hai.push(own[0]);
+                    open_hai.push(own[1]);
+                    open_hai.push(*taken);
+                }
+                Fuuro::Kantsu(KantsuInner::Ankan { own }) => {
+                    open_hai.push(own[0]);
+                    open_hai.push(own[1]);
+                    open_hai.push(own[2]);
+                    open_hai.push(own[3]);
+                }
+                Fuuro::Kantsu(KantsuInner::DaiMinkan { own, taken, .. }) => {
+                    open_hai.push(own[0]);
+                    open_hai.push(own[1]);
+                    open_hai.push(own[2]);
+                    open_hai.push(*taken);
+                }
+                Fuuro::Kantsu(KantsuInner::ShouMinkan { own, taken, added, .. }) => {
+                    open_hai.push(own[0]);
+                    open_hai.push(own[1]);
+                    open_hai.push(*added);
+                    open_hai.push(*taken);
+                }
+            }
+        }
+        self.hai().chain(open_hai)
     }
 
     fn combinations(&self) -> Vec<AgariTeCombination<'_, 't, 'g>> {
@@ -463,7 +497,7 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     }
 
     fn tanyao(&self) -> bool {
-        self.agari_te.hai().all(|hai| !hai.is_jihai_or_1_9())
+        self.agari_te.hai_all().all(|hai| !hai.is_jihai_or_1_9())
     }
 
     fn pinfu(&self) -> bool {
