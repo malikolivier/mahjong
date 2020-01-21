@@ -482,8 +482,22 @@ impl Game {
             });
             SuteHai::Riichi(hai)
         } else {
+            if let Some(riichi) = self.players[p as usize].riichi.as_mut() {
+                // Remove ippatsu if the user as called riichi
+                riichi.ippatsu = false;
+            }
             SuteHai::Normal(hai)
         })
+    }
+
+    /// Set ippatsu boolean to false.
+    /// Used when a call is done. All ippatsu are then cancelled.
+    fn remove_ippatsu(&mut self) {
+        for p in &mut self.players {
+            if let Some(riichi) = p.riichi.as_mut() {
+                riichi.ippatsu = false;
+            }
+        }
     }
 
     /// p: Wind of the caller.
@@ -508,6 +522,7 @@ impl Game {
             _ => unreachable!("Modulo 4"),
         };
         te.open_shuntsu(hai, index);
+        self.remove_ippatsu();
         self.turn = p;
     }
 
@@ -533,6 +548,7 @@ impl Game {
             _ => unreachable!("Modulo 4"),
         };
         te.open_kootsu(hai, direction);
+        self.remove_ippatsu();
         self.turn = p;
     }
 
@@ -558,6 +574,7 @@ impl Game {
             _ => unreachable!("Modulo 4"),
         };
         te.daikantsu(hai, direction);
+        self.remove_ippatsu();
         self.kan_after(p, channels)
     }
 
@@ -578,6 +595,7 @@ impl Game {
 
     /// Returns a boolean whose value is false if this is the last turn
     pub fn kan_after(&mut self, p: Fon, channels: &[AiServer; 4]) -> bool {
+        self.remove_ippatsu();
         let te = &mut self.players[p as usize].te;
         // Insert tsumohai in te, if any
         if let Some(tsumohai) = te.tsumo.take() {
