@@ -293,7 +293,9 @@ impl<'t, 'g> AgariTe<'t, 'g> {
                     open_hai.push(own[2]);
                     open_hai.push(*taken);
                 }
-                Fuuro::Kantsu(KantsuInner::ShouMinkan { own, taken, added, .. }) => {
+                Fuuro::Kantsu(KantsuInner::ShouMinkan {
+                    own, taken, added, ..
+                }) => {
                     open_hai.push(own[0]);
                     open_hai.push(own[1]);
                     open_hai.push(*added);
