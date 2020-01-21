@@ -347,6 +347,7 @@ struct AgariTeCombination<'a, 't: 'a, 'g: 't> {
     combination: WinningCombination,
 }
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 enum Mentsu_ {
     Anshun([Hai; 3]),
     Minshun([Hai; 3]),
@@ -546,13 +547,13 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
                     if minkoo {
                         Mentsu_::Minkou(*m)
                     } else {
-                        // Note: If we are pedantic,
-                        // this mentsu may possible be a minshun. However,
-                        // this will not change how points are counted.
-                        // So we leave it as is.
-                        Mentsu_::Anshun(*m)
+                        Mentsu_::Ankou(*m)
                     }
                 } else {
+                    // Note: If we are pedantic,
+                    // this mentsu may possible be a minshun. However,
+                    // this will not change how points are counted.
+                    // So we leave it as is.
                     Mentsu_::Anshun(*m)
                 };
                 out.push(mentsu_);
@@ -574,7 +575,7 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
                 };
                 out.push(mentsu);
             }
-            Some(vec![].into_iter())
+            Some(out.into_iter())
         } else {
             None
         }
@@ -687,18 +688,12 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     }
 
     fn sanankou(&self) -> bool {
-        if let WinningCombination::Normal { mentsu, .. } = &self.combination {
+        if let Some(mentsu) = self.mentsu() {
             let mut ankou_cnt = 0;
             for m in mentsu {
-                // TODO: Count ankan
-                if is_kootsu(m) {
-                    let hupai = self.agari_te.agarihai;
-                    let minkoo = self.agari_te.method == WinningMethod::Ron
-                        && hupai == m[0]
-                        && !mentsu.iter().any(|m| !is_kootsu(m) && m.contains(&hupai));
-                    if !minkoo {
-                        ankou_cnt += 1;
-                    }
+                match m {
+                    Mentsu_::Ankan(_) | Mentsu_::Ankou(_) => ankou_cnt += 1,
+                    _ => {}
                 }
             }
             ankou_cnt == 3
