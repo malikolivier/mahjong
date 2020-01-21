@@ -347,6 +347,33 @@ struct AgariTeCombination<'a, 't: 'a, 'g: 't> {
     combination: WinningCombination,
 }
 
+enum Mentsu_ {
+    Anshun([Hai; 3]),
+    Minshun([Hai; 3]),
+    Ankou([Hai; 3]),
+    Minkou([Hai; 3]),
+    Ankan([Hai; 4]),
+    Minkan([Hai; 4]),
+}
+
+impl Mentsu_ {
+    /// Return true if this mentsu is Ankou, Minkou, Ankan or Minkan
+    /// whose tile match the given predicate.
+    fn count_as_kootsu_with<F>(&self, mut f: F) -> bool
+    where
+        F: FnMut(Hai) -> bool,
+    {
+        use Mentsu_::*;
+        match self {
+            Ankou([hai_, _, _])
+            | Minkou([hai_, _, _])
+            | Ankan([hai_, _, _, _])
+            | Minkan([hai_, _, _, _]) => f(*hai_),
+            Anshun(_) | Minshun(_) => false,
+        }
+    }
+}
+
 impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     fn yaku(&self) -> Vec<Yaku> {
         let mut yakus = vec![];
@@ -368,6 +395,21 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         }
         if self.iipeikou() {
             yakus.push(Yaku::Iipeikou);
+        }
+        if self.haku() {
+            yakus.push(Yaku::Haku);
+        }
+        if self.hatsu() {
+            yakus.push(Yaku::Hatsu);
+        }
+        if self.chun() {
+            yakus.push(Yaku::Chun);
+        }
+        if self.ba_no_kaze() {
+            yakus.push(Yaku::BaNoKaze);
+        }
+        if self.jibun_no_kaze() {
+            yakus.push(Yaku::JibunNoKaze);
         }
         // TODO (other yakus)
         if self.sanankou() {
@@ -490,6 +532,54 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         self.agari_te.fuuro.is_empty()
     }
 
+    fn mentsu(&self) -> Option<impl Iterator<Item = Mentsu_>> {
+        if let WinningCombination::Normal { mentsu, .. } = &self.combination {
+            let mut out = vec![];
+
+            let hupai = self.agari_te.agarihai;
+            let ron = self.agari_te.method == WinningMethod::Ron;
+            for m in mentsu {
+                let mentsu_ = if is_kootsu(m) {
+                    let minkoo = ron
+                        && hupai == m[0]
+                        && !mentsu.iter().any(|m| !is_kootsu(m) && m.contains(&hupai));
+                    if minkoo {
+                        Mentsu_::Minkou(*m)
+                    } else {
+                        // Note: If we are pedantic,
+                        // this mentsu may possible be a minshun. However,
+                        // this will not change how points are counted.
+                        // So we leave it as is.
+                        Mentsu_::Anshun(*m)
+                    }
+                } else {
+                    Mentsu_::Anshun(*m)
+                };
+                out.push(mentsu_);
+            }
+
+            for fuuro in self.agari_te.fuuro {
+                let mentsu = match fuuro {
+                    Fuuro::Shuntsu { own, taken, .. } => Mentsu_::Minshun([own[0], own[1], *taken]),
+                    Fuuro::Kootsu { own, taken, .. } => Mentsu_::Minkou([own[0], own[1], *taken]),
+                    Fuuro::Kantsu(KantsuInner::Ankan { own }) => {
+                        Mentsu_::Ankan([own[0], own[1], own[2], own[3]])
+                    }
+                    Fuuro::Kantsu(KantsuInner::DaiMinkan { own, taken, .. }) => {
+                        Mentsu_::Minkan([own[0], own[1], own[2], *taken])
+                    }
+                    Fuuro::Kantsu(KantsuInner::ShouMinkan {
+                        own, taken, added, ..
+                    }) => Mentsu_::Minkan([own[0], own[1], *taken, *added]),
+                };
+                out.push(mentsu);
+            }
+            Some(vec![].into_iter())
+        } else {
+            None
+        }
+    }
+
     fn menzentsumo(&self) -> bool {
         self.closed() && self.agari_te.method == WinningMethod::Tsumo
     }
@@ -548,6 +638,46 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         }
     }
 
+    fn haku(&self) -> bool {
+        if let Some(mut mentsu) = self.mentsu() {
+            mentsu.any(|m| m.count_as_kootsu_with(|hai| hai.is_haku()))
+        } else {
+            false
+        }
+    }
+
+    fn hatsu(&self) -> bool {
+        if let Some(mut mentsu) = self.mentsu() {
+            mentsu.any(|m| m.count_as_kootsu_with(|hai| hai.is_hatsu()))
+        } else {
+            false
+        }
+    }
+
+    fn chun(&self) -> bool {
+        if let Some(mut mentsu) = self.mentsu() {
+            mentsu.any(|m| m.count_as_kootsu_with(|hai| hai.is_chun()))
+        } else {
+            false
+        }
+    }
+
+    fn ba_no_kaze(&self) -> bool {
+        if let Some(mut mentsu) = self.mentsu() {
+            mentsu.any(|m| m.count_as_kootsu_with(|hai| hai.is_fon(self.agari_te.game.wind)))
+        } else {
+            false
+        }
+    }
+
+    fn jibun_no_kaze(&self) -> bool {
+        if let Some(mut mentsu) = self.mentsu() {
+            mentsu.any(|m| m.count_as_kootsu_with(|hai| hai.is_fon(self.agari_te.wind)))
+        } else {
+            false
+        }
+    }
+
     fn chiitoitsu(&self) -> bool {
         if let WinningCombination::Chiitoitsu(_) = self.combination {
             true
@@ -560,6 +690,7 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if let WinningCombination::Normal { mentsu, .. } = &self.combination {
             let mut ankou_cnt = 0;
             for m in mentsu {
+                // TODO: Count ankan
                 if is_kootsu(m) {
                     let hupai = self.agari_te.agarihai;
                     let minkoo = self.agari_te.method == WinningMethod::Ron

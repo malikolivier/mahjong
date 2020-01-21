@@ -184,6 +184,31 @@ impl Hai {
         }
     }
 
+    pub fn is_haku(self) -> bool {
+        match self {
+            Hai::Ji(JiHai::Sangen(Sangen::Haku)) => true,
+            _ => false,
+        }
+    }
+    pub fn is_hatsu(self) -> bool {
+        match self {
+            Hai::Ji(JiHai::Sangen(Sangen::Hatsu)) => true,
+            _ => false,
+        }
+    }
+    pub fn is_chun(self) -> bool {
+        match self {
+            Hai::Ji(JiHai::Sangen(Sangen::Chun)) => true,
+            _ => false,
+        }
+    }
+    pub fn is_fon(self, fon: Fon) -> bool {
+        match self {
+            Hai::Ji(JiHai::Fon(fon_)) => fon_ == fon,
+            _ => false,
+        }
+    }
+
     pub fn next(self) -> Self {
         match self {
             Hai::Suu(SuuHai { suu, value, .. }) => Hai::Suu(SuuHai {
