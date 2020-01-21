@@ -371,10 +371,15 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             }
             if let WinningCombination::Normal { mentsu, .. } = &self.combination {
                 for m in mentsu {
-                    // FIXME: If the agari_hai in case of ron is used for a kootsu,
-                    // then the kootsu is considered to be an minkoo, not ankoo.
                     if is_kootsu(m) {
-                        mentsu_fu += if m[0].is_jihai_or_1_9() { 8 } else { 4 };
+                        let mut fu_count = if m[0].is_jihai_or_1_9() { 8 } else { 4 };
+                        let hupai = self.agari_te.agarihai;
+                        let minkoo = hupai == m[0]
+                            && !mentsu.iter().any(|m| !is_kootsu(m) && m.contains(&hupai));
+                        if minkoo {
+                            fu_count /= 2;
+                        }
+                        mentsu_fu += fu_count;
                     }
                 }
             }
