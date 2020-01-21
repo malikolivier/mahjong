@@ -370,6 +370,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             yakus.push(Yaku::Iipeikou);
         }
         // TODO (other yakus)
+        if self.sanankou() {
+            yakus.push(Yaku::SanAnkou);
+        }
+        // TODO (other yakus)
 
         yakus
     }
@@ -418,7 +422,8 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
                     if is_kootsu(m) {
                         let mut fu_count = if m[0].is_jihai_or_1_9() { 8 } else { 4 };
                         let hupai = self.agari_te.agarihai;
-                        let minkoo = hupai == m[0]
+                        let minkoo = self.agari_te.method == WinningMethod::Ron
+                            && hupai == m[0]
                             && !mentsu.iter().any(|m| !is_kootsu(m) && m.contains(&hupai));
                         if minkoo {
                             fu_count /= 2;
@@ -546,6 +551,26 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     fn chiitoitsu(&self) -> bool {
         if let WinningCombination::Chiitoitsu(_) = self.combination {
             true
+        } else {
+            false
+        }
+    }
+
+    fn sanankou(&self) -> bool {
+        if let WinningCombination::Normal { mentsu, .. } = &self.combination {
+            let mut ankou_cnt = 0;
+            for m in mentsu {
+                if is_kootsu(m) {
+                    let hupai = self.agari_te.agarihai;
+                    let minkoo = self.agari_te.method == WinningMethod::Ron
+                        && hupai == m[0]
+                        && !mentsu.iter().any(|m| !is_kootsu(m) && m.contains(&hupai));
+                    if !minkoo {
+                        ankou_cnt += 1;
+                    }
+                }
+            }
+            ankou_cnt == 3
         } else {
             false
         }
