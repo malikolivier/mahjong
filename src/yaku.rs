@@ -324,7 +324,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.ippatsu() {
             yakus.push(Yaku::Ippatsu);
         }
-        // TODO: tanyao
+        if self.tanyao() {
+            yakus.push(Yaku::Tanyao);
+        }
         if self.pinfu() {
             yakus.push(Yaku::Pinfu);
         }
@@ -458,6 +460,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         } else {
             false
         }
+    }
+
+    fn tanyao(&self) -> bool {
+        self.agari_te.hai().all(|hai| !hai.is_jihai_or_1_9())
     }
 
     fn pinfu(&self) -> bool {
