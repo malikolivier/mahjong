@@ -1076,13 +1076,25 @@ mod tests {
 
     #[test]
     fn test_iipeikou() {
-        let yaku = yaku_from_str("🀇🀇🀈🀈🀉🀉🀊🀋🀌🀍🀙🀚🀛", "🀍").unwrap();
+        let yaku = yaku_from_str_ron("🀇🀇🀈🀈🀉🀉🀊🀋🀌🀍🀙🀚🀛", "🀍").unwrap();
         assert_eq!(yaku, vec![Yaku::Iipeikou]);
     }
 
     #[test]
+    fn test_iipeikou_triple_ron() {
+        let yaku = yaku_from_str_ron("🀇🀇🀇🀈🀈🀈🀉🀉🀍🀍🀙🀚🀛", "🀉").unwrap();
+        assert_eq!(yaku, vec![Yaku::Iipeikou]);
+    }
+
+    #[test]
+    fn test_iipeikou_triple_sanankou_ambiguous_tsumo() {
+        let yaku = yaku_from_str_tsumo("🀇🀇🀇🀈🀈🀈🀉🀉🀍🀍🀙🀚🀛", "🀉").unwrap();
+        assert_eq!(yaku, vec![Yaku::Menzentsumo, Yaku::SanAnkou]);
+    }
+
+    #[test]
     fn test_pinfu_iipeikou() {
-        let yaku = yaku_from_str("🀇🀇🀈🀈🀉🀉🀊🀋🀌🀍🀍🀚🀛", "🀙").unwrap();
+        let yaku = yaku_from_str_ron("🀇🀇🀈🀈🀉🀉🀊🀋🀌🀍🀍🀚🀛", "🀙").unwrap();
         assert_eq!(yaku, vec![Yaku::Pinfu, Yaku::Iipeikou]);
     }
 
@@ -1140,7 +1152,18 @@ mod tests {
         })
     }
 
-    fn yaku_from_str(tehai: &str, hupai: &str) -> Result<Vec<Yaku>, ParseHaiError> {
+    fn yaku_from_str_ron(tehai: &str, hupai: &str) -> Result<Vec<Yaku>, ParseHaiError> {
+        yaku_from_str(tehai, hupai, WinningMethod::Ron)
+    }
+    fn yaku_from_str_tsumo(tehai: &str, hupai: &str) -> Result<Vec<Yaku>, ParseHaiError> {
+        yaku_from_str(tehai, hupai, WinningMethod::Tsumo)
+    }
+
+    fn yaku_from_str(
+        tehai: &str,
+        hupai: &str,
+        method: WinningMethod,
+    ) -> Result<Vec<Yaku>, ParseHaiError> {
         let player_wind = Fon::Ton;
         let mut game = Game::default();
         {
@@ -1153,7 +1176,6 @@ mod tests {
         let hupai = te_from_string(hupai)?;
         assert_eq!(hupai.len(), 1);
         let agarihai = hupai[0];
-        let method = WinningMethod::Ron;
 
         let (yaku, _, _) = AgariTe::from_te(te, &game, agarihai, method, Fon::Ton).points();
         Ok(yaku)
