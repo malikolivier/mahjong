@@ -1258,6 +1258,12 @@ mod tests {
         assert_eq!(fu, 20);
     }
 
+    #[test]
+    fn test_sanankou_fu() {
+        let fu = fu_from_str_tsumo("🀇🀇🀇🀈🀈🀈🀉🀉🀍🀍🀙🀚🀛", "🀉").unwrap();
+        assert_eq!(fu, 40);
+    }
+
     use super::super::tiles::ParseHaiError;
     fn mentsu_from_str(mentsu: &[&str], remaining: &str) -> Result<Mentsu, ParseHaiError> {
         let mut mentsu_out = vec![];
