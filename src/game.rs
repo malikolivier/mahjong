@@ -1564,7 +1564,12 @@ mod solver {
                 machi.extend(group.machi());
             }
 
-            // TODO: Add tanki machi
+            // Add tanki machi
+            if !has_head(&self.remaining) {
+                for hai in &self.remaining {
+                    machi.push(*hai);
+                }
+            }
 
             machi
         }
@@ -1965,6 +1970,12 @@ pub mod tests {
     fn test_find_machi_head_0() {
         let te = te_from_string("🀇🀈🀉🀊🀋🀍🀎🀏🀙🀚🀛🀗🀗").unwrap();
         assert_eq!(find_machi(&te), te_from_string("🀉🀌").unwrap());
+    }
+
+    #[test]
+    fn test_find_machi_tanki() {
+        let te = te_from_string("🀇🀈🀉🀊🀋🀌🀍🀎🀏🀙🀚🀛🀗").unwrap();
+        assert_eq!(find_machi(&te), te_from_string("🀗").unwrap());
     }
 
     use ron;
