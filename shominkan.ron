@@ -21,7 +21,7 @@
             fuuro: [Kootsu(own: ('🀍', '🀍'), taken: '🀍', from: Left)],
             tsumo: None,
         ),
-        riichi: false,
+        riichi: None,
     ), (
         wind: '🀁',
         te: (
@@ -43,7 +43,7 @@
             fuuro: [],
             tsumo: None,
         ),
-        riichi: false,
+        riichi: None,
     ), (
         wind: '🀂',
         te: (
@@ -65,7 +65,7 @@
             fuuro: [],
             tsumo: None,
         ),
-        riichi: false,
+        riichi: None,
     ), (
         wind: '🀃',
         te: (
@@ -87,7 +87,7 @@
             fuuro: [],
             tsumo: None,
         ),
-        riichi: false,
+        riichi: None,
     )),
     yama: [
         None,

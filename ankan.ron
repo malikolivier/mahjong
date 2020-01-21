@@ -24,7 +24,7 @@
             fuuro: [],
             tsumo: None,
         ),
-        riichi: false,
+        riichi: None,
     ), (
         wind: '🀁',
         te: (
@@ -46,7 +46,7 @@
             fuuro: [],
             tsumo: None,
         ),
-        riichi: false,
+        riichi: None,
     ), (
         wind: '🀂',
         te: (
@@ -68,7 +68,7 @@
             fuuro: [],
             tsumo: None,
         ),
-        riichi: false,
+        riichi: None,
     ), (
         wind: '🀃',
         te: (
@@ -90,7 +90,7 @@
             fuuro: [],
             tsumo: None,
         ),
-        riichi: false,
+        riichi: None,
     )),
     yama: [
         None,
