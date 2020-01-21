@@ -1088,6 +1088,7 @@ impl Game {
         if let Some(hai) = self.last_thrown_tile() {
             match hai {
                 Hai::Suu(SuuHai { value, .. }) => {
+                    // FIXME: Take into account Kuikae
                     let right = [hai.prev().prev(), hai.prev()];
                     let middle = [hai.prev(), hai.next()];
                     let left = [hai.next(), hai.next().next()];
