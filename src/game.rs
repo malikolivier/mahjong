@@ -1324,6 +1324,7 @@ pub enum ThrowableOnRiichi {
 fn is_tempai(te: &[Hai]) -> bool {
     count_shanten(te) == 0
 }
+
 /// Thanks https://qiita.com/tomo_hxx/items/75b5f771285e1334c0a5 !
 /// http://ara.moo.jp/mjhmr/shanten.htm
 fn count_shanten(te: &[Hai]) -> usize {
@@ -1389,12 +1390,26 @@ fn count_kokushimuso_shanten(te: &[Hai]) -> Option<usize> {
 
 fn count_normal_shanten(te: &[Hai]) -> usize {
     let open_mentsu_count = (14 - te.len()) / 3;
-    let root = GroupTree::generate(te, 0, 4 - open_mentsu_count, 0, 0);
+    let root = solver::GroupTree::generate(te, 0, 4 - open_mentsu_count, 0, 0);
     for tree in &root {
         trace!("{}", tree);
     }
 
-    #[derive(Debug, Eq, PartialEq)]
+    solver::GroupTree::shanten(&root)
+}
+
+fn find_machi(te: &[Hai]) -> Vec<Hai> {
+    let open_mentsu_count = (14 - te.len()) / 3;
+    let root = solver::GroupTree::generate(te, 0, 4 - open_mentsu_count, 0, 0);
+
+    vec![]
+}
+
+mod solver {
+    use super::{Hai, SuuHai, Values};
+    use std::fmt;
+
+    #[derive(Debug, Eq, PartialEq, Copy, Clone)]
     enum Group {
         Mentsu([Hai; 3]),
         Taatsu([Hai; 2]),
@@ -1442,8 +1457,8 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
         }
     }
 
-    #[derive(Debug)]
-    struct GroupTree {
+    #[derive(Debug, Clone)]
+    pub struct GroupTree {
         group: Group,
         children: Vec<GroupTree>,
         depth: usize,
@@ -1455,6 +1470,41 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
         /// Head in remaining hai?
         has_head: bool,
         shanten: usize,
+    }
+
+    #[derive(Debug, Clone)]
+    struct Combination {
+        mentsu_candidates: Vec<Group>,
+        remaining: Vec<Hai>,
+    }
+
+    impl fmt::Display for Combination {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            let mut group_list = Vec::with_capacity(self.mentsu_candidates.len());
+            for group in &self.mentsu_candidates {
+                match group {
+                    Group::Mentsu(mentsu) => {
+                        group_list.push(format!(
+                            "{}{}{}",
+                            mentsu[0].to_char(),
+                            mentsu[1].to_char(),
+                            mentsu[2].to_char()
+                        ));
+                    }
+                    Group::Taatsu(taatsu) => {
+                        group_list.push(format!("{}{}", taatsu[0].to_char(), taatsu[1].to_char()));
+                    }
+                }
+            }
+            let mut remaining = String::new();
+            for hai in &self.remaining {
+                remaining.push(hai.to_char());
+            }
+            f.debug_struct("Combination")
+                .field("candidates", &group_list)
+                .field("remaining", &remaining)
+                .finish()
+        }
     }
 
     fn has_head(te: &[Hai]) -> bool {
@@ -1472,7 +1522,7 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
     }
 
     impl GroupTree {
-        fn shanten(trees: &[GroupTree]) -> usize {
+        pub fn shanten(trees: &[GroupTree]) -> usize {
             let mut shanten = usize::max_value();
             for tree in trees {
                 shanten = shanten.min(if tree.children.is_empty() {
@@ -1483,6 +1533,47 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
             }
             shanten
         }
+        fn possible_groups(&self) -> Vec<Combination> {
+            let mut possible_groups = if self.children.is_empty() {
+                vec![Combination {
+                    mentsu_candidates: vec![self.group],
+                    remaining: self.remaining_hai.clone(),
+                }]
+            } else {
+                vec![]
+            };
+
+            for child in &self.children {
+                let mut child_groups = child.possible_groups();
+                for child_group in &mut child_groups {
+                    child_group.mentsu_candidates.push(self.group);
+                }
+                possible_groups.extend(child_groups);
+            }
+            possible_groups
+        }
+        /// Check if has a 0-shanten child
+        fn has_shanten0(&self) -> bool {
+            if self.children.is_empty() {
+                self.shanten == 0
+            } else {
+                self.children.iter().any(GroupTree::has_shanten0)
+            }
+        }
+        /// Find all possibilities in 0-shanten by culling all branches
+        /// that are not 0-shanten
+        fn shanten0(trees: &[GroupTree]) -> Vec<GroupTree> {
+            let mut trees_out = vec![];
+            for tree in trees {
+                if tree.has_shanten0() {
+                    let mut tree = tree.clone();
+                    let children = Self::shanten0(&tree.children);
+                    tree.children = children;
+                    trees_out.push(tree);
+                }
+            }
+            trees_out
+        }
         fn has_group(trees: &[GroupTree], group: &Group) -> bool {
             for tree in trees {
                 if &tree.group == group {
@@ -1492,7 +1583,7 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
             false
         }
 
-        fn generate(
+        pub fn generate(
             te: &[Hai],
             depth: usize,
             max_depth: usize,
@@ -1630,8 +1721,6 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
             Hai::Ji(..) => vec![toitsu],
         }
     }
-
-    GroupTree::shanten(&root)
 }
 
 #[cfg(test)]
