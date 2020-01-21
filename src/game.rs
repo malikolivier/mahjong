@@ -352,6 +352,10 @@ impl Game {
                 .expect("Received!");
         }
 
+        // Check furiten by checking sutehai before they are moved by a
+        // potential call.
+        self.riichi_furiten_check_on_last_thrown_tile();
+
         let calls = [call1, call2, call3];
         trace!("Calls: {:?}", &calls);
         match calls {
@@ -500,6 +504,24 @@ impl Game {
         }
     }
 
+    fn riichi_furiten_check_on_last_thrown_tile(&mut self) {
+        if let Some(hai) = self.last_thrown_tile() {
+            self.riichi_furiten_check(hai);
+        }
+    }
+
+    /// Check if riichi players are furiten on given hai.
+    /// If any player is furiten, the furiten flag will be set.
+    fn riichi_furiten_check(&mut self, hai: Hai) {
+        for p in &mut self.players {
+            if let Some(riichi) = p.riichi.as_mut() {
+                if riichi.machi.contains(&hai) {
+                    riichi.furiten = true;
+                }
+            }
+        }
+    }
+
     /// p: Wind of the caller.
     pub fn call_chi(&mut self, p: Fon, index: [usize; 2]) {
         let hai = self.remove_last_thrown_tile();
@@ -590,6 +612,8 @@ impl Game {
         let te = &mut self.players[self.turn as usize].te;
         te.kakan(i);
         // TODO: Add chankan check!
+        // NB: If a riichi player did not call possible ron on a chankan,
+        // they will be in furiten.
         self.kan_after(self.turn, channels)
     }
 
@@ -1203,16 +1227,17 @@ impl Game {
     }
 
     fn is_furiten(&self, player: Fon) -> bool {
+        if let Some(riichi) = &self.players[player as usize].riichi {
+            if riichi.furiten {
+                return true;
+            }
+        }
         let machi = find_machi(&self.players[player as usize].te.hai());
         for sutehai in &self.hoo[player as usize].river {
             if machi.contains(&sutehai.hai()) {
                 return true;
             }
         }
-        // TODO
-        // Check sutehai in opponents' fuuro
-        // If riichi, check everything that was thrown since riichi was called
-        // If riichi, check chankan
         false
     }
 
@@ -1335,6 +1360,8 @@ impl Game {
             count(&mut cnt_map, hai);
         }
 
+        // FIXME: Cannot call ankan on special case when player called riichi
+        // and calling ankan would change their machi.
         cnt_map
             .iter()
             .filter(|(_, &cnt)| cnt == 4)
