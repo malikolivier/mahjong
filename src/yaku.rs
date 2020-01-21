@@ -443,36 +443,39 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             };
 
             let mut mentsu_fu = 0;
-            for fuuro in self.agari_te.fuuro {
-                match fuuro {
-                    Fuuro::Kootsu { taken, .. } => {
-                        mentsu_fu += if taken.is_jihai_or_1_9() { 4 } else { 2 };
-                    }
-                    Fuuro::Kantsu(KantsuInner::Ankan {
-                        own: [hai, _, _, _],
-                    }) => {
-                        mentsu_fu += if hai.is_jihai_or_1_9() { 32 } else { 16 };
-                    }
-                    Fuuro::Kantsu(KantsuInner::DaiMinkan { taken, .. })
-                    | Fuuro::Kantsu(KantsuInner::ShouMinkan { taken, .. }) => {
-                        mentsu_fu += if taken.is_jihai_or_1_9() { 16 } else { 8 };
-                    }
-                    _ => {}
-                }
-            }
-            if let WinningCombination::Normal { mentsu, .. } = &self.combination {
+            if let Some(mentsu) = self.mentsu() {
                 for m in mentsu {
-                    if is_kootsu(m) {
-                        let mut fu_count = if m[0].is_jihai_or_1_9() { 8 } else { 4 };
-                        let hupai = self.agari_te.agarihai;
-                        let minkoo = self.agari_te.method == WinningMethod::Ron
-                            && hupai == m[0]
-                            && !mentsu.iter().any(|m| !is_kootsu(m) && m.contains(&hupai));
-                        if minkoo {
-                            fu_count /= 2;
+                    mentsu_fu += match m {
+                        Mentsu_::Ankan([hai, _, _, _]) => {
+                            if hai.is_jihai_or_1_9() {
+                                32
+                            } else {
+                                16
+                            }
                         }
-                        mentsu_fu += fu_count;
-                    }
+                        Mentsu_::Minkan([hai, _, _, _]) => {
+                            if hai.is_jihai_or_1_9() {
+                                16
+                            } else {
+                                8
+                            }
+                        }
+                        Mentsu_::Ankou([hai, _, _]) => {
+                            if hai.is_jihai_or_1_9() {
+                                8
+                            } else {
+                                4
+                            }
+                        }
+                        Mentsu_::Minkou([hai, _, _]) => {
+                            if hai.is_jihai_or_1_9() {
+                                4
+                            } else {
+                                2
+                            }
+                        }
+                        Mentsu_::Anshun(_) | Mentsu_::Minshun(_) => 0,
+                    };
                 }
             }
 
@@ -1249,6 +1252,12 @@ mod tests {
         assert_eq!(yaku, vec![Yaku::Pinfu, Yaku::Iipeikou]);
     }
 
+    #[test]
+    fn test_pinfu_tsumo_fu() {
+        let fu = fu_from_str_tsumo("🀇🀇🀈🀈🀉🀉🀊🀋🀌🀍🀍🀚🀛", "🀙").unwrap();
+        assert_eq!(fu, 20);
+    }
+
     use super::super::tiles::ParseHaiError;
     fn mentsu_from_str(mentsu: &[&str], remaining: &str) -> Result<Mentsu, ParseHaiError> {
         let mut mentsu_out = vec![];
@@ -1309,12 +1318,35 @@ mod tests {
     fn yaku_from_str_tsumo(tehai: &str, hupai: &str) -> Result<Vec<Yaku>, ParseHaiError> {
         yaku_from_str(tehai, hupai, WinningMethod::Tsumo)
     }
+    fn fu_from_str_ron(tehai: &str, hupai: &str) -> Result<usize, ParseHaiError> {
+        fu_from_str(tehai, hupai, WinningMethod::Ron)
+    }
+    fn fu_from_str_tsumo(tehai: &str, hupai: &str) -> Result<usize, ParseHaiError> {
+        fu_from_str(tehai, hupai, WinningMethod::Tsumo)
+    }
 
+    fn fu_from_str(
+        tehai: &str,
+        hupai: &str,
+        method: WinningMethod,
+    ) -> Result<usize, ParseHaiError> {
+        let (_, _, fu) = points_from_str(tehai, hupai, method)?;
+        Ok(fu)
+    }
     fn yaku_from_str(
         tehai: &str,
         hupai: &str,
         method: WinningMethod,
     ) -> Result<Vec<Yaku>, ParseHaiError> {
+        let (yaku, _, _) = points_from_str(tehai, hupai, method)?;
+        Ok(yaku)
+    }
+
+    fn points_from_str(
+        tehai: &str,
+        hupai: &str,
+        method: WinningMethod,
+    ) -> Result<(Vec<Yaku>, YakuValue, usize), ParseHaiError> {
         let player_wind = Fon::Ton;
         let mut game = Game::default();
         {
@@ -1328,7 +1360,6 @@ mod tests {
         assert_eq!(hupai.len(), 1);
         let agarihai = hupai[0];
 
-        let (yaku, _, _) = AgariTe::from_te(te, &game, agarihai, method, Fon::Ton).points();
-        Ok(yaku)
+        Ok(AgariTe::from_te(te, &game, agarihai, method, Fon::Ton).points())
     }
 }
