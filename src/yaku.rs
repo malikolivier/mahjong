@@ -1080,6 +1080,12 @@ mod tests {
         assert_eq!(yaku, vec![Yaku::Iipeikou]);
     }
 
+    #[test]
+    fn test_pinfu_iipeikou() {
+        let yaku = yaku_from_str("🀇🀇🀈🀈🀉🀉🀊🀋🀌🀍🀍🀚🀛", "🀙").unwrap();
+        assert_eq!(yaku, vec![Yaku::Pinfu, Yaku::Iipeikou]);
+    }
+
     use super::super::tiles::ParseHaiError;
     fn mentsu_from_str(mentsu: &[&str], remaining: &str) -> Result<Mentsu, ParseHaiError> {
         let mut mentsu_out = vec![];
