@@ -1151,19 +1151,36 @@ impl Game {
 
     fn can_ron(&self, player: Fon) -> bool {
         if let Some(hai) = self.last_thrown_tile() {
-            // FIXME: Take furiten into account
-            let agari_te = AgariTe::from_te(
-                &self.players[player as usize].te,
-                self,
-                hai,
-                WinningMethod::Ron,
-                player,
-            );
-            let (yaku, _, _) = agari_te.points();
-            !yaku.is_empty()
+            if self.is_furiten(player) {
+                false
+            } else {
+                let agari_te = AgariTe::from_te(
+                    &self.players[player as usize].te,
+                    self,
+                    hai,
+                    WinningMethod::Ron,
+                    player,
+                );
+                let (yaku, _, _) = agari_te.points();
+                !yaku.is_empty()
+            }
         } else {
             false
         }
+    }
+
+    fn is_furiten(&self, player: Fon) -> bool {
+        let machi = find_machi(&self.players[player as usize].te.hai());
+        for sutehai in &self.hoo[player as usize].river {
+            if machi.contains(&sutehai.hai()) {
+                return true;
+            }
+        }
+        // TODO
+        // Check sutehai in opponents' fuuro
+        // If riichi, check everything that was thrown since riichi was called
+        // If riichi, check chankan
+        false
     }
 
     fn can_tsumo(&self) -> bool {
