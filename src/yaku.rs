@@ -1,3 +1,5 @@
+use log::{debug, trace};
+
 use super::game::{Fuuro, Game, KantsuInner, Te};
 use super::tiles::{Fon, Hai};
 
@@ -173,6 +175,59 @@ impl Yaku {
             KokushimusouJuusanmen => Yakuman(2),
         }
     }
+
+    pub fn name(self) -> &'static str {
+        use YakuValue::*;
+        match self {
+            Menzentsumo => "門前自摸",
+            Riichi => "立直",
+            Ippatsu => "一発",
+            Tanyao => "断么九",
+            Pinfu => "平和",
+            Iipeikou => "一盃口",
+            Haku => "白",
+            Hatsu => "発",
+            Chun => "中",
+            BaNoKaze => "場の風",
+            JibunNoKaze => "自分の風",
+            Chankan => "搶槓",
+            RinshanKaihou => "嶺上開花",
+            Haiteiraoyue => "海底摸月",
+            Houteiraoyui => "河底撈魚 ",
+            Daburii => "ダブル立直",
+            Chiitoitsu => "七対子",
+            Toitoi => "対々和",
+            SanAnkou => "三暗刻",
+            SanshokuDoukou => "三色同刻",
+            SanshokuDoujun => "三色同順",
+            Honroutou => "混老頭",
+            Ittsuu => "一気通貫",
+            Chanta => "混全帯么九",
+            Shousangen => "小三元",
+            Sankantsu => "三槓子",
+            HonItsu => "混一色",
+            Junchan => "純全帯么九",
+            Ryanpeikou => "二盃口",
+            Nagashimangan => "流し満貫",
+            ChinItsu => "清一色",
+            Tenhou => "天和",
+            Chihou => "地和",
+            Renhou => "人和",
+            Ryuuiisou => "緑一色",
+            Daisangen => "大三元",
+            Shousuushii => "小四喜",
+            Tsuuiisou => "字一色",
+            Kokushimusou => "国士無双",
+            Chuurenpoutou => "九蓮宝燈",
+            Suuankou => "四暗刻",
+            Chinroutou => "清老頭",
+            Suukantsu => "四槓子",
+            SuuankouTanki => "四槓子単騎",
+            Daisuushi => "大四喜",
+            JunseiChuurenpoutou => "純正九蓮宝燈",
+            KokushimusouJuusanmen => "国士無双十三面",
+        }
+    }
 }
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
@@ -334,8 +389,11 @@ impl<'t, 'g> AgariTe<'t, 'g> {
 
     pub fn points(&self) -> (Vec<Yaku>, YakuValue, usize) {
         if let Some(comb) = self.best_combination() {
-            (comb.yaku(), comb.han(), comb.fu())
+            let yaku = comb.yaku();
+            trace!("Got yaku: {:?}", &yaku);
+            (yaku, comb.han(), comb.fu())
         } else {
+            trace!("No combination");
             (vec![], YakuValue::Han(0), 0)
         }
     }
@@ -401,6 +459,7 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             yakus.push(Yaku::Haku);
         }
         if self.hatsu() {
+            debug!("Hatsu validated");
             yakus.push(Yaku::Hatsu);
         }
         if self.chun() {
@@ -651,8 +710,12 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     }
 
     fn hatsu(&self) -> bool {
+        debug!("Check hatsu yaku");
         if let Some(mut mentsu) = self.mentsu() {
-            mentsu.any(|m| m.count_as_kootsu_with(|hai| hai.is_hatsu()))
+            mentsu.any(|m| {
+                trace!("Check hatsu on Mentsu {:?}", &m);
+                m.count_as_kootsu_with(|hai| hai.is_hatsu())
+            })
         } else {
             false
         }

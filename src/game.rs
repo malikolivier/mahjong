@@ -9,7 +9,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use super::ai::{AiServer, Call, PossibleCall, TehaiIndex, TurnResult};
 use super::list::OrderedList;
 use super::tiles::{make_all_tiles, Fon, Hai, SuuHai, Values};
-use super::yaku::{AgariTe, WinningMethod};
+use super::yaku::{AgariTe, WinningMethod, Yaku};
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone, Serialize, Deserialize)]
 pub enum Dice {
@@ -184,6 +184,13 @@ pub enum Request {
         can_shominkan: Vec<Hai>,
         can_ankan: Vec<Hai>,
     },
+    DisplayScore(EndGameResult),
+}
+
+#[derive(Debug, Clone)]
+pub struct EndGameResult {
+    /// List of winners with their respective Yaku. If none, then ryukyoku
+    pub winners: Vec<(Fon, Vec<Yaku>)>,
 }
 
 impl Game {
@@ -390,7 +397,9 @@ impl Game {
                     })
                     .collect();
                 if !ron_calls.is_empty() {
-                    self.agari(ron_calls)
+                    let result = self.agari(ron_calls, WinningMethod::Ron);
+                    self.send_game_result(result, channels);
+                    false
                 } else {
                     if let Some(pon_kan_player_i) = calls.iter().position(|call| match call {
                         Some(Call::Pon) | Some(Call::Kan) => true,
@@ -420,6 +429,22 @@ impl Game {
         }
     }
 
+    fn send_game_result(&self, result: EndGameResult, channels: &[AiServer; 4]) {
+        for ch in channels {
+            ch.tx
+                .send(GameRequest::new(
+                    self,
+                    Request::DisplayScore(result.clone()),
+                ))
+                .expect("Sent!");
+        }
+
+        // Just wait when the game is finished
+        loop {
+            std::thread::sleep(std::time::Duration::from_secs(1));
+        }
+    }
+
     /// Ask client for what to do then do it.
     ///
     /// Returns a boolean whose value is false if this is the last turn
@@ -442,7 +467,11 @@ impl Game {
             .recv()
             .expect("Received!");
         match result {
-            TurnResult::Tsumo => self.agari(vec![self.turn]),
+            TurnResult::Tsumo => {
+                let result = self.agari(vec![self.turn], WinningMethod::Tsumo);
+                self.send_game_result(result, channels);
+                false
+            }
             TurnResult::Kyusyukyuhai => self.ryukyoku(),
             TurnResult::Ankan { index } => self.announce_ankan(index, channels),
             TurnResult::Kakan { index } => self.announce_kakan(index, channels),
@@ -460,9 +489,25 @@ impl Game {
     }
 
     /// Ends a game player with the given players winning.
-    fn agari(&mut self, players: Vec<Fon>) -> bool {
-        // TODO
-        false
+    fn agari(&mut self, players: Vec<Fon>, winning_method: WinningMethod) -> EndGameResult {
+        let loser = self.turn.prev();
+        let mut winners = vec![];
+        for winner in players {
+            let p = &self.players[winner as usize];
+            let hupai = match winning_method {
+                WinningMethod::Ron => self.last_thrown_tile().expect("Has last thrown tile"),
+                WinningMethod::Tsumo => p.te.tsumo.expect("Has tsumohai"),
+            };
+            trace!(
+                "Compute points for winner player {} (hupai: {})",
+                winner as usize,
+                hupai.to_char()
+            );
+            let points = AgariTe::from_te(&p.te, self, hupai, winning_method, winner).points();
+            trace!("Points: {:?}", &points);
+            winners.push((winner, points.0));
+        }
+        EndGameResult { winners }
     }
 
     fn last_thrown_tile(&self) -> Option<Hai> {

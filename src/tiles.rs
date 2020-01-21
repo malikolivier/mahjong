@@ -87,6 +87,10 @@ impl Fon {
             self.next().next_nth(i - 1)
         }
     }
+
+    pub fn to_char(self) -> char {
+        Hai::Ji(JiHai::Fon(self)).to_char()
+    }
 }
 
 const FON: [Fon; 4] = [Fon::Ton, Fon::Nan, Fon::Shaa, Fon::Pee];
