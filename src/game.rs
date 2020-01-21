@@ -475,7 +475,11 @@ impl Game {
     pub fn throw_tile(&mut self, p: Fon, i: TehaiIndex, riichi: bool) {
         let hai = self.players[p as usize].te.throw_and_insert(i);
         self.hoo[p as usize].river.push(if riichi {
-            self.players[p as usize].riichi = true;
+            self.players[p as usize].riichi = Some(Riichi {
+                ippatsu: true,
+                furiten: self.is_furiten(p),
+                machi: find_machi(self.players[p as usize].te.hai()),
+            });
             SuteHai::Riichi(hai)
         } else {
             SuteHai::Normal(hai)
@@ -825,7 +829,7 @@ impl Game {
         self.players[p as usize].te.tsumo
     }
     pub fn player_riichi(&self, p: Fon) -> bool {
-        self.players[p as usize].riichi
+        self.players[p as usize].riichi.is_some()
     }
 }
 
@@ -858,7 +862,14 @@ impl SuteHai {
 pub struct Player {
     wind: Fon,
     te: Te,
-    riichi: bool,
+    riichi: Option<Riichi>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct Riichi {
+    ippatsu: bool,
+    machi: Vec<Hai>,
+    furiten: bool,
 }
 
 impl Player {
@@ -866,7 +877,7 @@ impl Player {
         Self {
             wind,
             te: Default::default(),
-            riichi: false,
+            riichi: None,
         }
     }
 }
@@ -1071,7 +1082,7 @@ impl Game {
     /// Return all possible chi on calling
     fn can_chi(&self) -> Vec<[usize; 2]> {
         // Cannot call chi if in riichi
-        if self.players[self.turn as usize].riichi {
+        if self.players[self.turn as usize].riichi.is_some() {
             return vec![];
         }
         if let Some(hai) = self.last_thrown_tile() {
@@ -1114,7 +1125,7 @@ impl Game {
 
     fn can_pon(&self, player: Fon) -> bool {
         // Cannot call pon if in riichi
-        if self.players[player as usize].riichi {
+        if self.players[player as usize].riichi.is_some() {
             return false;
         }
         if let Some(hai) = self.last_thrown_tile() {
@@ -1134,7 +1145,7 @@ impl Game {
     fn can_kan(&self, player: Fon) -> bool {
         // Cannot call kan if in riichi
         if let Some(hai) = self.last_thrown_tile() {
-            if self.players[player as usize].riichi {
+            if self.players[player as usize].riichi.is_some() {
                 return false;
             }
             let mut cnt = 0;
@@ -1198,7 +1209,7 @@ impl Game {
         let mut throwable_tiles = vec![];
 
         let player = &self.players[self.turn as usize];
-        if !player.riichi && player.te.fuuro.is_empty() {
+        if player.riichi.is_none() && player.te.fuuro.is_empty() {
             if let Some(tsumohai) = player.te.tsumo {
                 let mut te = vec![];
                 te.extend(player.te.hai.iter().cloned());
