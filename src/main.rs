@@ -233,7 +233,7 @@ fn cursive_human() -> ai::AiServer {
                             })
                         }
                     }
-                    if !game.player_riichi(tiles::Fon::Ton) {
+                    if !game.player_is_riichi(tiles::Fon::Ton) {
                         for (i, hai) in game.player_te(tiles::Fon::Ton).enumerate() {
                             let tx_turn = tx_turn.clone();
                             dialog = dialog.button(hai.to_string(), move |s| {

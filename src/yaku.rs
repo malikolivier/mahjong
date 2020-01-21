@@ -321,7 +321,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.riichi() {
             yakus.push(Yaku::Riichi);
         }
-        // TODO: ippatsu, tanyao
+        if self.ippatsu() {
+            yakus.push(Yaku::Ippatsu);
+        }
+        // TODO: tanyao
         if self.pinfu() {
             yakus.push(Yaku::Pinfu);
         }
@@ -446,7 +449,15 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     }
 
     fn riichi(&self) -> bool {
-        self.agari_te.game.player_riichi(self.agari_te.wind)
+        self.agari_te.game.player_is_riichi(self.agari_te.wind)
+    }
+
+    fn ippatsu(&self) -> bool {
+        if let Some(riichi) = self.agari_te.game.player_riichi(self.agari_te.wind) {
+            riichi.ippatsu
+        } else {
+            false
+        }
     }
 
     fn pinfu(&self) -> bool {

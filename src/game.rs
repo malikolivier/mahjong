@@ -828,8 +828,11 @@ impl Game {
     pub fn player_tsumo(&self, p: Fon) -> Option<Hai> {
         self.players[p as usize].te.tsumo
     }
-    pub fn player_riichi(&self, p: Fon) -> bool {
+    pub fn player_is_riichi(&self, p: Fon) -> bool {
         self.players[p as usize].riichi.is_some()
+    }
+    pub fn player_riichi(&self, p: Fon) -> Option<&Riichi> {
+        self.players[p as usize].riichi.as_ref()
     }
 }
 
@@ -866,8 +869,8 @@ pub struct Player {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-struct Riichi {
-    ippatsu: bool,
+pub struct Riichi {
+    pub ippatsu: bool,
     machi: Vec<Hai>,
     furiten: bool,
 }
