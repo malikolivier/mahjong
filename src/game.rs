@@ -55,6 +55,14 @@ pub struct Game {
     /// 4 rivers indexed by Ton/Nan/Sha/Pee
     hoo: [Hoo; 4],
     dice: [Dice; 2],
+    /// What is left on the table in front of each player
+    score: [Score; 4],
+}
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+struct Score {
+    riichi_bou: usize,
+    score: isize,
 }
 
 impl Default for Game {
@@ -79,6 +87,10 @@ impl Default for Game {
             yama,
             hoo: Default::default(),
             dice: [Dice::One, Dice::Six],
+            score: [Score {
+                riichi_bou: 0,
+                score: 25000,
+            }; 4],
         }
     }
 }
@@ -115,6 +127,7 @@ struct GameSerde {
     yama: Vec<Option<Hai>>,
     hoo: [Hoo; 4],
     dice: [Dice; 2],
+    score: [Score; 4],
 }
 
 impl Serialize for Game {
@@ -129,6 +142,7 @@ impl Serialize for Game {
             yama: self.yama.iter().cloned().collect(),
             hoo: self.hoo.clone(),
             dice: self.dice,
+            score: self.score,
         };
         game.serialize(serializer)
     }
@@ -156,6 +170,7 @@ impl<'de> Deserialize<'de> for Game {
             yama,
             hoo: game.hoo,
             dice: game.dice,
+            score: game.score,
         })
     }
 }
@@ -194,7 +209,7 @@ pub enum Request {
 #[derive(Debug, Clone)]
 pub enum KyokuResult {
     Agari {
-        /// List of winners with their respective Yaku. If none, then ryukyoku
+        /// List of winners with their respective Yaku.
         winners: Vec<(Fon, Vec<Yaku>)>,
         oya_agari: bool,
     },
@@ -254,10 +269,11 @@ impl Game {
                 KyokuResult::Agari { oya_agari, .. } => {
                     if oya_agari {
                         self.honba += 1;
+                    } else {
                         // Move player
                         channels.rotate_right(1);
-                    // self.player_score.rotate_right(1);
-                    } else {
+                        self.score.rotate_right(1);
+
                         self.kyoku += 1;
                         if self.kyoku > 3 {
                             self.kyoku = 0;
@@ -996,6 +1012,52 @@ impl Game {
     }
     pub fn player_riichi(&self, p: Fon) -> Option<&Riichi> {
         self.players[p as usize].riichi.as_ref()
+    }
+
+    fn dora_indicator(&self) -> Vec<Hai> {
+        (0..=self.kan_count())
+            .map(|i| {
+                let break_point = self.wall_break_index();
+
+                fn previous_tile_index(i: usize, nth: usize) -> usize {
+                    if i < nth {
+                        136 - (nth - i)
+                    } else {
+                        i - nth
+                    }
+                }
+
+                let dora_index = previous_tile_index(break_point, 2 * i);
+                self.yama[dora_index].expect("Dora not found")
+            })
+            .collect()
+    }
+    fn uradora_indicator(&self) -> Vec<Hai> {
+        (0..=self.kan_count())
+            .map(|i| {
+                let break_point = self.wall_break_index();
+
+                fn previous_tile_index(i: usize, nth: usize) -> usize {
+                    if i < nth {
+                        136 - (nth - i)
+                    } else {
+                        i - nth
+                    }
+                }
+
+                let dora_index = previous_tile_index(break_point, 2 * i + 1);
+                self.yama[dora_index].expect("Uradora not found")
+            })
+            .collect()
+    }
+    pub fn dora(&self) -> Vec<Hai> {
+        self.dora_indicator().into_iter().map(Hai::next).collect()
+    }
+    pub fn uradora(&self) -> Vec<Hai> {
+        self.uradora_indicator()
+            .into_iter()
+            .map(Hai::next)
+            .collect()
     }
 }
 
