@@ -48,7 +48,6 @@ pub struct Game {
     pub turn: Fon,
     honba: usize,
     kyoku: usize,
-    // turn_player: usize,
     tsumo_cnt: usize,
     /// 4 players indexed by Ton/Nan/Sha/Pee
     players: [Player; 4],
