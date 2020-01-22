@@ -196,14 +196,9 @@ pub struct EndGameResult {
 impl Game {
     pub fn new<R: Rng>(rng: &mut R) -> Self {
         let mut game = Self::default();
-
-        game.yama.shuffle(rng);
-        game.dice[0] = rng.gen();
-        game.dice[1] = rng.gen();
-
+        game.reset(rng);
         game
     }
-
     fn wall_break_index(&self) -> usize {
         let dice_result = self.dice[0] as usize + self.dice[1] as usize;
         let break_point = ((dice_result - 1) % 4) * 34 + dice_result * 2;
@@ -240,20 +235,34 @@ impl Game {
         true
     }
 
-    pub fn play(&mut self, channels: [AiServer; 4]) {
-        self.deal();
-
-        while self.next_turn(&channels) {}
-
-        // TODO: Move winds, add honba counter, etc.
-        self.reset();
-        self.play(channels)
+    pub fn play_hanchan<R: Rng>(&mut self, channels: [AiServer; 4], rng: &mut R) {
+        loop {
+            self.play(&channels);
+            // TODO: Move winds, add honba counter, etc.
+            self.reset(rng);
+        }
     }
 
-    /// Reset the game before anything is dealt
-    fn reset(&mut self) {
-        // TODO: Should shuffle
-        *self = Game::default();
+    /// Play a kyoku
+    pub fn play(&mut self, channels: &[AiServer; 4]) {
+        self.deal();
+
+        while self.next_turn(channels) {}
+    }
+
+    /// Reset the game to the state before any tile is dealt
+    fn reset<R: Rng>(&mut self, rng: &mut R) {
+        let mut new_game = Self::default();
+
+        new_game.yama.shuffle(rng);
+        new_game.dice[0] = rng.gen();
+        new_game.dice[1] = rng.gen();
+
+        self.tsumo_cnt = new_game.tsumo_cnt;
+        self.players = new_game.players;
+        self.yama = new_game.yama;
+        self.hoo = new_game.hoo;
+        self.dice = new_game.dice;
     }
 
     fn deal(&mut self) {

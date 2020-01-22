@@ -25,12 +25,15 @@ fn main() {
     let mut game = game::Game::new(&mut rng);
     // let mut game: game::Game =
     //     ron::de::from_reader(std::fs::File::open("in.ron").unwrap()).unwrap();
-    game.play([
-        cursive_human(),
-        ai::null_bot(),
-        ai::null_bot(),
-        ai::null_bot(),
-    ]);
+    game.play_hanchan(
+        [
+            cursive_human(),
+            ai::null_bot(),
+            ai::null_bot(),
+            ai::null_bot(),
+        ],
+        &mut rng,
+    );
 }
 
 fn cursive_human() -> ai::AiServer {
