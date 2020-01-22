@@ -1061,6 +1061,31 @@ impl Game {
             .map(Hai::next)
             .collect()
     }
+
+    pub fn score_repr(&self) -> String {
+        fn riichi_bou_repr(n: usize) -> String {
+            let mut out = String::with_capacity(n);
+            for _ in 0..n {
+                out.push('|');
+            }
+            out
+        }
+        format!(
+            "{}: {}  {}\n{}: {}  {}\n{}: {}  {}\n{}: {}  {}",
+            Fon::Ton.to_char(),
+            self.score[Fon::Ton as usize].score,
+            riichi_bou_repr(self.score[Fon::Ton as usize].riichi_bou),
+            Fon::Nan.to_char(),
+            self.score[Fon::Nan as usize].score,
+            riichi_bou_repr(self.score[Fon::Nan as usize].riichi_bou),
+            Fon::Shaa.to_char(),
+            self.score[Fon::Shaa as usize].score,
+            riichi_bou_repr(self.score[Fon::Shaa as usize].riichi_bou),
+            Fon::Pee.to_char(),
+            self.score[Fon::Pee as usize].score,
+            riichi_bou_repr(self.score[Fon::Pee as usize].riichi_bou),
+        )
+    }
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
