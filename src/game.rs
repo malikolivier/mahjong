@@ -793,11 +793,16 @@ impl Game {
         i: TehaiIndex,
         channels: &[AiServer; 4],
     ) -> Option<KyokuResult> {
-        // Check chankan
+        // Retrieve chankan tile
         let hai = self.players[self.turn as usize]
             .te
             .get(i)
             .expect("Get tile to kakan");
+
+        // Do kakan
+        self.players[self.turn as usize].te.kakan(i);
+
+        // Check chankan
         let chankan1 = self.can_chankan(self.turn.next(), hai);
         let chankan2 = self.can_chankan(self.turn.next().next(), hai);
         let chankan3 = self.can_chankan(self.turn.next().next().next(), hai);
@@ -867,13 +872,13 @@ impl Game {
             ron_calls.push(self.turn.next().next().next());
         }
         if !ron_calls.is_empty() {
+            // FIXME: Abort kakan!
             let result = self.agari(ron_calls, WinningMethod::Ron, Some(hai));
             self.send_game_result(result.clone(), channels);
             return Some(result);
         }
 
-        // Do kakan
-        self.players[self.turn as usize].te.kakan(i);
+        // After kan
         self.kan_after(self.turn, channels)
     }
 
