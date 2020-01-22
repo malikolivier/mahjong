@@ -57,7 +57,11 @@ fn cursive_human() -> ai::AiServer {
             });
 
             debug!("Waiting for request...");
-            let game::GameRequest { game, request } = rx.recv().expect("Receive state");
+            let game::GameRequest {
+                game,
+                request,
+                player,
+            } = rx.recv().expect("Receive state");
             debug!(
                 "Received {:?} for game: \n{}\n",
                 &request,
@@ -90,14 +94,10 @@ fn cursive_human() -> ai::AiServer {
                             } => {
                                 for chi in possible_chis {
                                     let tx_call = tx_call.clone();
-                                    let tile1 = game
-                                        .player_te(tiles::Fon::Ton)
-                                        .nth(chi[0])
-                                        .expect("Has tile");
-                                    let tile2 = game
-                                        .player_te(tiles::Fon::Ton)
-                                        .nth(chi[1])
-                                        .expect("Has tile");
+                                    let tile1 =
+                                        game.player_te(player).nth(chi[0]).expect("Has tile");
+                                    let tile2 =
+                                        game.player_te(player).nth(chi[1]).expect("Has tile");
                                     dialog = dialog.button(
                                         format!("Chi {}{}", tile1.to_string(), tile2.to_string()),
                                         move |s| {
@@ -174,10 +174,7 @@ fn cursive_human() -> ai::AiServer {
                             let tx_turn = tx_turn.clone();
                             match throwable {
                                 game::ThrowableOnRiichi::Te(index) => {
-                                    let tile = game
-                                        .player_te(tiles::Fon::Ton)
-                                        .nth(index)
-                                        .expect("Has tile");
+                                    let tile = game.player_te(player).nth(index).expect("Has tile");
                                     dialog = dialog.button(
                                         format!("Riichi {}", tile.to_string()),
                                         move |s| {
@@ -192,8 +189,7 @@ fn cursive_human() -> ai::AiServer {
                                     )
                                 }
                                 game::ThrowableOnRiichi::Tsumohai => {
-                                    let tile =
-                                        game.player_tsumo(tiles::Fon::Ton).expect("Has tsumohai");
+                                    let tile = game.player_tsumo(player).expect("Has tsumohai");
                                     dialog = dialog.button(
                                         format!("Riichi {}", tile.to_string()),
                                         move |s| {
@@ -213,10 +209,7 @@ fn cursive_human() -> ai::AiServer {
                     if !can_ankan.is_empty() {
                         for hai in can_ankan {
                             let tx_turn = tx_turn.clone();
-                            let index = game
-                                .player_te_(tiles::Fon::Ton)
-                                .index(hai)
-                                .expect("Has ankan tile");
+                            let index = game.player_te_(player).index(hai).expect("Has ankan tile");
                             dialog = dialog.button(format!("AnKan {}", hai.to_string()), move |s| {
                                 tx_turn
                                     .send(ai::TurnResult::Ankan { index })
@@ -228,10 +221,7 @@ fn cursive_human() -> ai::AiServer {
                     if !can_shominkan.is_empty() {
                         for hai in can_shominkan {
                             let tx_turn = tx_turn.clone();
-                            let index = game
-                                .player_te_(tiles::Fon::Ton)
-                                .index(hai)
-                                .expect("Has kakan tile");
+                            let index = game.player_te_(player).index(hai).expect("Has kakan tile");
                             dialog = dialog.button(format!("Kakan {}", hai.to_string()), move |s| {
                                 tx_turn
                                     .send(ai::TurnResult::Kakan { index })
@@ -240,8 +230,8 @@ fn cursive_human() -> ai::AiServer {
                             })
                         }
                     }
-                    if !game.player_is_riichi(tiles::Fon::Ton) {
-                        for (i, hai) in game.player_te(tiles::Fon::Ton).enumerate() {
+                    if !game.player_is_riichi(player) {
+                        for (i, hai) in game.player_te(player).enumerate() {
                             let tx_turn = tx_turn.clone();
                             dialog = dialog.button(hai.to_string(), move |s| {
                                 tx_turn
@@ -254,7 +244,7 @@ fn cursive_human() -> ai::AiServer {
                             })
                         }
                     }
-                    if let Some(hai) = game.player_tsumo(tiles::Fon::Ton) {
+                    if let Some(hai) = game.player_tsumo(player) {
                         let tx_turn = tx_turn.clone();
                         dialog = dialog.button(hai.to_string(), move |s| {
                             tx_turn

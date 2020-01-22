@@ -179,13 +179,15 @@ impl<'de> Deserialize<'de> for Game {
 pub struct GameRequest {
     pub game: Game,
     pub request: Request,
+    pub player: Fon,
 }
 
 impl GameRequest {
-    fn new(game: &Game, request: Request) -> Self {
+    fn new(game: &Game, request: Request, player: Fon) -> Self {
         Self {
             game: game.clone(),
             request,
+            player,
         }
     }
 }
@@ -371,11 +373,13 @@ impl Game {
     }
 
     fn tx_refresh(&self, channels: &[AiServer; 4]) {
+        let mut player = Fon::Ton;
         for channel in channels {
             channel
                 .tx
-                .send(GameRequest::new(self, Request::Refresh))
+                .send(GameRequest::new(self, Request::Refresh, player))
                 .expect("Sent!");
+            player = player.next();
         }
     }
 
@@ -398,7 +402,11 @@ impl Game {
             trace!("1. Player {} can {:?}!", self.turn as usize, allowed_calls1);
             channels[self.turn as usize]
                 .tx
-                .send(GameRequest::new(self, Request::Call(allowed_calls1)))
+                .send(GameRequest::new(
+                    self,
+                    Request::Call(allowed_calls1),
+                    self.turn,
+                ))
                 .expect("Sent!");
             call1 = channels[self.turn as usize]
                 .rx_call
@@ -415,7 +423,11 @@ impl Game {
             );
             channels[self.turn.next() as usize]
                 .tx
-                .send(GameRequest::new(self, Request::Call(allowed_calls2)))
+                .send(GameRequest::new(
+                    self,
+                    Request::Call(allowed_calls2),
+                    self.turn.next(),
+                ))
                 .expect("Sent!");
             call2 = channels[self.turn.next() as usize]
                 .rx_call
@@ -432,7 +444,11 @@ impl Game {
             );
             channels[self.turn.next().next() as usize]
                 .tx
-                .send(GameRequest::new(self, Request::Call(allowed_calls3)))
+                .send(GameRequest::new(
+                    self,
+                    Request::Call(allowed_calls3),
+                    self.turn.next().next(),
+                ))
                 .expect("Sent!");
             call3 = channels[self.turn.next().next() as usize]
                 .rx_call
@@ -502,13 +518,16 @@ impl Game {
     }
 
     fn send_game_result(&self, result: KyokuResult, channels: &[AiServer; 4]) {
+        let mut player = Fon::Ton;
         for ch in channels {
             ch.tx
                 .send(GameRequest::new(
                     self,
                     Request::DisplayScore(result.clone()),
+                    player,
                 ))
                 .expect("Sent!");
+            player = player.next();
         }
     }
 
@@ -527,6 +546,7 @@ impl Game {
                     can_shominkan: self.can_shominkan(),
                     can_ankan: self.can_ankan(),
                 },
+                self.turn,
             ))
             .expect("Sent!");
         let result = channels[self.turn as usize]
@@ -790,6 +810,7 @@ impl Game {
                 .send(GameRequest::new(
                     self,
                     Request::Call(vec![PossibleCall::Ron]),
+                    self.turn.next(),
                 ))
                 .expect("Sent!");
         }
@@ -799,6 +820,7 @@ impl Game {
                 .send(GameRequest::new(
                     self,
                     Request::Call(vec![PossibleCall::Ron]),
+                    self.turn.next().next(),
                 ))
                 .expect("Sent!");
         }
@@ -808,6 +830,7 @@ impl Game {
                 .send(GameRequest::new(
                     self,
                     Request::Call(vec![PossibleCall::Ron]),
+                    self.turn.next().next().next(),
                 ))
                 .expect("Sent!");
         }

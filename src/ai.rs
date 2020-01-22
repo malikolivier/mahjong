@@ -1,5 +1,4 @@
 use super::game::{GameRequest, Request};
-use super::tiles::Fon;
 use log::trace;
 
 #[derive(Debug, Copy, Eq, PartialEq, PartialOrd, Ord, Clone)]
@@ -80,13 +79,11 @@ pub fn null_bot() -> AiServer {
             GameRequest {
                 request: Request::DoTurn { can_shominkan, .. },
                 game,
+                player,
             } => client
                 .tx_turn
                 .send(if let Some(hai) = can_shominkan.first() {
-                    let index = game
-                        .player_te_(Fon::Ton)
-                        .index(*hai)
-                        .expect("Has kakan tile");
+                    let index = game.player_te_(player).index(*hai).expect("Has kakan tile");
                     TurnResult::Kakan { index }
                 } else {
                     TurnResult::ThrowHai {
