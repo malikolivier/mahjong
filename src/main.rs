@@ -268,11 +268,24 @@ fn cursive_human() -> ai::AiServer {
                 }
 
                 game::Request::DisplayScore(result) => {
+                    use game::KyokuResult;
                     let mut display = String::new();
-                    for winner in result.winners {
-                        info!("Player {} won with {:?}", winner.0 as usize, &winner.1);
-                        let yaku: Vec<_> = winner.1.into_iter().map(|yaku| yaku.name()).collect();
-                        display.push_str(&format!("{} won with {:?}\n", winner.0.to_char(), yaku))
+                    match result {
+                        KyokuResult::Agari { winners, .. } => {
+                            for winner in winners {
+                                info!("Player {} won with {:?}", winner.0 as usize, &winner.1);
+                                let yaku: Vec<_> =
+                                    winner.1.into_iter().map(|yaku| yaku.name()).collect();
+                                display.push_str(&format!(
+                                    "{} won with {:?}\n",
+                                    winner.0.to_char(),
+                                    yaku
+                                ));
+                            }
+                        }
+                        KyokuResult::Ryukyoku => {
+                            display.push_str("Ryukyoku");
+                        }
                     }
                     let mut dialog = Dialog::text(display).title("End");
                     dialog = dialog.button("OK", |s| s.quit());

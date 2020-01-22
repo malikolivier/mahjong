@@ -47,6 +47,7 @@ pub struct Game {
     /// Current player that should draw
     pub turn: Fon,
     honba: usize,
+    kyoku: usize,
     // turn_player: usize,
     tsumo_cnt: usize,
     /// 4 players indexed by Ton/Nan/Sha/Pee
@@ -68,6 +69,7 @@ impl Default for Game {
             wind: Fon::Ton,
             turn: Fon::Ton,
             honba: 0,
+            kyoku: 0,
             tsumo_cnt: 0,
             players: [
                 Player::new(Fon::Ton),
@@ -107,6 +109,7 @@ impl fmt::Debug for Game {
 struct GameSerde {
     wind: Fon,
     pub turn: Fon,
+    kyoku: usize,
     honba: usize,
     tsumo_cnt: usize,
     players: [Player; 4],
@@ -120,6 +123,7 @@ impl Serialize for Game {
         let game = GameSerde {
             wind: self.wind,
             turn: self.turn,
+            kyoku: self.kyoku,
             honba: self.honba,
             tsumo_cnt: self.tsumo_cnt,
             players: self.players.clone(),
@@ -146,6 +150,7 @@ impl<'de> Deserialize<'de> for Game {
         Ok(Game {
             wind: game.wind,
             turn: game.turn,
+            kyoku: game.kyoku,
             honba: game.honba,
             players: game.players,
             tsumo_cnt: game.tsumo_cnt,
@@ -184,14 +189,17 @@ pub enum Request {
         can_shominkan: Vec<Hai>,
         can_ankan: Vec<Hai>,
     },
-    DisplayScore(EndGameResult),
+    DisplayScore(KyokuResult),
 }
 
 #[derive(Debug, Clone)]
-pub struct EndGameResult {
-    /// List of winners with their respective Yaku. If none, then ryukyoku
-    pub winners: Vec<(Fon, Vec<Yaku>)>,
-    pub oya_agari: bool,
+pub enum KyokuResult {
+    Agari {
+        /// List of winners with their respective Yaku. If none, then ryukyoku
+        winners: Vec<(Fon, Vec<Yaku>)>,
+        oya_agari: bool,
+    },
+    Ryukyoku,
 }
 
 impl Game {
@@ -236,16 +244,40 @@ impl Game {
         true
     }
 
-    pub fn play_hanchan<R: Rng>(&mut self, channels: [AiServer; 4], rng: &mut R) {
+    pub fn play_hanchan<R: Rng>(&mut self, mut channels: [AiServer; 4], rng: &mut R) {
         loop {
             let result = self.play(&channels);
-            // TODO: Move winds, add honba counter, etc.
+            match result {
+                KyokuResult::Ryukyoku => {
+                    self.honba += 1;
+                    // Check tenpai, and move points and players if necessary
+                }
+                KyokuResult::Agari { oya_agari, .. } => {
+                    if oya_agari {
+                        self.honba += 1;
+                        // Move player
+                        channels.rotate_right(1);
+                    // self.player_score.rotate_right(1);
+                    } else {
+                        self.kyoku += 1;
+                        if self.kyoku > 3 {
+                            self.kyoku = 0;
+                            self.wind = self.wind.next();
+                            if self.wind > Fon::Nan {
+                                info!("Hanchan completed!");
+                                // TODO: Hanchan is finished
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
             self.reset(rng);
         }
     }
 
     /// Play a kyoku
-    pub fn play(&mut self, channels: &[AiServer; 4]) -> EndGameResult {
+    pub fn play(&mut self, channels: &[AiServer; 4]) -> KyokuResult {
         self.deal();
 
         loop {
@@ -333,7 +365,7 @@ impl Game {
     }
 
     /// Returns a boolean whose value is false if this is the last turn
-    fn next_turn(&mut self, channels: &[AiServer; 4]) -> Option<EndGameResult> {
+    fn next_turn(&mut self, channels: &[AiServer; 4]) -> Option<KyokuResult> {
         // TODO: Ryukyoku conditions:
         //   - 4 riichi;
         //   - 4 kan from different players;
@@ -454,7 +486,7 @@ impl Game {
         }
     }
 
-    fn send_game_result(&self, result: EndGameResult, channels: &[AiServer; 4]) {
+    fn send_game_result(&self, result: KyokuResult, channels: &[AiServer; 4]) {
         for ch in channels {
             ch.tx
                 .send(GameRequest::new(
@@ -468,7 +500,7 @@ impl Game {
     /// Ask client for what to do then do it.
     ///
     /// Returns end game results if this turn ends the kyoku
-    fn do_turn(&mut self, channels: &[AiServer; 4]) -> Option<EndGameResult> {
+    fn do_turn(&mut self, channels: &[AiServer; 4]) -> Option<KyokuResult> {
         channels[self.turn as usize]
             .tx
             .send(GameRequest::new(
@@ -503,16 +535,13 @@ impl Game {
         }
     }
 
-    fn ryukyoku(&mut self) -> EndGameResult {
+    fn ryukyoku(&mut self) -> KyokuResult {
         // TODO
-        EndGameResult {
-            winners: vec![],
-            oya_agari: false,
-        }
+        KyokuResult::Ryukyoku
     }
 
     /// Ends a game player with the given players winning.
-    fn agari(&mut self, players: Vec<Fon>, winning_method: WinningMethod) -> EndGameResult {
+    fn agari(&mut self, players: Vec<Fon>, winning_method: WinningMethod) -> KyokuResult {
         let loser = self.turn.prev();
         let mut winners = vec![];
         let mut oya_agari = false;
@@ -536,11 +565,7 @@ impl Game {
             }
         }
 
-        if oya_agari {
-            self.honba += 1;
-        }
-
-        EndGameResult { winners, oya_agari }
+        KyokuResult::Agari { winners, oya_agari }
     }
 
     fn last_thrown_tile(&self) -> Option<Hai> {
@@ -661,7 +686,7 @@ impl Game {
     }
 
     /// Returns a boolean whose value is false if this is the last turn
-    pub fn call_kan(&mut self, p: Fon, channels: &[AiServer; 4]) -> Option<EndGameResult> {
+    pub fn call_kan(&mut self, p: Fon, channels: &[AiServer; 4]) -> Option<KyokuResult> {
         let hai = self.remove_last_thrown_tile();
         debug!(
             "Kan called by player {}. Last thrown tile: {}, thrown by player {}",
@@ -691,7 +716,7 @@ impl Game {
         &mut self,
         i: TehaiIndex,
         channels: &[AiServer; 4],
-    ) -> Option<EndGameResult> {
+    ) -> Option<KyokuResult> {
         let te = &mut self.players[self.turn as usize].te;
         te.ankan(i);
         self.kan_after(self.turn, channels)
@@ -702,7 +727,7 @@ impl Game {
         &mut self,
         i: TehaiIndex,
         channels: &[AiServer; 4],
-    ) -> Option<EndGameResult> {
+    ) -> Option<KyokuResult> {
         let te = &mut self.players[self.turn as usize].te;
         te.kakan(i);
         // TODO: Add chankan check!
@@ -712,7 +737,7 @@ impl Game {
     }
 
     /// Returns a boolean whose value is false if this is the last turn
-    pub fn kan_after(&mut self, p: Fon, channels: &[AiServer; 4]) -> Option<EndGameResult> {
+    pub fn kan_after(&mut self, p: Fon, channels: &[AiServer; 4]) -> Option<KyokuResult> {
         self.remove_ippatsu();
         let te = &mut self.players[p as usize].te;
         // Insert tsumohai in te, if any
