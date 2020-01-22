@@ -64,9 +64,10 @@ fn cursive_human() -> ai::AiServer {
                 game.to_string_repr()
             );
 
+            let title = game.title_repr();
             let score = game.score_repr();
             let board = game.to_string_repr();
-            let display = format!("{}\n\n{}", score, board);
+            let display = format!("{}\n{}\n\n{}", title, score, board);
             siv.add_layer(TextView::new(display));
 
             match request {

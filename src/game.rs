@@ -1062,6 +1062,21 @@ impl Game {
             .collect()
     }
 
+    pub fn title_repr(&self) -> String {
+        let fon = match self.wind {
+            Fon::Ton => "東",
+            Fon::Nan => "南",
+            Fon::Shaa => "西",
+            Fon::Pee => "北",
+        };
+        let kyoku = format!("{}{}局", fon, self.kyoku + 1);
+        if self.honba == 0 {
+            kyoku
+        } else {
+            format!("{}{}本場", kyoku, self.honba)
+        }
+    }
+
     pub fn score_repr(&self) -> String {
         fn riichi_bou_repr(n: usize) -> String {
             let mut out = String::with_capacity(n);
