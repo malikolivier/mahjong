@@ -11,6 +11,8 @@ pub struct AgariTe<'t, 'g> {
     agarihai: Hai,
     method: WinningMethod,
     wind: Fon,
+    /// Ron on kakan (steal a kan)
+    chankan: bool,
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
@@ -315,7 +317,13 @@ impl<'t, 'g> AgariTe<'t, 'g> {
             agarihai,
             method,
             wind,
+            chankan: false,
         }
+    }
+
+    pub fn chankan(mut self, chankan: bool) -> Self {
+        self.chankan = chankan;
+        self
     }
 
     /// Iterate over hidden tiles.

@@ -469,7 +469,7 @@ impl Game {
                     })
                     .collect();
                 if !ron_calls.is_empty() {
-                    let result = self.agari(ron_calls, WinningMethod::Ron);
+                    let result = self.agari(ron_calls, WinningMethod::Ron, None);
                     self.send_game_result(result.clone(), channels);
                     Some(result)
                 } else {
@@ -535,7 +535,7 @@ impl Game {
             .expect("Received!");
         match result {
             TurnResult::Tsumo => {
-                let result = self.agari(vec![self.turn], WinningMethod::Tsumo);
+                let result = self.agari(vec![self.turn], WinningMethod::Tsumo, None);
                 self.send_game_result(result.clone(), channels);
                 Some(result)
             }
@@ -556,22 +556,33 @@ impl Game {
     }
 
     /// Ends a game player with the given players winning.
-    fn agari(&mut self, players: Vec<Fon>, winning_method: WinningMethod) -> KyokuResult {
+    fn agari(
+        &mut self,
+        players: Vec<Fon>,
+        winning_method: WinningMethod,
+        chankan: Option<Hai>,
+    ) -> KyokuResult {
         let loser = self.turn.prev();
         let mut winners = vec![];
         let mut oya_agari = false;
         for winner in players {
             let p = &self.players[winner as usize];
-            let hupai = match winning_method {
-                WinningMethod::Ron => self.last_thrown_tile().expect("Has last thrown tile"),
-                WinningMethod::Tsumo => p.te.tsumo.expect("Has tsumohai"),
+            let hupai = if let Some(hai) = chankan {
+                hai
+            } else {
+                match winning_method {
+                    WinningMethod::Ron => self.last_thrown_tile().expect("Has last thrown tile"),
+                    WinningMethod::Tsumo => p.te.tsumo.expect("Has tsumohai"),
+                }
             };
             trace!(
                 "Compute points for winner player {} (hupai: {})",
                 winner as usize,
                 hupai.to_char()
             );
-            let points = AgariTe::from_te(&p.te, self, hupai, winning_method, winner).points();
+            let points = AgariTe::from_te(&p.te, self, hupai, winning_method, winner)
+                .chankan(chankan.is_some())
+                .points();
             trace!("Points: {:?}", &points);
             winners.push((winner, points.0));
 
@@ -739,17 +750,107 @@ impl Game {
         self.kan_after(self.turn, channels)
     }
 
+    fn can_chankan(&self, player: Fon, hai: Hai) -> bool {
+        if self.is_furiten(player) {
+            false
+        } else {
+            let agari_te = AgariTe::from_te(
+                &self.players[player as usize].te,
+                self,
+                hai,
+                WinningMethod::Ron,
+                player,
+            )
+            .chankan(true);
+            let (yaku, _, _) = agari_te.points();
+            !yaku.is_empty()
+        }
+    }
+
     /// Returns a boolean whose value is false if this is the last turn
     pub fn announce_kakan(
         &mut self,
         i: TehaiIndex,
         channels: &[AiServer; 4],
     ) -> Option<KyokuResult> {
-        let te = &mut self.players[self.turn as usize].te;
-        te.kakan(i);
-        // TODO: Add chankan check!
+        // Check chankan
+        let hai = self.players[self.turn as usize]
+            .te
+            .get(i)
+            .expect("Get tile to kakan");
+        let chankan1 = self.can_chankan(self.turn.next(), hai);
+        let chankan2 = self.can_chankan(self.turn.next().next(), hai);
+        let chankan3 = self.can_chankan(self.turn.next().next().next(), hai);
+        let mut call1 = None;
+        let mut call2 = None;
+        let mut call3 = None;
+        if chankan1 {
+            channels[self.turn.next() as usize]
+                .tx
+                .send(GameRequest::new(
+                    self,
+                    Request::Call(vec![PossibleCall::Ron]),
+                ))
+                .expect("Sent!");
+        }
+        if chankan2 {
+            channels[self.turn.next().next() as usize]
+                .tx
+                .send(GameRequest::new(
+                    self,
+                    Request::Call(vec![PossibleCall::Ron]),
+                ))
+                .expect("Sent!");
+        }
+        if chankan3 {
+            channels[self.turn.next().next().next() as usize]
+                .tx
+                .send(GameRequest::new(
+                    self,
+                    Request::Call(vec![PossibleCall::Ron]),
+                ))
+                .expect("Sent!");
+        }
+        if chankan1 {
+            call1 = channels[self.turn.next() as usize]
+                .rx_call
+                .recv()
+                .expect("Received!");
+        }
+        if chankan2 {
+            call2 = channels[self.turn.next().next() as usize]
+                .rx_call
+                .recv()
+                .expect("Received!");
+        }
+        if chankan3 {
+            call3 = channels[self.turn.next().next().next() as usize]
+                .rx_call
+                .recv()
+                .expect("Received!");
+        }
         // NB: If a riichi player did not call possible ron on a chankan,
         // they will be in furiten.
+        self.riichi_furiten_check(hai);
+
+        let mut ron_calls = vec![];
+        if let Some(Call::Ron) = call1 {
+            ron_calls.push(self.turn.next());
+        }
+        if let Some(Call::Ron) = call2 {
+            ron_calls.push(self.turn.next().next());
+        }
+        if let Some(Call::Ron) = call3 {
+            ron_calls.push(self.turn.next().next().next());
+        }
+        if !ron_calls.is_empty() {
+            let result = self.agari(ron_calls, WinningMethod::Ron, Some(hai));
+            self.send_game_result(result.clone(), channels);
+            return Some(result);
+        }
+
+        // Do kakan
+        self.players[self.turn as usize].te.kakan(i);
         self.kan_after(self.turn, channels)
     }
 
@@ -1171,6 +1272,12 @@ impl Te {
                 None
             }
         })
+    }
+    pub fn get(&self, i: TehaiIndex) -> Option<Hai> {
+        match i {
+            TehaiIndex::Tehai(i) => self.hai.get(i).copied(),
+            TehaiIndex::Tsumohai => self.tsumo,
+        }
     }
     pub fn remove(&mut self, i: TehaiIndex) -> Hai {
         match i {

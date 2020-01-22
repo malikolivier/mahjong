@@ -52,6 +52,9 @@ impl<T: PartialOrd> OrderedList<T> {
     pub fn index(&self, element: &T) -> Option<usize> {
         self.container.iter().position(|x| x == element)
     }
+    pub fn get(&self, i: usize) -> Option<&T> {
+        self.container.get(i)
+    }
 }
 
 impl<'x, T: 'x + PartialOrd> OrderedList<T> {
