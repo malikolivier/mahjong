@@ -479,6 +479,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.jibun_no_kaze() {
             yakus.push(Yaku::JibunNoKaze);
         }
+        if self.chankan() {
+            yakus.push(Yaku::Chankan);
+        }
         // TODO (other yakus)
         if self.sanankou() {
             yakus.push(Yaku::SanAnkou);
@@ -751,6 +754,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         } else {
             false
         }
+    }
+
+    fn chankan(&self) -> bool {
+        self.agari_te.chankan
     }
 
     fn chiitoitsu(&self) -> bool {
