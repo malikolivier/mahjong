@@ -1016,7 +1016,58 @@ impl Game {
 
         // Player 2
         let left_player = &self.players[1];
-        // TODO: Called tiles not done
+        let mut offset = 0;
+        for fuuro in &left_player.te.fuuro {
+            match fuuro {
+                Fuuro::Shuntsu { own, taken, from } | Fuuro::Kootsu { own, taken, from } => {
+                    let tiles = match from {
+                        Direction::Left => [*taken, own[0], own[1]],
+                        Direction::Front => [own[0], *taken, own[1]],
+                        Direction::Right => [own[0], own[1], *taken],
+                    };
+                    grid[24 - offset - 2][0] = tiles[0].to_string();
+                    grid[24 - offset - 1][0] = tiles[1].to_string();
+                    grid[24 - offset][0] = tiles[2].to_string();
+                    offset += 4;
+                }
+                Fuuro::Kantsu(KantsuInner::Ankan { own }) => {
+                    grid[24 - offset - 3][0] = own[0].to_string();
+                    grid[24 - offset - 2][0] = Hai::back_char().to_string();
+                    grid[24 - offset - 1][0] = Hai::back_char().to_string();
+                    grid[24 - offset][0] = own[3].to_string();
+                    offset += 5;
+                }
+                Fuuro::Kantsu(KantsuInner::DaiMinkan { own, taken, from }) => {
+                    let tiles = match from {
+                        Direction::Left => [*taken, own[0], own[1], own[2]],
+                        Direction::Front => [own[0], *taken, own[1], own[2]],
+                        Direction::Right => [own[0], own[1], own[2], *taken],
+                    };
+                    grid[24 - offset - 3][0] = tiles[0].to_string();
+                    grid[24 - offset - 2][0] = tiles[1].to_string();
+                    grid[24 - offset - 1][0] = tiles[2].to_string();
+                    grid[24 - offset][0] = tiles[3].to_string();
+                    offset += 5;
+                }
+                Fuuro::Kantsu(KantsuInner::ShouMinkan {
+                    own,
+                    taken,
+                    added,
+                    from,
+                }) => {
+                    let (tiles, taken_pos) = match from {
+                        Direction::Left => ([*taken, own[0], own[1]], 2),
+                        Direction::Front => ([own[0], *taken, own[1]], 1),
+                        Direction::Right => ([own[0], own[1], *taken], 0),
+                    };
+                    grid[24 - offset - 2][0] = tiles[0].to_string();
+                    grid[24 - offset - 1][0] = tiles[1].to_string();
+                    grid[24 - offset][0] = tiles[2].to_string();
+                    grid[24 - offset - taken_pos][1] = added.to_string();
+                    offset += 4;
+                }
+            }
+        }
         for (i, hai) in left_player.te.hai.iter().enumerate() {
             grid[i + 5][0] = hai.to_string();
         }
