@@ -258,6 +258,7 @@ impl Game {
         new_game.dice[0] = rng.gen();
         new_game.dice[1] = rng.gen();
 
+        self.turn = new_game.turn;
         self.tsumo_cnt = new_game.tsumo_cnt;
         self.players = new_game.players;
         self.yama = new_game.yama;
