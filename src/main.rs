@@ -231,7 +231,7 @@ fn cursive_human() -> ai::AiServer {
                             let index = game
                                 .player_te_(tiles::Fon::Ton)
                                 .index(hai)
-                                .expect("Has ankan tile");
+                                .expect("Has kakan tile");
                             dialog = dialog.button(format!("Kakan {}", hai.to_string()), move |s| {
                                 tx_turn
                                     .send(ai::TurnResult::Kakan { index })
