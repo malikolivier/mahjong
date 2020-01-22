@@ -2102,12 +2102,17 @@ pub mod tests {
             Ok(Self {
                 wind: Fon::Ton,
                 turn: Fon::Ton,
+                kyoku: 0,
                 honba: 0,
                 tsumo_cnt: 0,
                 players,
                 yama: [None; 136],
                 hoo,
                 dice: data.dice,
+                score: [Score {
+                    score: 25000,
+                    riichi_bou: 0,
+                }; 4],
             })
         }
     }
