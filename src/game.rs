@@ -191,6 +191,7 @@ pub enum Request {
 pub struct EndGameResult {
     /// List of winners with their respective Yaku. If none, then ryukyoku
     pub winners: Vec<(Fon, Vec<Yaku>)>,
+    pub oya_agari: bool,
 }
 
 impl Game {
@@ -237,17 +238,22 @@ impl Game {
 
     pub fn play_hanchan<R: Rng>(&mut self, channels: [AiServer; 4], rng: &mut R) {
         loop {
-            self.play(&channels);
+            let result = self.play(&channels);
             // TODO: Move winds, add honba counter, etc.
             self.reset(rng);
         }
     }
 
     /// Play a kyoku
-    pub fn play(&mut self, channels: &[AiServer; 4]) {
+    pub fn play(&mut self, channels: &[AiServer; 4]) -> EndGameResult {
         self.deal();
 
-        while self.next_turn(channels) {}
+        loop {
+            if let Some(result) = self.next_turn(channels) {
+                // End a kyoku
+                return result;
+            }
+        }
     }
 
     /// Reset the game to the state before any tile is dealt
@@ -327,7 +333,7 @@ impl Game {
     }
 
     /// Returns a boolean whose value is false if this is the last turn
-    fn next_turn(&mut self, channels: &[AiServer; 4]) -> bool {
+    fn next_turn(&mut self, channels: &[AiServer; 4]) -> Option<EndGameResult> {
         // TODO: Ryukyoku conditions:
         //   - 4 riichi;
         //   - 4 kan from different players;
@@ -396,8 +402,7 @@ impl Game {
         match calls {
             [None, None, None] => {
                 if !self.draw() {
-                    self.ryukyoku();
-                    return false;
+                    return Some(self.ryukyoku());
                 }
                 self.do_turn(channels)
             }
@@ -418,8 +423,8 @@ impl Game {
                     .collect();
                 if !ron_calls.is_empty() {
                     let result = self.agari(ron_calls, WinningMethod::Ron);
-                    self.send_game_result(result, channels);
-                    false
+                    self.send_game_result(result.clone(), channels);
+                    Some(result)
                 } else {
                     if let Some(pon_kan_player_i) = calls.iter().position(|call| match call {
                         Some(Call::Pon) | Some(Call::Kan) => true,
@@ -462,8 +467,8 @@ impl Game {
 
     /// Ask client for what to do then do it.
     ///
-    /// Returns a boolean whose value is false if this is the last turn
-    fn do_turn(&mut self, channels: &[AiServer; 4]) -> bool {
+    /// Returns end game results if this turn ends the kyoku
+    fn do_turn(&mut self, channels: &[AiServer; 4]) -> Option<EndGameResult> {
         channels[self.turn as usize]
             .tx
             .send(GameRequest::new(
@@ -484,29 +489,33 @@ impl Game {
         match result {
             TurnResult::Tsumo => {
                 let result = self.agari(vec![self.turn], WinningMethod::Tsumo);
-                self.send_game_result(result, channels);
-                false
+                self.send_game_result(result.clone(), channels);
+                Some(result)
             }
-            TurnResult::Kyusyukyuhai => self.ryukyoku(),
+            TurnResult::Kyusyukyuhai => Some(self.ryukyoku()),
             TurnResult::Ankan { index } => self.announce_ankan(index, channels),
             TurnResult::Kakan { index } => self.announce_kakan(index, channels),
             TurnResult::ThrowHai { index, riichi } => {
                 self.throw_tile(self.turn, index, riichi);
                 self.turn = self.turn.next();
-                true
+                None
             }
         }
     }
 
-    fn ryukyoku(&mut self) -> bool {
+    fn ryukyoku(&mut self) -> EndGameResult {
         // TODO
-        false
+        EndGameResult {
+            winners: vec![],
+            oya_agari: false,
+        }
     }
 
     /// Ends a game player with the given players winning.
     fn agari(&mut self, players: Vec<Fon>, winning_method: WinningMethod) -> EndGameResult {
         let loser = self.turn.prev();
         let mut winners = vec![];
+        let mut oya_agari = false;
         for winner in players {
             let p = &self.players[winner as usize];
             let hupai = match winning_method {
@@ -521,8 +530,17 @@ impl Game {
             let points = AgariTe::from_te(&p.te, self, hupai, winning_method, winner).points();
             trace!("Points: {:?}", &points);
             winners.push((winner, points.0));
+
+            if winner == Fon::Ton {
+                oya_agari = true;
+            }
         }
-        EndGameResult { winners }
+
+        if oya_agari {
+            self.honba += 1;
+        }
+
+        EndGameResult { winners, oya_agari }
     }
 
     fn last_thrown_tile(&self) -> Option<Hai> {
@@ -643,7 +661,7 @@ impl Game {
     }
 
     /// Returns a boolean whose value is false if this is the last turn
-    pub fn call_kan(&mut self, p: Fon, channels: &[AiServer; 4]) -> bool {
+    pub fn call_kan(&mut self, p: Fon, channels: &[AiServer; 4]) -> Option<EndGameResult> {
         let hai = self.remove_last_thrown_tile();
         debug!(
             "Kan called by player {}. Last thrown tile: {}, thrown by player {}",
@@ -669,14 +687,22 @@ impl Game {
     }
 
     /// Returns a boolean whose value is false if this is the last turn
-    pub fn announce_ankan(&mut self, i: TehaiIndex, channels: &[AiServer; 4]) -> bool {
+    pub fn announce_ankan(
+        &mut self,
+        i: TehaiIndex,
+        channels: &[AiServer; 4],
+    ) -> Option<EndGameResult> {
         let te = &mut self.players[self.turn as usize].te;
         te.ankan(i);
         self.kan_after(self.turn, channels)
     }
 
     /// Returns a boolean whose value is false if this is the last turn
-    pub fn announce_kakan(&mut self, i: TehaiIndex, channels: &[AiServer; 4]) -> bool {
+    pub fn announce_kakan(
+        &mut self,
+        i: TehaiIndex,
+        channels: &[AiServer; 4],
+    ) -> Option<EndGameResult> {
         let te = &mut self.players[self.turn as usize].te;
         te.kakan(i);
         // TODO: Add chankan check!
@@ -686,7 +712,7 @@ impl Game {
     }
 
     /// Returns a boolean whose value is false if this is the last turn
-    pub fn kan_after(&mut self, p: Fon, channels: &[AiServer; 4]) -> bool {
+    pub fn kan_after(&mut self, p: Fon, channels: &[AiServer; 4]) -> Option<EndGameResult> {
         self.remove_ippatsu();
         let te = &mut self.players[p as usize].te;
         // Insert tsumohai in te, if any
