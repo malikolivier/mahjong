@@ -1,6 +1,7 @@
 (
     wind: '🀀',
     turn: '🀀',
+    kyoku: 0,
     honba: 0,
     tsumo_cnt: 30,
     players: ((
@@ -277,4 +278,22 @@
         ],
     )),
     dice: (Two, Six),
+    score: (
+        (
+            riichi_bou: 0,
+            score: 25000,
+        ),
+        (
+            riichi_bou: 0,
+            score: 25000,
+        ),
+        (
+            riichi_bou: 0,
+            score: 25000,
+        ),
+        (
+            riichi_bou: 0,
+            score: 25000,
+        ),
+    )
 )
