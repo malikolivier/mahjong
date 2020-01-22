@@ -244,6 +244,16 @@ impl Game {
         self.deal();
 
         while self.next_turn(&channels) {}
+
+        // TODO: Move winds, add honba counter, etc.
+        self.reset();
+        self.play(channels)
+    }
+
+    /// Reset the game before anything is dealt
+    fn reset(&mut self) {
+        // TODO: Should shuffle
+        *self = Game::default();
     }
 
     fn deal(&mut self) {
@@ -437,11 +447,6 @@ impl Game {
                     Request::DisplayScore(result.clone()),
                 ))
                 .expect("Sent!");
-        }
-
-        // Just wait when the game is finished
-        loop {
-            std::thread::sleep(std::time::Duration::from_secs(1));
         }
     }
 
