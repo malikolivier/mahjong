@@ -610,6 +610,8 @@ impl Game {
                 furiten: self.is_furiten(p),
                 machi: find_machi(self.players[p as usize].te.hai()),
             });
+            self.score[p as usize].riichi_bou += 1;
+            self.score[p as usize].score -= 1000;
             SuteHai::Riichi(hai)
         } else {
             if let Some(riichi) = self.players[p as usize].riichi.as_mut() {
@@ -1439,7 +1441,8 @@ impl Game {
         let mut throwable_tiles = vec![];
 
         let player = &self.players[self.turn as usize];
-        if player.riichi.is_none() && player.te.fuuro.is_empty() {
+        let enough_point = self.score[self.turn as usize].score >= 1000;
+        if enough_point && player.riichi.is_none() && player.te.fuuro.is_empty() {
             if let Some(tsumohai) = player.te.tsumo {
                 let mut te = vec![];
                 te.extend(player.te.hai.iter().cloned());
