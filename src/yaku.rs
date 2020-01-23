@@ -541,12 +541,27 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         yakus
     }
 
+    fn dora_count(&self) -> usize {
+        let mut dora = self.agari_te.game.dora();
+        if self.riichi() || self.daburii() {
+            dora.extend(self.agari_te.game.uradora());
+        }
+
+        let mut dora_cnt = 0;
+        for hai in self.agari_te.hai_all() {
+            if dora.contains(&hai) {
+                dora_cnt += 1;
+            }
+        }
+        dora_cnt
+    }
+
     fn han(&self) -> YakuValue {
         let closed = self.closed();
-        // TODO: Add dora and uradora
+        let dora_cnt = self.dora_count();
         self.yaku()
             .iter()
-            .fold(YakuValue::Han(0), |acc, yaku| acc + yaku.han(closed))
+            .fold(YakuValue::Han(dora_cnt), |acc, yaku| acc + yaku.han(closed))
     }
 
     /// From https://majandofu.com/fu-calculation#001
