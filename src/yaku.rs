@@ -575,6 +575,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.junchan() {
             yakus.push(Yaku::Junchan);
         }
+        if self.ryanpeikou() {
+            yakus.push(Yaku::Ryanpeikou);
+        }
         // TODO (other yakus)
 
         yakus
@@ -1044,6 +1047,32 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
                 toitsu.iter().all(|h| h.is_1_9())
                     && mentsu.all(|m| Mentsu_::is_extremity(&m))
                     && self.agari_te.hai_all().all(Hai::is_suuhai)
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    fn ryanpeikou(&self) -> bool {
+        if self.closed() {
+            if let WinningCombination::Normal { mentsu, .. } = &self.combination {
+                use std::collections::hash_map::Entry;
+                let mut cnt = std::collections::HashMap::new();
+                for m in mentsu {
+                    if !is_kootsu(m) {
+                        match cnt.entry(m) {
+                            Entry::Occupied(mut e) => {
+                                *e.get_mut() += 1;
+                            }
+                            Entry::Vacant(e) => {
+                                e.insert(1);
+                            }
+                        }
+                    }
+                }
+                cnt.iter().filter(|(_, n)| **n >= 2).count() == 2
             } else {
                 false
             }
