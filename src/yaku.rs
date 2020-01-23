@@ -446,6 +446,11 @@ impl Mentsu_ {
             Anshun(_) | Minshun(_) => false,
         }
     }
+
+    /// Return true if this mentsu is Ankou, Minkou, Ankan or Minkan
+    fn count_as_kootsu(&self) -> bool {
+        self.count_as_kootsu_with(|_| true)
+    }
 }
 
 impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
@@ -503,6 +508,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         }
         if self.chiitoitsu() {
             yakus.push(Yaku::Chiitoitsu);
+        }
+        if self.toitoi() {
+            yakus.push(Yaku::Toitoi);
         }
         // TODO (other yakus)
         if self.sanankou() {
@@ -807,6 +815,14 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     fn chiitoitsu(&self) -> bool {
         if let WinningCombination::Chiitoitsu(_) = self.combination {
             true
+        } else {
+            false
+        }
+    }
+
+    fn toitoi(&self) -> bool {
+        if let Some(mut mentsu) = self.mentsu() {
+            mentsu.all(|m| Mentsu_::count_as_kootsu(&m))
         } else {
             false
         }
