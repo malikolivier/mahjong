@@ -166,6 +166,19 @@ impl Hai {
         !self.is_suuhai()
     }
 
+    pub fn is_1_9(self) -> bool {
+        match self {
+            Hai::Suu(SuuHai {
+                value: Values::Ii, ..
+            })
+            | Hai::Suu(SuuHai {
+                value: Values::Kyuu,
+                ..
+            }) => true,
+            _ => false,
+        }
+    }
+
     pub fn is_jihai_or_1_9(self) -> bool {
         match self {
             Hai::Suu(SuuHai {

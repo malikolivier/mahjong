@@ -572,6 +572,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.honitsu() {
             yakus.push(Yaku::HonItsu);
         }
+        if self.junchan() {
+            yakus.push(Yaku::Junchan);
+        }
         // TODO (other yakus)
 
         yakus
@@ -982,6 +985,7 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if let WinningCombination::Normal { toitsu, .. } = self.combination {
             if let Some(mut mentsu) = self.mentsu() {
                 !self.honroutou()
+                    && !self.junchan()
                     && toitsu.iter().all(|h| h.is_jihai_or_1_9())
                     && mentsu.all(|m| Mentsu_::is_extremity(&m))
             } else {
@@ -1032,6 +1036,20 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             }
         }
         suu_found.is_some() && has_jihai
+    }
+
+    fn junchan(&self) -> bool {
+        if let WinningCombination::Normal { toitsu, .. } = self.combination {
+            if let Some(mut mentsu) = self.mentsu() {
+                toitsu.iter().all(|h| h.is_1_9())
+                    && mentsu.all(|m| Mentsu_::is_extremity(&m))
+                    && self.agari_te.hai_all().all(Hai::is_suuhai)
+            } else {
+                false
+            }
+        } else {
+            false
+        }
     }
 }
 
@@ -1598,7 +1616,7 @@ mod tests {
         let yaku = yaku_from_str_ron("🀇🀈🀉🀙🀙🀚🀛🀐🀑🀒🀐🀑🀒", "🀙").unwrap();
         assert_eq!(
             yaku,
-            vec![Yaku::Iipeikou, Yaku::SanshokuDoujun, Yaku::Chanta]
+            vec![Yaku::Iipeikou, Yaku::SanshokuDoujun, Yaku::Junchan]
         );
     }
 
@@ -1650,6 +1668,12 @@ mod tests {
             yaku,
             vec![Yaku::Menzentsumo, Yaku::Chun, Yaku::Ittsuu, Yaku::HonItsu]
         );
+    }
+
+    #[test]
+    fn test_junchan() {
+        let yaku = yaku_from_str_ron("🀏🀏🀐🀐🀐🀖🀗🀘🀙🀚🀛🀡🀡", "🀡").unwrap();
+        assert_eq!(yaku, vec![Yaku::Junchan],);
     }
 
     #[test]
