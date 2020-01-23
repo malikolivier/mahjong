@@ -188,6 +188,13 @@ impl Hai {
         }
     }
 
+    pub fn is_sangen(self) -> bool {
+        match self {
+            Hai::Ji(JiHai::Sangen(_)) => true,
+            _ => false,
+        }
+    }
+
     pub fn is_haku(self) -> bool {
         match self {
             Hai::Ji(JiHai::Sangen(Sangen::Haku)) => true,

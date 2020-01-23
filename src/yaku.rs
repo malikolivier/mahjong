@@ -555,6 +555,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.chanta() {
             yakus.push(Yaku::Chanta);
         }
+        if self.shousangen() {
+            yakus.push(Yaku::Shousangen);
+        }
         // TODO (other yakus)
 
         yakus
@@ -970,6 +973,21 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
                 !self.honroutou()
                     && toitsu.iter().all(|h| h.is_jihai_or_1_9())
                     && mentsu.all(|m| Mentsu_::is_extremity(&m))
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    }
+
+    fn shousangen(&self) -> bool {
+        if let WinningCombination::Normal { toitsu, .. } = self.combination {
+            if let Some(mentsu) = self.mentsu() {
+                let sangenpai_cnt = mentsu
+                    .filter(|m| m.count_as_kootsu_with(Hai::is_sangen))
+                    .count();
+                sangenpai_cnt == 2 && toitsu[0].is_sangen()
             } else {
                 false
             }
@@ -1570,6 +1588,15 @@ mod tests {
     fn test_chanta() {
         let yaku = yaku_from_str_ron("🀇🀈🀉🀍🀎🀏🀙🀚🀛🀃🀃🀆🀆", "🀆").unwrap();
         assert_eq!(yaku, vec![Yaku::Haku, Yaku::Chanta]);
+    }
+
+    #[test]
+    fn test_shousangen() {
+        let yaku = yaku_from_str_ron("🀇🀈🀉🀃🀃🀃🀆🀆🀅🀅🀅🀄🀄", "🀆").unwrap();
+        assert_eq!(
+            yaku,
+            vec![Yaku::Haku, Yaku::Hatsu, Yaku::Chanta, Yaku::Shousangen]
+        );
     }
 
     #[test]
