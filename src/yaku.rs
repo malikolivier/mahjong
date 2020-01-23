@@ -463,6 +463,19 @@ impl Mentsu_ {
             Anshun(_) | Minshun(_) => None,
         }
     }
+
+    fn is_extremity(&self) -> bool {
+        use Mentsu_::*;
+        match self {
+            Ankou([hai, _, _])
+            | Minkou([hai, _, _])
+            | Ankan([hai, _, _, _])
+            | Minkan([hai, _, _, _]) => hai.is_jihai_or_1_9(),
+            Anshun([hai1, hai2, hai3]) | Minshun([hai1, hai2, hai3]) => {
+                hai1.is_jihai_or_1_9() || hai2.is_jihai_or_1_9() || hai3.is_jihai_or_1_9()
+            }
+        }
+    }
 }
 
 impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
@@ -538,6 +551,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         }
         if self.ittsuu() {
             yakus.push(Yaku::Ittsuu);
+        }
+        if self.chanta() {
+            yakus.push(Yaku::Chanta);
         }
         // TODO (other yakus)
 
@@ -943,6 +959,20 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             suuhai_grid
                 .iter()
                 .any(|[ii, _, _, suu, _, _, chii, _, _]| *ii && *suu && *chii)
+        } else {
+            false
+        }
+    }
+
+    fn chanta(&self) -> bool {
+        if let WinningCombination::Normal { toitsu, .. } = self.combination {
+            if let Some(mut mentsu) = self.mentsu() {
+                !self.honroutou()
+                    && toitsu.iter().all(|h| h.is_jihai_or_1_9())
+                    && mentsu.all(|m| Mentsu_::is_extremity(&m))
+            } else {
+                false
+            }
         } else {
             false
         }
@@ -1510,7 +1540,10 @@ mod tests {
     #[test]
     fn test_sanshokudoujun() {
         let yaku = yaku_from_str_ron("🀇🀈🀉🀙🀙🀚🀛🀐🀑🀒🀐🀑🀒", "🀙").unwrap();
-        assert_eq!(yaku, vec![Yaku::Iipeikou, Yaku::SanshokuDoujun]);
+        assert_eq!(
+            yaku,
+            vec![Yaku::Iipeikou, Yaku::SanshokuDoujun, Yaku::Chanta]
+        );
     }
 
     #[test]
@@ -1531,6 +1564,12 @@ mod tests {
     fn test_ittsuu() {
         let yaku = yaku_from_str_ron("🀇🀈🀉🀊🀋🀌🀍🀎🀏🀙🀚🀛🀜", "🀜").unwrap();
         assert_eq!(yaku, vec![Yaku::Ittsuu]);
+    }
+
+    #[test]
+    fn test_chanta() {
+        let yaku = yaku_from_str_ron("🀇🀈🀉🀍🀎🀏🀙🀚🀛🀃🀃🀆🀆", "🀆").unwrap();
+        assert_eq!(yaku, vec![Yaku::Haku, Yaku::Chanta]);
     }
 
     #[test]
