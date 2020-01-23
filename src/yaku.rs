@@ -501,6 +501,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.daburii() {
             yakus.push(Yaku::Daburii);
         }
+        if self.chiitoitsu() {
+            yakus.push(Yaku::Chiitoitsu);
+        }
         // TODO (other yakus)
         if self.sanankou() {
             yakus.push(Yaku::SanAnkou);
