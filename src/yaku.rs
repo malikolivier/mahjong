@@ -492,6 +492,12 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.rinshankaihou() {
             yakus.push(Yaku::RinshanKaihou);
         }
+        if self.haiteiraoyue() {
+            yakus.push(Yaku::Haiteiraoyue);
+        }
+        if self.houteiraoyui() {
+            yakus.push(Yaku::Houteiraoyui);
+        }
         // TODO (other yakus)
         if self.sanankou() {
             yakus.push(Yaku::SanAnkou);
@@ -772,6 +778,16 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
 
     fn rinshankaihou(&self) -> bool {
         self.agari_te.rinshankaihou
+    }
+
+    fn haiteiraoyue(&self) -> bool {
+        self.agari_te.method == WinningMethod::Tsumo
+            && self.agari_te.game.next_tsumohai_index().is_none()
+    }
+
+    fn houteiraoyui(&self) -> bool {
+        self.agari_te.method == WinningMethod::Ron
+            && self.agari_te.game.next_tsumohai_index().is_none()
     }
 
     fn chiitoitsu(&self) -> bool {

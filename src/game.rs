@@ -230,7 +230,7 @@ impl Game {
         break_point
     }
 
-    fn next_tsumohai_index(&self) -> Option<usize> {
+    pub fn next_tsumohai_index(&self) -> Option<usize> {
         let break_point = self.wall_break_index();
         let tsumo_cnt_max = 16 * 4 + 1 - self.kan_count();
         if self.tsumo_cnt > tsumo_cnt_max {
