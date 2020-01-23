@@ -1673,7 +1673,7 @@ mod tests {
     #[test]
     fn test_junchan() {
         let yaku = yaku_from_str_ron("🀏🀏🀐🀐🀐🀖🀗🀘🀙🀚🀛🀡🀡", "🀡").unwrap();
-        assert_eq!(yaku, vec![Yaku::Junchan],);
+        assert_eq!(yaku, vec![Yaku::Junchan]);
     }
 
     #[test]
