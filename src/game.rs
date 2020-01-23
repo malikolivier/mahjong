@@ -467,7 +467,7 @@ impl Game {
                 if !self.draw() {
                     return Some(self.ryukyoku());
                 }
-                self.do_turn(channels)
+                self.do_turn(channels, false)
             }
             _ => {
                 // If any has Ron do single, double or triple ron score calculation.
@@ -485,7 +485,7 @@ impl Game {
                     })
                     .collect();
                 if !ron_calls.is_empty() {
-                    let result = self.agari(ron_calls, WinningMethod::Ron, None);
+                    let result = self.agari(ron_calls, WinningMethod::Ron, None, false);
                     self.send_game_result(result.clone(), channels);
                     Some(result)
                 } else {
@@ -501,14 +501,14 @@ impl Game {
                         match calls[pon_kan_player_i] {
                             Some(Call::Pon) => {
                                 self.call_pon(caller);
-                                self.do_turn(channels)
+                                self.do_turn(channels, false)
                             }
                             Some(Call::Kan) => self.call_kan(caller, channels),
                             _ => unreachable!("Expect kan or pon"),
                         }
                     } else if let Some(Call::Chi { index }) = call1 {
                         self.call_chi(self.turn, index);
-                        self.do_turn(channels)
+                        self.do_turn(channels, false)
                     } else {
                         unreachable!("Impossible state!");
                     }
@@ -534,7 +534,7 @@ impl Game {
     /// Ask client for what to do then do it.
     ///
     /// Returns end game results if this turn ends the kyoku
-    fn do_turn(&mut self, channels: &[AiServer; 4]) -> Option<KyokuResult> {
+    fn do_turn(&mut self, channels: &[AiServer; 4], rinshankaihou: bool) -> Option<KyokuResult> {
         channels[self.turn as usize]
             .tx
             .send(GameRequest::new(
@@ -555,7 +555,7 @@ impl Game {
             .expect("Received!");
         match result {
             TurnResult::Tsumo => {
-                let result = self.agari(vec![self.turn], WinningMethod::Tsumo, None);
+                let result = self.agari(vec![self.turn], WinningMethod::Tsumo, None, rinshankaihou);
                 self.send_game_result(result.clone(), channels);
                 Some(result)
             }
@@ -581,7 +581,10 @@ impl Game {
         players: Vec<Fon>,
         winning_method: WinningMethod,
         chankan: Option<Hai>,
+        rinshankaihou: bool,
     ) -> KyokuResult {
+        // Do not allow rinshankaihou and chankan flags to be set at the same time
+        assert!(!(rinshankaihou && chankan.is_some()));
         let loser = self.turn.prev();
         let mut winners = vec![];
         let mut oya_agari = false;
@@ -602,6 +605,7 @@ impl Game {
             );
             let points = AgariTe::from_te(&p.te, self, hupai, winning_method, winner)
                 .chankan(chankan.is_some())
+                .rinshankaihou(rinshankaihou)
                 .points();
             trace!("Points: {:?}", &points);
             winners.push((winner, points.0));
@@ -874,7 +878,7 @@ impl Game {
         if !ron_calls.is_empty() {
             // Abort kakan!
             self.players[self.turn as usize].te.abort_kakan(hai);
-            let result = self.agari(ron_calls, WinningMethod::Ron, Some(hai));
+            let result = self.agari(ron_calls, WinningMethod::Ron, Some(hai), false);
             self.send_game_result(result.clone(), channels);
             return Some(result);
         }
@@ -894,7 +898,7 @@ impl Game {
         // Draw from mont intouchable and do a standard turn
         self.draw_from_rinshan(p);
         self.turn = p;
-        self.do_turn(channels)
+        self.do_turn(channels, true)
     }
 
     pub fn to_string_repr(&self) -> String {

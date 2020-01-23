@@ -13,6 +13,8 @@ pub struct AgariTe<'t, 'g> {
     wind: Fon,
     /// Ron on kakan (steal a kan)
     chankan: bool,
+    /// Tsumo on kan supplementary tile
+    rinshankaihou: bool,
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
@@ -318,11 +320,16 @@ impl<'t, 'g> AgariTe<'t, 'g> {
             method,
             wind,
             chankan: false,
+            rinshankaihou: false,
         }
     }
 
     pub fn chankan(mut self, chankan: bool) -> Self {
         self.chankan = chankan;
+        self
+    }
+    pub fn rinshankaihou(mut self, rinshankaihou: bool) -> Self {
+        self.rinshankaihou = rinshankaihou;
         self
     }
 
@@ -481,6 +488,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         }
         if self.chankan() {
             yakus.push(Yaku::Chankan);
+        }
+        if self.rinshankaihou() {
+            yakus.push(Yaku::RinshanKaihou);
         }
         // TODO (other yakus)
         if self.sanankou() {
@@ -758,6 +768,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
 
     fn chankan(&self) -> bool {
         self.agari_te.chankan
+    }
+
+    fn rinshankaihou(&self) -> bool {
+        self.agari_te.rinshankaihou
     }
 
     fn chiitoitsu(&self) -> bool {
