@@ -872,7 +872,8 @@ impl Game {
             ron_calls.push(self.turn.next().next().next());
         }
         if !ron_calls.is_empty() {
-            // FIXME: Abort kakan!
+            // Abort kakan!
+            self.players[self.turn as usize].te.abort_kakan(hai);
             let result = self.agari(ron_calls, WinningMethod::Ron, Some(hai));
             self.send_game_result(result.clone(), channels);
             return Some(result);
@@ -1477,6 +1478,27 @@ impl Te {
             })
         } else {
             unreachable!("Expect kootsu!");
+        }
+    }
+
+    /// Remove a kakan in this te (called in case of chankan)
+    pub fn abort_kakan(&mut self, hai: Hai) {
+        let shominkan_index = self
+            .fuuro
+            .iter()
+            .position(|fuuro| {
+                if let Fuuro::Kantsu(KantsuInner::ShouMinkan { added, .. }) = fuuro {
+                    *added == hai
+                } else {
+                    false
+                }
+            })
+            .expect("Has shominkan");
+        let shominkan = self.fuuro.remove(shominkan_index);
+        if let Fuuro::Kantsu(KantsuInner::ShouMinkan { added, .. }) = shominkan {
+            self.hai.insert(added);
+        } else {
+            unreachable!("Expect shominkan!");
         }
     }
 
