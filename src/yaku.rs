@@ -533,6 +533,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.sanshokudoujun() {
             yakus.push(Yaku::SanshokuDoujun);
         }
+        if self.honroutou() {
+            yakus.push(Yaku::Honroutou);
+        }
         // TODO (other yakus)
 
         yakus
@@ -899,6 +902,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         } else {
             false
         }
+    }
+
+    fn honroutou(&self) -> bool {
+        self.agari_te.hai_all().all(Hai::is_jihai_or_1_9)
     }
 }
 
@@ -1464,6 +1471,20 @@ mod tests {
     fn test_sanshokudoujun() {
         let yaku = yaku_from_str_ron("🀇🀈🀉🀙🀙🀚🀛🀐🀑🀒🀐🀑🀒", "🀙").unwrap();
         assert_eq!(yaku, vec![Yaku::Iipeikou, Yaku::SanshokuDoujun]);
+    }
+
+    #[test]
+    fn test_sanankou_toitoi_sanshokudoukou_honroutou() {
+        let yaku = yaku_from_str_ron("🀇🀇🀇🀏🀏🀏🀙🀙🀐🀐🀐🀅🀅", "🀙").unwrap();
+        assert_eq!(
+            yaku,
+            vec![
+                Yaku::Toitoi,
+                Yaku::SanAnkou,
+                Yaku::SanshokuDoukou,
+                Yaku::Honroutou
+            ]
+        );
     }
 
     #[test]
