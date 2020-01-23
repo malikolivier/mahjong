@@ -578,6 +578,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.ryanpeikou() {
             yakus.push(Yaku::Ryanpeikou);
         }
+        if self.chinitsu() {
+            yakus.push(Yaku::ChinItsu);
+        }
         // TODO (other yakus)
 
         yakus
@@ -1080,6 +1083,23 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         } else {
             false
         }
+    }
+
+    fn chinitsu(&self) -> bool {
+        let mut suu_found = None;
+        for hai in self.agari_te.hai_all() {
+            match hai {
+                Hai::Suu(SuuHai { suu, .. }) => {
+                    if suu_found.is_none() {
+                        suu_found = Some(suu);
+                    } else if suu_found != Some(suu) {
+                        return false;
+                    }
+                }
+                _ => return false,
+            }
+        }
+        suu_found.is_some()
     }
 }
 
@@ -1716,6 +1736,12 @@ mod tests {
     fn test_ryanpeikou_edge_case() {
         let yaku = yaku_from_str_ron("🀌🀌🀌🀌🀍🀍🀍🀍🀎🀎🀎🀎🀃", "🀃").unwrap();
         assert_eq!(yaku, vec![Yaku::HonItsu, Yaku::Ryanpeikou]);
+    }
+
+    #[test]
+    fn test_chinitsu() {
+        let yaku = yaku_from_str_ron("🀇🀌🀌🀌🀌🀍🀍🀍🀍🀎🀎🀎🀎", "🀇").unwrap();
+        assert_eq!(yaku, vec![Yaku::Ryanpeikou, Yaku::ChinItsu]);
     }
 
     #[test]
