@@ -1712,6 +1712,12 @@ mod tests {
     }
 
     #[test]
+    fn test_ryanpeikou_edge_case() {
+        let yaku = yaku_from_str_ron("🀌🀌🀌🀌🀍🀍🀍🀍🀎🀎🀎🀎🀃", "🀃").unwrap();
+        assert_eq!(yaku, vec![Yaku::HonItsu, Yaku::Ryanpeikou]);
+    }
+
+    #[test]
     fn test_pinfu_tsumo_fu() {
         let fu = fu_from_str_tsumo("🀇🀇🀈🀈🀉🀉🀊🀋🀌🀍🀍🀚🀛", "🀙").unwrap();
         assert_eq!(fu, 20);
