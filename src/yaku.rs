@@ -476,6 +476,14 @@ impl Mentsu_ {
             }
         }
     }
+
+    fn is_kan(&self) -> bool {
+        use Mentsu_::*;
+        match self {
+            Ankan(_) | Minkan(_) => true,
+            Ankou(_) | Minkou(_) | Anshun(_) | Minshun(_) => false,
+        }
+    }
 }
 
 impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
@@ -557,6 +565,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         }
         if self.shousangen() {
             yakus.push(Yaku::Shousangen);
+        }
+        if self.sankantsu() {
+            yakus.push(Yaku::Sankantsu);
         }
         // TODO (other yakus)
 
@@ -991,6 +1002,15 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             } else {
                 false
             }
+        } else {
+            false
+        }
+    }
+
+    fn sankantsu(&self) -> bool {
+        if let Some(mentsu) = self.mentsu() {
+            let kan_cnt = mentsu.filter(|m| m.is_kan()).count();
+            kan_cnt == 3
         } else {
             false
         }
