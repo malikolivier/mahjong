@@ -1391,6 +1391,12 @@ mod tests {
     }
 
     #[test]
+    fn test_sanankou_toitoi() {
+        let yaku = yaku_from_str_ron("🀇🀇🀇🀈🀈🀈🀉🀉🀉🀍🀍🀙🀙", "🀙").unwrap();
+        assert_eq!(yaku, vec![Yaku::Toitoi, Yaku::SanAnkou]);
+    }
+
+    #[test]
     fn test_pinfu_tsumo_fu() {
         let fu = fu_from_str_tsumo("🀇🀇🀈🀈🀉🀉🀊🀋🀌🀍🀍🀚🀛", "🀙").unwrap();
         assert_eq!(fu, 20);
