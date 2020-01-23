@@ -536,6 +536,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.honroutou() {
             yakus.push(Yaku::Honroutou);
         }
+        if self.ittsuu() {
+            yakus.push(Yaku::Ittsuu);
+        }
         // TODO (other yakus)
 
         yakus
@@ -921,6 +924,28 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
 
     fn honroutou(&self) -> bool {
         self.agari_te.hai_all().all(Hai::is_jihai_or_1_9)
+    }
+
+    fn ittsuu(&self) -> bool {
+        use super::tiles::SuuHai;
+        if let Some(mentsu) = self.mentsu() {
+            let mut suuhai_grid = [[false; 9]; 3];
+            for m in mentsu {
+                match m {
+                    Mentsu_::Anshun([hai1, hai2, hai3]) | Mentsu_::Minshun([hai1, hai2, hai3]) => {
+                        if let Hai::Suu(SuuHai { value, suu, .. }) = hai1.min(hai2).min(hai3) {
+                            suuhai_grid[suu as usize][value as usize - 1] = true;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            suuhai_grid
+                .iter()
+                .any(|[ii, _, _, suu, _, _, chii, _, _]| *ii && *suu && *chii)
+        } else {
+            false
+        }
     }
 }
 
@@ -1500,6 +1525,12 @@ mod tests {
                 Yaku::Honroutou
             ]
         );
+    }
+
+    #[test]
+    fn test_ittsuu() {
+        let yaku = yaku_from_str_ron("🀇🀈🀉🀊🀋🀌🀍🀎🀏🀙🀚🀛🀜", "🀜").unwrap();
+        assert_eq!(yaku, vec![Yaku::Ittsuu]);
     }
 
     #[test]
