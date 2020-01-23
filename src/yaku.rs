@@ -451,6 +451,18 @@ impl Mentsu_ {
     fn count_as_kootsu(&self) -> bool {
         self.count_as_kootsu_with(|_| true)
     }
+
+    /// Return kootsu's tile (if it is kootsu)
+    fn as_kootsu_hai(&self) -> Option<Hai> {
+        use Mentsu_::*;
+        match self {
+            Ankou([hai, _, _])
+            | Minkou([hai, _, _])
+            | Ankan([hai, _, _, _])
+            | Minkan([hai, _, _, _]) => Some(*hai),
+            Anshun(_) | Minshun(_) => None,
+        }
+    }
 }
 
 impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
@@ -512,9 +524,11 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.toitoi() {
             yakus.push(Yaku::Toitoi);
         }
-        // TODO (other yakus)
         if self.sanankou() {
             yakus.push(Yaku::SanAnkou);
+        }
+        if self.sanshokudoukou() {
+            yakus.push(Yaku::SanshokuDoukou);
         }
         // TODO (other yakus)
 
@@ -838,6 +852,25 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
                 }
             }
             ankou_cnt == 3
+        } else {
+            false
+        }
+    }
+
+    fn sanshokudoukou(&self) -> bool {
+        use super::tiles::SuuHai;
+        if let Some(mentsu) = self.mentsu() {
+            let mut suuhai_grid = [[false; 3]; 9];
+            for m in mentsu {
+                if let Some(hai) = m.as_kootsu_hai() {
+                    if let Hai::Suu(SuuHai { value, suu, .. }) = hai {
+                        suuhai_grid[value as usize - 1][suu as usize] = true;
+                    }
+                }
+            }
+            suuhai_grid
+                .iter()
+                .any(|[wan, pin, sou]| *wan && *pin && *sou)
         } else {
             false
         }
@@ -1394,6 +1427,12 @@ mod tests {
     fn test_sanankou_toitoi() {
         let yaku = yaku_from_str_ron("🀇🀇🀇🀈🀈🀈🀉🀉🀉🀍🀍🀙🀙", "🀙").unwrap();
         assert_eq!(yaku, vec![Yaku::Toitoi, Yaku::SanAnkou]);
+    }
+
+    #[test]
+    fn test_sanshokudoukou() {
+        let yaku = yaku_from_str_ron("🀇🀇🀇🀇🀈🀉🀍🀍🀙🀙🀐🀐🀐", "🀙").unwrap();
+        assert_eq!(yaku, vec![Yaku::SanshokuDoukou]);
     }
 
     #[test]

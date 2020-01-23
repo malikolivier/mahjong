@@ -27,9 +27,9 @@ const VALUES: [Values; 9] = [
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum Suu {
-    Wan,
-    Pin,
-    Sou,
+    Wan = 0,
+    Pin = 1,
+    Sou = 2,
 }
 const SUU: [Suu; 3] = [Suu::Wan, Suu::Pin, Suu::Sou];
 
