@@ -798,7 +798,7 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
                         }
                     }
                 }
-                cnt.iter().filter(|(_, n)| **n >= 2).count() == 1
+                cnt.iter().filter(|(_, n)| **n == 2 || **n == 3).count() == 1
             } else {
                 false
             }
@@ -1073,6 +1073,7 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
                     }
                 }
                 cnt.iter().filter(|(_, n)| **n >= 2).count() == 2
+                    || cnt.iter().filter(|(_, n)| **n == 4).count() == 1
             } else {
                 false
             }
