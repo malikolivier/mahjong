@@ -260,6 +260,10 @@ impl Game {
         true
     }
 
+    fn first_uninterrupted_turn(&self) -> bool {
+        self.tsumo_cnt <= 4 && self.players.iter().all(|p| p.te.fuuro.is_empty())
+    }
+
     pub fn play_hanchan<R: Rng>(&mut self, mut channels: [AiServer; 4], rng: &mut R) {
         loop {
             let result = self.play(&channels);
@@ -642,6 +646,7 @@ impl Game {
         self.hoo[p as usize].river.push(if riichi {
             self.players[p as usize].riichi = Some(Riichi {
                 ippatsu: true,
+                double: self.first_uninterrupted_turn(),
                 furiten: self.is_furiten(p),
                 machi: find_machi(self.players[p as usize].te.hai()),
             });
@@ -1323,6 +1328,7 @@ pub struct Player {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Riichi {
     pub ippatsu: bool,
+    pub double: bool,
     machi: Vec<Hai>,
     furiten: bool,
 }

@@ -498,6 +498,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.houteiraoyui() {
             yakus.push(Yaku::Houteiraoyui);
         }
+        if self.daburii() {
+            yakus.push(Yaku::Daburii);
+        }
         // TODO (other yakus)
         if self.sanankou() {
             yakus.push(Yaku::SanAnkou);
@@ -675,7 +678,7 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     }
 
     fn riichi(&self) -> bool {
-        self.agari_te.game.player_is_riichi(self.agari_te.wind)
+        self.agari_te.game.player_is_riichi(self.agari_te.wind) && !self.daburii()
     }
 
     fn ippatsu(&self) -> bool {
@@ -788,6 +791,14 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     fn houteiraoyui(&self) -> bool {
         self.agari_te.method == WinningMethod::Ron
             && self.agari_te.game.next_tsumohai_index().is_none()
+    }
+
+    fn daburii(&self) -> bool {
+        if let Some(riichi) = self.agari_te.game.player_riichi(self.agari_te.wind) {
+            riichi.double
+        } else {
+            false
+        }
     }
 
     fn chiitoitsu(&self) -> bool {
