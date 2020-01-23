@@ -530,6 +530,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.sanshokudoukou() {
             yakus.push(Yaku::SanshokuDoukou);
         }
+        if self.sanshokudoujun() {
+            yakus.push(Yaku::SanshokuDoujun);
+        }
         // TODO (other yakus)
 
         yakus
@@ -866,6 +869,28 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
                     if let Hai::Suu(SuuHai { value, suu, .. }) = hai {
                         suuhai_grid[value as usize - 1][suu as usize] = true;
                     }
+                }
+            }
+            suuhai_grid
+                .iter()
+                .any(|[wan, pin, sou]| *wan && *pin && *sou)
+        } else {
+            false
+        }
+    }
+
+    fn sanshokudoujun(&self) -> bool {
+        use super::tiles::SuuHai;
+        if let Some(mentsu) = self.mentsu() {
+            let mut suuhai_grid = [[false; 3]; 9];
+            for m in mentsu {
+                match m {
+                    Mentsu_::Anshun([hai1, hai2, hai3]) | Mentsu_::Minshun([hai1, hai2, hai3]) => {
+                        if let Hai::Suu(SuuHai { value, suu, .. }) = hai1.min(hai2).min(hai3) {
+                            suuhai_grid[value as usize - 1][suu as usize] = true;
+                        }
+                    }
+                    _ => {}
                 }
             }
             suuhai_grid
@@ -1433,6 +1458,12 @@ mod tests {
     fn test_sanshokudoukou() {
         let yaku = yaku_from_str_ron("🀇🀇🀇🀇🀈🀉🀍🀍🀙🀙🀐🀐🀐", "🀙").unwrap();
         assert_eq!(yaku, vec![Yaku::SanshokuDoukou]);
+    }
+
+    #[test]
+    fn test_sanshokudoujun() {
+        let yaku = yaku_from_str_ron("🀇🀈🀉🀙🀙🀚🀛🀐🀑🀒🀐🀑🀒", "🀙").unwrap();
+        assert_eq!(yaku, vec![Yaku::Iipeikou, Yaku::SanshokuDoujun]);
     }
 
     #[test]
