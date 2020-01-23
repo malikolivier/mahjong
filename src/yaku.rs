@@ -1,7 +1,7 @@
 use log::{debug, trace};
 
 use super::game::{Fuuro, Game, KantsuInner, Te};
-use super::tiles::{Fon, Hai};
+use super::tiles::{Fon, Hai, SuuHai};
 
 #[derive(Debug, Copy, Clone)]
 pub struct AgariTe<'t, 'g> {
@@ -569,6 +569,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.sankantsu() {
             yakus.push(Yaku::Sankantsu);
         }
+        if self.honitsu() {
+            yakus.push(Yaku::HonItsu);
+        }
         // TODO (other yakus)
 
         yakus
@@ -912,7 +915,6 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     }
 
     fn sanshokudoukou(&self) -> bool {
-        use super::tiles::SuuHai;
         if let Some(mentsu) = self.mentsu() {
             let mut suuhai_grid = [[false; 3]; 9];
             for m in mentsu {
@@ -931,7 +933,6 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     }
 
     fn sanshokudoujun(&self) -> bool {
-        use super::tiles::SuuHai;
         if let Some(mentsu) = self.mentsu() {
             let mut suuhai_grid = [[false; 3]; 9];
             for m in mentsu {
@@ -957,7 +958,6 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     }
 
     fn ittsuu(&self) -> bool {
-        use super::tiles::SuuHai;
         if let Some(mentsu) = self.mentsu() {
             let mut suuhai_grid = [[false; 9]; 3];
             for m in mentsu {
@@ -1014,6 +1014,24 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         } else {
             false
         }
+    }
+
+    fn honitsu(&self) -> bool {
+        let mut has_jihai = false;
+        let mut suu_found = None;
+        for hai in self.agari_te.hai_all() {
+            match hai {
+                Hai::Ji(_) => has_jihai = true,
+                Hai::Suu(SuuHai { suu, .. }) => {
+                    if suu_found.is_none() {
+                        suu_found = Some(suu);
+                    } else if suu_found != Some(suu) {
+                        return false;
+                    }
+                }
+            }
+        }
+        suu_found.is_some() && has_jihai
     }
 }
 
@@ -1615,7 +1633,22 @@ mod tests {
         let yaku = yaku_from_str_ron("🀇🀈🀉🀃🀃🀃🀆🀆🀅🀅🀅🀄🀄", "🀆").unwrap();
         assert_eq!(
             yaku,
-            vec![Yaku::Haku, Yaku::Hatsu, Yaku::Chanta, Yaku::Shousangen]
+            vec![
+                Yaku::Haku,
+                Yaku::Hatsu,
+                Yaku::Chanta,
+                Yaku::Shousangen,
+                Yaku::HonItsu
+            ]
+        );
+    }
+
+    #[test]
+    fn test_honitsu() {
+        let yaku = yaku_from_str_tsumo("🀇🀇🀇🀈🀉🀊🀋🀌🀍🀎🀏🀄🀄", "🀄").unwrap();
+        assert_eq!(
+            yaku,
+            vec![Yaku::Menzentsumo, Yaku::Chun, Yaku::Ittsuu, Yaku::HonItsu]
         );
     }
 
