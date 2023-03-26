@@ -270,7 +270,7 @@ impl Game {
             match result {
                 KyokuResult::Ryukyoku => {
                     self.honba += 1;
-                    // TODO: Check tenpai, and move points and players if necessary
+                    // TODO: Move players if oya is not tempai
                 }
                 KyokuResult::Agari { oya_agari, .. } => {
                     if oya_agari {
@@ -576,7 +576,39 @@ impl Game {
     }
 
     fn ryukyoku(&mut self) -> KyokuResult {
-        // TODO
+        // Check tempai
+        let mut tempai = [false; 4];
+        for (i, p) in self.players.iter().enumerate() {
+            tempai[i] = is_tempai(p.te.hai());
+        }
+        // Move points from non-tempai players to tempai players
+        let tempai_count = tempai.into_iter().filter(|&t| t).count();
+        match tempai_count {
+            0 | 4 => { /* Do nothing */ }
+            1 => {
+                // -1000 for each non-tempai player
+                // +3000 for tempai player
+                for (i, t) in tempai.into_iter().enumerate() {
+                    self.score[i].score += if t { 3000 } else { -1000 };
+                }
+            }
+            2 => {
+                // -1500 for each non-tempai player
+                // +1500 for tempai player
+                for (i, t) in tempai.into_iter().enumerate() {
+                    self.score[i].score += if t { 1500 } else { -1500 };
+                }
+            }
+            3 => {
+                // -3000 for each non-tempai player
+                // +1000 for tempai player
+                for (i, t) in tempai.into_iter().enumerate() {
+                    self.score[i].score += if t { 1000 } else { -3000 };
+                }
+            }
+            _ => unreachable!("tempai_count cannot be any other value"),
+        }
+
         KyokuResult::Ryukyoku
     }
 
