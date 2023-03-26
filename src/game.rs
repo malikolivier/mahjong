@@ -1945,7 +1945,7 @@ fn count_kokushimuso_shanten(te: &[Hai]) -> Option<usize> {
 
 fn count_normal_shanten(te: &[Hai]) -> usize {
     let open_mentsu_count = (14 - te.len()) / 3;
-    let root = solver::GroupTree::generate(te, 0, 4 - open_mentsu_count, 0, 0);
+    let root = solver::GroupTree::generate(te, open_mentsu_count, 4, open_mentsu_count, 0);
     for tree in &root {
         trace!("{}", tree);
     }
@@ -1955,7 +1955,7 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
 
 fn find_machi(te: &[Hai]) -> Vec<Hai> {
     let open_mentsu_count = (14 - te.len()) / 3;
-    let root = solver::GroupTree::generate(te, 0, 4 - open_mentsu_count, 0, 0);
+    let root = solver::GroupTree::generate(te, open_mentsu_count, 4, open_mentsu_count, 0);
     let root = solver::GroupTree::shanten0(root);
 
     let mut machi = vec![];
@@ -2523,6 +2523,15 @@ pub mod tests {
     #[test]
     fn test_normal_shanten_head_0() {
         let te = te_from_string("🀇🀈🀉🀊🀋🀌🀍🀎🀏🀙🀚🀛🀗🀗").unwrap();
+        assert_eq!(count_normal_shanten(&te), 0);
+    }
+
+    #[test]
+    fn test_normal_shanten_head_open() {
+        let te = te_from_string("🀍🀎🀏🀒🀓🀔🀖🀗🀘🀆").unwrap();
+        assert_eq!(count_normal_shanten(&te), 0);
+
+        let te = te_from_string("🀍🀎🀏🀒🀓🀔🀖🀗🀘🀆🀅🀅🀅").unwrap();
         assert_eq!(count_normal_shanten(&te), 0);
     }
 
