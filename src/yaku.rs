@@ -1361,7 +1361,7 @@ fn all_kootsu(te: &[Hai]) -> Vec<Mentsu> {
 
 fn all_shuntsu(te: &[Hai]) -> Vec<Mentsu> {
     fn possible_shuntsu(hai: Hai) -> Vec<[Hai; 3]> {
-        use super::tiles::{SuuHai, Values};
+        use super::tiles::Values;
         match hai {
             Hai::Suu(SuuHai { value, .. }) => {
                 let right = [hai.prev().prev(), hai.prev(), hai];
