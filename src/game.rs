@@ -636,6 +636,13 @@ impl Game {
     }
 
     /// Ends a game player with the given players winning.
+    ///
+    /// # Arguments
+    ///
+    /// * `players` - List of winners, ordered by 上家 first.
+    /// * `winning_method` - Ron or Tsumo.
+    /// * `chankan` - Pass chankan's stolen `Hai` if won by chankan (搶槓).
+    /// * `rinshankaihou` - Pass true if won by rinshankaihou (嶺上開花).
     fn agari(
         &mut self,
         players: Vec<Fon>,
@@ -645,6 +652,18 @@ impl Game {
     ) -> KyokuResult {
         // Do not allow rinshankaihou and chankan flags to be set at the same time
         assert!(!(rinshankaihou && chankan.is_some()));
+
+        // Give all riichi bou on the boards to the winner (上家 only if several
+        // winners)
+        let kamicha = players[0];
+        let mut riichi_bou_count = 0;
+        for score in self.score.iter_mut() {
+            riichi_bou_count += score.riichi_bou;
+            score.riichi_bou = 0;
+        }
+        self.score[kamicha as usize].score += riichi_bou_count as isize * 1000;
+
+        // Move points from winner(s) to loser(s)
         let loser = self.turn.prev();
         let mut winners = vec![];
         let mut oya_agari = false;
@@ -717,9 +736,6 @@ impl Game {
                 oya_agari = true;
             }
         }
-
-        // TODO
-        // Split all riichi bou on the boards to the winners
 
         KyokuResult::Agari { winners, oya_agari }
     }
