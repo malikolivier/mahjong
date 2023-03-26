@@ -829,6 +829,11 @@ impl Game {
             3 => Direction::Left,
             _ => unreachable!("Modulo 4"),
         };
+        assert_eq!(
+            direction,
+            Direction::Right,
+            "chi can only be called by the right"
+        );
         te.open_shuntsu(hai, index);
         self.remove_ippatsu();
         self.turn = p;
