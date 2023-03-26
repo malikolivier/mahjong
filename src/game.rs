@@ -270,7 +270,7 @@ impl Game {
             match result {
                 KyokuResult::Ryukyoku => {
                     self.honba += 1;
-                    // Check tenpai, and move points and players if necessary
+                    // TODO: Check tenpai, and move points and players if necessary
                 }
                 KyokuResult::Agari { oya_agari, .. } => {
                     if oya_agari {
