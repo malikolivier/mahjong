@@ -1253,7 +1253,7 @@ impl Game {
                     }
                 }
 
-                let dora_index = previous_tile_index(break_point, 2 * i);
+                let dora_index = previous_tile_index(break_point, 2 * i + 5);
                 self.yama[dora_index].expect("Dora not found")
             })
             .collect()
@@ -1271,7 +1271,7 @@ impl Game {
                     }
                 }
 
-                let dora_index = previous_tile_index(break_point, 2 * i + 1);
+                let dora_index = previous_tile_index(break_point, 2 * i + 6);
                 self.yama[dora_index].expect("Uradora not found")
             })
             .collect()
