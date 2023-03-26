@@ -907,8 +907,8 @@ impl Game {
     }
 
     pub fn to_string_repr(&self) -> String {
-        let mut grid = unsafe {
-            let mut grid: [[String; 25]; 25] = std::mem::zeroed();
+        let mut grid = {
+            let mut grid: [[String; 25]; 25] = Default::default();
             for i in 0..25 {
                 for j in 0..25 {
                     grid[i][j] = String::from("  ");
