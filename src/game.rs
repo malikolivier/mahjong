@@ -215,7 +215,9 @@ pub enum KyokuResult {
         winners: Vec<(Fon, Vec<Yaku>)>,
         oya_agari: bool,
     },
-    Ryukyoku,
+    Ryukyoku {
+        oya_tempai: bool,
+    },
 }
 
 impl Game {
@@ -268,9 +270,24 @@ impl Game {
         loop {
             let result = self.play(&channels);
             match result {
-                KyokuResult::Ryukyoku => {
+                KyokuResult::Ryukyoku { oya_tempai } => {
                     self.honba += 1;
-                    // TODO: Move players if oya is not tempai
+                    if !oya_tempai {
+                        // Move players if oya is not tempai
+                        channels.rotate_right(1);
+                        self.score.rotate_right(1);
+
+                        self.kyoku += 1;
+                        if self.kyoku > 3 {
+                            self.kyoku = 0;
+                            self.wind = self.wind.next();
+                            if self.wind > Fon::Nan {
+                                info!("Hanchan completed!");
+                                // TODO: Hanchan is finished
+                                return;
+                            }
+                        }
+                    }
                 }
                 KyokuResult::Agari { oya_agari, .. } => {
                     if oya_agari {
@@ -578,8 +595,12 @@ impl Game {
     fn ryukyoku(&mut self) -> KyokuResult {
         // Check tempai
         let mut tempai = [false; 4];
+        let mut oya_tempai = false;
         for (i, p) in self.players.iter().enumerate() {
             tempai[i] = is_tempai(p.te.hai());
+            if p.wind == Fon::Ton && tempai[i] {
+                oya_tempai = true;
+            }
         }
         // Move points from non-tempai players to tempai players
         let tempai_count = tempai.into_iter().filter(|&t| t).count();
@@ -609,7 +630,7 @@ impl Game {
             _ => unreachable!("tempai_count cannot be any other value"),
         }
 
-        KyokuResult::Ryukyoku
+        KyokuResult::Ryukyoku { oya_tempai }
     }
 
     /// Ends a game player with the given players winning.

@@ -277,7 +277,7 @@ fn cursive_human() -> ai::AiServer {
                                 ));
                             }
                         }
-                        KyokuResult::Ryukyoku => {
+                        KyokuResult::Ryukyoku { .. } => {
                             display.push_str("Ryukyoku");
                         }
                     }
