@@ -387,7 +387,8 @@ impl Game {
         }
     }
 
-    /// Returns a boolean whose value is false if this is the last turn
+    /// Plays a turn.
+    /// Returns `Some(KyokuResult)` if this was the last turn, `None` otherwise.
     fn next_turn(&mut self, channels: &[AiServer; 4]) -> Option<KyokuResult> {
         // TODO: Ryukyoku conditions:
         //   - 4 riichi;
