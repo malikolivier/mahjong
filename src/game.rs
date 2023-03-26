@@ -6,6 +6,8 @@ use rand::seq::SliceRandom;
 use rand::Rng;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+use crate::points::{points_ron_ko, points_ron_oya, points_tsumo_ko, points_tsumo_oya};
+
 use super::ai::{AiServer, Call, PossibleCall, TehaiIndex, TurnResult};
 use super::list::OrderedList;
 use super::tiles::{make_all_tiles, Fon, Hai, SuuHai, Values};
@@ -666,12 +668,58 @@ impl Game {
                 .rinshankaihou(rinshankaihou)
                 .points();
             trace!("Points: {:?}", &points);
+            let han = points.1;
+            let fu = points.2;
             winners.push((winner, points.0));
+
+            // Move points from loser(s) to winner
+            let honba_points = self.honba as isize * 100;
+            match winning_method {
+                WinningMethod::Ron => {
+                    let points = if winner == Fon::Ton {
+                        points_ron_oya(han, fu)
+                    } else {
+                        points_ron_ko(han, fu)
+                    };
+                    let total = points + honba_points * 3;
+                    self.score[winner as usize].score += total;
+                    self.score[loser as usize].score -= total;
+                }
+                WinningMethod::Tsumo => {
+                    if winner == Fon::Ton {
+                        let points = points_tsumo_oya(han, fu);
+                        let total = points + honba_points;
+                        for (i, score) in self.score.iter_mut().enumerate() {
+                            if i == winner as usize {
+                                score.score += 3 * total;
+                            } else {
+                                score.score -= total;
+                            }
+                        }
+                    } else {
+                        let (oya_points, ko_points) = points_tsumo_ko(han, fu);
+                        for (i, score) in self.score.iter_mut().enumerate() {
+                            if i == winner as usize {
+                                score.score += oya_points + ko_points * 2 + honba_points * 3;
+                            } else {
+                                score.score -= if i == Fon::Ton as usize {
+                                    oya_points
+                                } else {
+                                    ko_points
+                                } + honba_points;
+                            }
+                        }
+                    };
+                }
+            }
 
             if winner == Fon::Ton {
                 oya_agari = true;
             }
         }
+
+        // TODO
+        // Split all riichi bou on the boards to the winners
 
         KyokuResult::Agari { winners, oya_agari }
     }

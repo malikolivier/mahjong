@@ -10,6 +10,7 @@ use rand::{rngs::StdRng, SeedableRng};
 mod ai;
 mod game;
 mod list;
+mod points;
 mod tiles;
 mod yaku;
 
