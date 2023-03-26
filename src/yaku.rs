@@ -128,7 +128,6 @@ const YAKU: [Yaku; 47] = [
 
 impl Yaku {
     pub fn han(self, closed: bool) -> YakuValue {
-        use YakuValue::*;
         match self {
             Menzentsumo => Han(1),
             Riichi => Han(1),
@@ -181,7 +180,6 @@ impl Yaku {
     }
 
     pub fn name(self) -> &'static str {
-        use YakuValue::*;
         match self {
             Menzentsumo => "門前自摸",
             Riichi => "立直",
@@ -239,6 +237,7 @@ pub enum YakuValue {
     Han(usize),
     Yakuman(usize),
 }
+use YakuValue::*;
 
 impl std::ops::Add for YakuValue {
     type Output = Self;
