@@ -908,9 +908,10 @@ impl Game {
 
     pub fn to_string_repr(&self) -> String {
         let mut grid = {
-            let mut grid: [[String; 25]; 25] = Default::default();
-            for i in 0..25 {
-                for j in 0..25 {
+            const SIZE: usize = 25;
+            let mut grid: [[String; SIZE]; SIZE] = Default::default();
+            for i in 0..SIZE {
+                for j in 0..SIZE {
                     grid[i][j] = String::from("  ");
                 }
             }
