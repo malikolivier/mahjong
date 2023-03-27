@@ -410,7 +410,6 @@ impl Game {
     /// Returns `Some(KyokuResult)` if this was the last turn, `None` otherwise.
     fn next_turn(&mut self, channels: &[AiServer; 4]) -> Option<KyokuResult> {
         // TODO: Ryukyoku conditions:
-        //   - 4 riichi;
         //   - same wind thrown 4 times on first turn.
 
         self.tx_refresh(channels);
@@ -644,6 +643,15 @@ impl Game {
             if !self.kan_same_player() {
                 return true;
             }
+        }
+
+        // 4 riichi
+        if self.player_is_riichi(Fon::Ton)
+            && self.player_is_riichi(Fon::Nan)
+            && self.player_is_riichi(Fon::Shaa)
+            && self.player_is_riichi(Fon::Pee)
+        {
+            return true;
         }
 
         false
