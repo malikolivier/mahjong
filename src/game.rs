@@ -1820,14 +1820,11 @@ impl Game {
                     for pattern in possible_patterns {
                         let pos1 = self.players[self.turn as usize].te.hai.index(&pattern[0]);
                         let pos2 = self.players[self.turn as usize].te.hai.index(&pattern[1]);
-                        match (pos1, pos2) {
-                            (Some(p1), Some(p2)) => {
-                                let new_match = [p1, p2];
-                                if !out.contains(&new_match) {
-                                    out.push(new_match);
-                                }
+                        if let (Some(p1), Some(p2)) = (pos1, pos2) {
+                            let new_match = [p1, p2];
+                            if !out.contains(&new_match) {
+                                out.push(new_match);
                             }
-                            _ => {}
                         }
                     }
                     out
