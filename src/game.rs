@@ -1462,12 +1462,6 @@ pub struct Hoo {
     river: Vec<SuteHai>,
 }
 
-impl Hoo {
-    pub fn new() -> Self {
-        Self { river: vec![] }
-    }
-}
-
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum SuteHai {
     Normal(Hai),
@@ -2503,7 +2497,7 @@ pub mod tests {
                 Player::new(Fon::Shaa),
                 Player::new(Fon::Pee),
             ];
-            let mut hoo = [Hoo::new(), Hoo::new(), Hoo::new(), Hoo::new()];
+            let mut hoo: [Hoo; 4] = Default::default();
 
             for i in 0..4 {
                 for c in data.te[i].chars() {
