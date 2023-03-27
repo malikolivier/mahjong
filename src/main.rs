@@ -19,12 +19,41 @@ mod yaku;
 
 use ai::TehaiIndex;
 
+use crate::ai::null_bot;
+use crate::ai::AiServer;
+
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
     /// Load game from state (.ron file)
     #[arg(long)]
     from_state: Option<PathBuf>,
+
+    /// Who is player 1?
+    #[arg(long, value_enum, default_value_t = AI::CursiveHuman)]
+    p1: AI,
+    /// Who is player 2?
+    #[arg(long, value_enum, default_value_t = AI::NullBot)]
+    p2: AI,
+    /// Who is player 3?
+    #[arg(long, value_enum, default_value_t = AI::NullBot)]
+    p3: AI,
+    /// Who is player 4?
+    #[arg(long, value_enum, default_value_t = AI::NullBot)]
+    p4: AI,
+}
+
+#[derive(clap::ValueEnum, Debug, Clone, Copy, PartialEq, Eq)]
+enum AI {
+    CursiveHuman,
+    NullBot,
+}
+
+fn make_ai_server(ai: AI) -> AiServer {
+    match ai {
+        AI::CursiveHuman => cursive_human(),
+        AI::NullBot => null_bot(),
+    }
 }
 
 fn main() {
@@ -41,12 +70,13 @@ fn main() {
     } else {
         game::Game::new(&mut rng)
     };
+
     game.play_hanchan(
         [
-            cursive_human(),
-            ai::null_bot(),
-            ai::null_bot(),
-            ai::null_bot(),
+            make_ai_server(args.p1),
+            make_ai_server(args.p2),
+            make_ai_server(args.p3),
+            make_ai_server(args.p4),
         ],
         &mut rng,
     );
