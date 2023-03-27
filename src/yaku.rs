@@ -944,10 +944,8 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if let Some(mentsu) = self.mentsu() {
             let mut suuhai_grid = [[false; 3]; 9];
             for m in mentsu {
-                if let Some(hai) = m.as_kootsu_hai() {
-                    if let Hai::Suu(SuuHai { value, suu, .. }) = hai {
-                        suuhai_grid[value as usize - 1][suu as usize] = true;
-                    }
+                if let Some(Hai::Suu(SuuHai { value, suu, .. })) = m.as_kootsu_hai() {
+                    suuhai_grid[value as usize - 1][suu as usize] = true;
                 }
             }
             suuhai_grid
