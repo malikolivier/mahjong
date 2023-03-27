@@ -264,7 +264,7 @@ impl Game {
         true
     }
 
-    fn first_uninterrupted_turn(&self) -> bool {
+    pub fn first_uninterrupted_turn(&self) -> bool {
         self.tsumo_cnt <= 4 && self.players.iter().all(|p| p.te.fuuro.is_empty())
     }
 
@@ -1430,6 +1430,10 @@ impl Game {
     }
     pub fn player_riichi(&self, p: Fon) -> Option<&Riichi> {
         self.players[p as usize].riichi.as_ref()
+    }
+    #[cfg(test)]
+    pub fn tsumo_cnt(&mut self) -> &mut usize {
+        &mut self.tsumo_cnt
     }
 
     fn dora_indicator(&self) -> Vec<Hai> {

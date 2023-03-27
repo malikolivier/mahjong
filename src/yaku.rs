@@ -589,6 +589,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.chinitsu() {
             yakus.push(Yaku::ChinItsu);
         }
+        if self.tenhou() {
+            yakus.retain(|y| y.is_yakuman());
+            yakus.push(Yaku::Tenhou);
+        }
         if self.tsuuiisou() {
             yakus.retain(|y| y.is_yakuman());
             yakus.push(Yaku::Tsuuiisou);
@@ -1113,6 +1117,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             }
         }
         suu_found.is_some()
+    }
+
+    fn tenhou(&self) -> bool {
+        self.agari_te.wind == Fon::Ton && self.agari_te.game.first_uninterrupted_turn()
     }
 
     fn tsuuiisou(&self) -> bool {
@@ -1760,6 +1768,11 @@ mod tests {
         let yaku = yaku_from_str_ron("🀇🀌🀌🀌🀌🀍🀍🀍🀍🀎🀎🀎🀎", "🀇").unwrap();
         assert_eq!(yaku, vec![Yaku::Ryanpeikou, Yaku::ChinItsu]);
     }
+    #[test]
+    fn test_tenhou() {
+        let yaku = yaku_from_str("🀝🀞🀟🀟🀠🀡🀐🀐🀑🀒🀓🀖🀖", "🀖", WinningMethod::Tsumo, true).unwrap();
+        assert_eq!(yaku, vec![Yaku::Tenhou]);
+    }
 
     #[test]
     fn test_tsuuiisou() {
@@ -1840,10 +1853,10 @@ mod tests {
     }
 
     fn yaku_from_str_ron(tehai: &str, hupai: &str) -> Result<Vec<Yaku>, ParseHaiError> {
-        yaku_from_str(tehai, hupai, WinningMethod::Ron)
+        yaku_from_str(tehai, hupai, WinningMethod::Ron, false)
     }
     fn yaku_from_str_tsumo(tehai: &str, hupai: &str) -> Result<Vec<Yaku>, ParseHaiError> {
-        yaku_from_str(tehai, hupai, WinningMethod::Tsumo)
+        yaku_from_str(tehai, hupai, WinningMethod::Tsumo, false)
     }
     fn fu_from_str_ron(tehai: &str, hupai: &str) -> Result<usize, ParseHaiError> {
         fu_from_str(tehai, hupai, WinningMethod::Ron)
@@ -1857,15 +1870,16 @@ mod tests {
         hupai: &str,
         method: WinningMethod,
     ) -> Result<usize, ParseHaiError> {
-        let (_, _, fu) = points_from_str(tehai, hupai, method)?;
+        let (_, _, fu) = points_from_str(tehai, hupai, method, false)?;
         Ok(fu)
     }
     fn yaku_from_str(
         tehai: &str,
         hupai: &str,
         method: WinningMethod,
+        first_turn: bool,
     ) -> Result<Vec<Yaku>, ParseHaiError> {
-        let (yaku, _, _) = points_from_str(tehai, hupai, method)?;
+        let (yaku, _, _) = points_from_str(tehai, hupai, method, first_turn)?;
         Ok(yaku)
     }
 
@@ -1873,9 +1887,13 @@ mod tests {
         tehai: &str,
         hupai: &str,
         method: WinningMethod,
+        first_turn: bool,
     ) -> Result<(Vec<Yaku>, YakuValue, usize), ParseHaiError> {
         let player_wind = Fon::Ton;
         let mut game = Game::default();
+        if !first_turn {
+            *game.tsumo_cnt() = 5; // Make it 5th turn to avoid tenhou / chihou
+        }
         {
             let te = game.player_te_mut(player_wind);
             for hai in te_from_string(tehai)? {
