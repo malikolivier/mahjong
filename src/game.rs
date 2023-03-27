@@ -511,10 +511,10 @@ impl Game {
                     let result = self.agari(ron_calls, WinningMethod::Ron, None, false);
                     self.send_game_result(result.clone(), channels);
                     Some(result)
-                } else if let Some(pon_kan_player_i) = calls.iter().position(|call| match call {
-                    Some(Call::Pon) | Some(Call::Kan) => true,
-                    _ => false,
-                }) {
+                } else if let Some(pon_kan_player_i) = calls
+                    .iter()
+                    .position(|call| matches!(call, Some(Call::Pon) | Some(Call::Kan)))
+                {
                     let caller = self.turn.next_nth(pon_kan_player_i);
                     info!(
                         "Player {} called {:?}",
