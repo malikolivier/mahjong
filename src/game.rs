@@ -158,9 +158,7 @@ impl<'de> Deserialize<'de> for Game {
 
         assert!(game.yama.len() == 136);
         let mut yama = [None; 136];
-        for i in 0..136 {
-            yama[i] = game.yama[i];
-        }
+        yama.copy_from_slice(&game.yama);
 
         Ok(Game {
             wind: game.wind,
