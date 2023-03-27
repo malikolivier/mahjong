@@ -1144,24 +1144,22 @@ fn machi(toitsu: [Hai; 2], mentsu: &[[Hai; 3]], agari_hai: Hai) -> Vec<Machi> {
             if m.contains(&agari_hai) {
                 if is_kootsu(&m) {
                     machis.push(Machi::Shanpon);
-                } else {
-                    if m[0] == agari_hai {
-                        if m[2].is_jihai_or_1_9() {
-                            machis.push(Machi::Penchan);
-                        } else {
-                            machis.push(Machi::Ryanmen);
-                        }
-                    } else if m[1] == agari_hai {
-                        machis.push(Machi::Kanchan);
-                    } else if m[2] == agari_hai {
-                        if m[0].is_jihai_or_1_9() {
-                            machis.push(Machi::Penchan);
-                        } else {
-                            machis.push(Machi::Ryanmen);
-                        }
+                } else if m[0] == agari_hai {
+                    if m[2].is_jihai_or_1_9() {
+                        machis.push(Machi::Penchan);
                     } else {
-                        unreachable!("Contains agari hai");
+                        machis.push(Machi::Ryanmen);
                     }
+                } else if m[1] == agari_hai {
+                    machis.push(Machi::Kanchan);
+                } else if m[2] == agari_hai {
+                    if m[0].is_jihai_or_1_9() {
+                        machis.push(Machi::Penchan);
+                    } else {
+                        machis.push(Machi::Ryanmen);
+                    }
+                } else {
+                    unreachable!("Contains agari hai");
                 }
             }
         }
@@ -1193,10 +1191,8 @@ impl<'t> Iterator for AgariTeHaiIter<'t> {
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(hai) = self.te.next() {
             Some(*hai)
-        } else if let Some(hai) = self.agarihai.take() {
-            Some(*hai)
         } else {
-            None
+            self.agarihai.take().copied()
         }
     }
 }
@@ -1487,10 +1483,9 @@ fn try_chiitoitsu(te: &[Hai]) -> Option<[[Hai; 2]; 7]> {
             .iter()
             .position(|[some_hai1, some_hai2]| some_hai1.is_none() && some_hai2.is_none())
         {
-            if chiitoitsu
+            if !chiitoitsu
                 .iter()
-                .find(|[some_hai1, _]| some_hai1 == &Some(*hai))
-                .is_none()
+                .any(|[some_hai1, _]| some_hai1 == &Some(*hai))
             {
                 chiitoitsu[empty_pos][0] = Some(*hai);
             }

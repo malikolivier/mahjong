@@ -141,7 +141,7 @@ impl Serialize for Game {
             honba: self.honba,
             tsumo_cnt: self.tsumo_cnt,
             players: self.players.clone(),
-            yama: self.yama.iter().cloned().collect(),
+            yama: self.yama.to_vec(),
             hoo: self.hoo.clone(),
             dice: self.dice,
             score: self.score,
@@ -230,8 +230,8 @@ impl Game {
     }
     fn wall_break_index(&self) -> usize {
         let dice_result = self.dice[0] as usize + self.dice[1] as usize;
-        let break_point = ((dice_result - 1) % 4) * 34 + dice_result * 2;
-        break_point
+
+        ((dice_result - 1) % 4) * 34 + dice_result * 2
     }
 
     pub fn next_tsumohai_index(&self) -> Option<usize> {
@@ -417,7 +417,7 @@ impl Game {
         let mut call3 = None;
 
         let allowed_calls1 = self.allowed_calls(self.turn);
-        if allowed_calls1.len() > 0 {
+        if !allowed_calls1.is_empty() {
             trace!("1. Player {} can {:?}!", self.turn as usize, allowed_calls1);
             channels[self.turn as usize]
                 .tx
@@ -434,7 +434,7 @@ impl Game {
         }
 
         let allowed_calls2 = self.allowed_calls(self.turn.next());
-        if allowed_calls2.len() > 0 {
+        if !allowed_calls2.is_empty() {
             trace!(
                 "2. Player {} can {:?}!",
                 self.turn.next() as usize,
@@ -455,7 +455,7 @@ impl Game {
         }
 
         let allowed_calls3 = self.allowed_calls(self.turn.next().next());
-        if allowed_calls3.len() > 0 {
+        if !allowed_calls3.is_empty() {
             trace!(
                 "3. Player {} can {:?}!",
                 self.turn.next().next() as usize,
@@ -513,30 +513,28 @@ impl Game {
                     let result = self.agari(ron_calls, WinningMethod::Ron, None, false);
                     self.send_game_result(result.clone(), channels);
                     Some(result)
-                } else {
-                    if let Some(pon_kan_player_i) = calls.iter().position(|call| match call {
-                        Some(Call::Pon) | Some(Call::Kan) => true,
-                        _ => false,
-                    }) {
-                        let caller = self.turn.next_nth(pon_kan_player_i);
-                        info!(
-                            "Player {} called {:?}",
-                            caller as usize, calls[pon_kan_player_i]
-                        );
-                        match calls[pon_kan_player_i] {
-                            Some(Call::Pon) => {
-                                self.call_pon(caller);
-                                self.do_turn(channels, false)
-                            }
-                            Some(Call::Kan) => self.call_kan(caller, channels),
-                            _ => unreachable!("Expect kan or pon"),
+                } else if let Some(pon_kan_player_i) = calls.iter().position(|call| match call {
+                    Some(Call::Pon) | Some(Call::Kan) => true,
+                    _ => false,
+                }) {
+                    let caller = self.turn.next_nth(pon_kan_player_i);
+                    info!(
+                        "Player {} called {:?}",
+                        caller as usize, calls[pon_kan_player_i]
+                    );
+                    match calls[pon_kan_player_i] {
+                        Some(Call::Pon) => {
+                            self.call_pon(caller);
+                            self.do_turn(channels, false)
                         }
-                    } else if let Some(Call::Chi { index }) = call1 {
-                        self.call_chi(self.turn, index);
-                        self.do_turn(channels, false)
-                    } else {
-                        unreachable!("Impossible state!");
+                        Some(Call::Kan) => self.call_kan(caller, channels),
+                        _ => unreachable!("Expect kan or pon"),
                     }
+                } else if let Some(Call::Chi { index }) = call1 {
+                    self.call_chi(self.turn, index);
+                    self.do_turn(channels, false)
+                } else {
+                    unreachable!("Impossible state!");
                 }
             }
         }
@@ -687,10 +685,8 @@ impl Game {
 
     fn is_tochu_ryuukyoku(&self) -> bool {
         // スーカン流れ
-        if self.kan_count() >= 4 {
-            if !self.kan_same_player() {
-                return true;
-            }
+        if self.kan_count() >= 4 && !self.kan_same_player() {
+            return true;
         }
 
         // 4 riichi
@@ -1908,7 +1904,7 @@ impl Game {
                 return true;
             }
         }
-        let machi = find_machi(&self.players[player as usize].te.hai());
+        let machi = find_machi(self.players[player as usize].te.hai());
         for sutehai in &self.hoo[player as usize].river {
             if machi.contains(&sutehai.hai()) {
                 return true;
@@ -2050,7 +2046,7 @@ impl Game {
         let mut allowed_calls = Vec::with_capacity(4);
         if self.turn == player {
             let possible_chi = self.can_chi();
-            if possible_chi.len() > 0 {
+            if !possible_chi.is_empty() {
                 allowed_calls.push(PossibleCall::Chi {
                     indices: possible_chi,
                 });
@@ -2252,7 +2248,7 @@ mod solver {
                 }
                 write!(f, "\t{}-shanten", self.shanten)?;
             }
-            write!(f, "\n")?;
+            writeln!(f)?;
             for child in &self.children {
                 write!(f, "{}", child)?;
             }
@@ -2454,7 +2450,7 @@ mod solver {
                                 mentsu_count + 1,
                                 taatsu_count,
                             ),
-                            depth: depth,
+                            depth,
                             remaining_hai: te_,
 
                             mentsu_count: mentsu_count + 1,
@@ -2495,7 +2491,7 @@ mod solver {
                                 mentsu_count,
                                 taatsu_count + 1,
                             ),
-                            depth: depth,
+                            depth,
                             remaining_hai: te_,
                             mentsu_count,
                             taatsu_count: taatsu_count + 1,

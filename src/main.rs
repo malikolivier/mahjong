@@ -1,8 +1,6 @@
 use std::path::PathBuf;
 
-use env_logger;
 use log::{debug, info};
-use ron;
 
 use clap::Parser;
 use cursive::views::Dialog;
