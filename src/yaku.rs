@@ -1772,6 +1772,12 @@ mod tests {
     }
 
     #[test]
+    fn test_pinfu_ron_fu() {
+        let fu = fu_from_str_ron("🀇🀇🀈🀈🀉🀉🀊🀋🀌🀍🀍🀚🀛", "🀙").unwrap();
+        assert_eq!(fu, 30);
+    }
+
+    #[test]
     fn test_sanankou_fu() {
         let fu = fu_from_str_tsumo("🀇🀇🀇🀈🀈🀈🀉🀉🀍🀍🀙🀚🀛", "🀉").unwrap();
         assert_eq!(fu, 40);
