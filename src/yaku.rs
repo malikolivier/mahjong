@@ -589,6 +589,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             yakus.retain(|y| y.is_yakuman());
             yakus.push(Yaku::Tenhou);
         }
+        if self.chihou() {
+            yakus.retain(|y| y.is_yakuman());
+            yakus.push(Yaku::Chihou);
+        }
         if self.tsuuiisou() {
             yakus.retain(|y| y.is_yakuman());
             yakus.push(Yaku::Tsuuiisou);
@@ -1111,6 +1115,12 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
 
     fn tenhou(&self) -> bool {
         self.agari_te.wind == Fon::Ton
+            && self.agari_te.game.first_uninterrupted_turn()
+            && self.agari_te.method == WinningMethod::Tsumo
+    }
+
+    fn chihou(&self) -> bool {
+        self.agari_te.wind != Fon::Ton
             && self.agari_te.game.first_uninterrupted_turn()
             && self.agari_te.method == WinningMethod::Tsumo
     }
