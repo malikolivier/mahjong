@@ -179,6 +179,14 @@ impl Yaku {
         }
     }
 
+    pub fn is_yakuman(self) -> bool {
+        if let Yakuman(_) = self.han(true) {
+            true
+        } else {
+            false
+        }
+    }
+
     pub fn name(self) -> &'static str {
         match self {
             Menzentsumo => "門前自摸",
@@ -579,6 +587,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         }
         if self.chinitsu() {
             yakus.push(Yaku::ChinItsu);
+        }
+        if self.tsuuiisou() {
+            yakus.retain(|y| y.is_yakuman());
+            yakus.push(Yaku::Tsuuiisou);
         }
         // TODO (other yakus)
 
@@ -1099,6 +1111,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             }
         }
         suu_found.is_some()
+    }
+
+    fn tsuuiisou(&self) -> bool {
+        self.agari_te.hai_all().all(Hai::is_jihai)
     }
 }
 
@@ -1741,6 +1757,12 @@ mod tests {
     fn test_chinitsu() {
         let yaku = yaku_from_str_ron("🀇🀌🀌🀌🀌🀍🀍🀍🀍🀎🀎🀎🀎", "🀇").unwrap();
         assert_eq!(yaku, vec![Yaku::Ryanpeikou, Yaku::ChinItsu]);
+    }
+
+    #[test]
+    fn test_tsuuiisou() {
+        let yaku = yaku_from_str_ron("🀆🀆🀆🀅🀅🀅🀀🀀🀀🀁🀁🀁🀂", "🀂").unwrap();
+        assert_eq!(yaku, vec![Yaku::Tsuuiisou]);
     }
 
     #[test]
