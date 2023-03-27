@@ -593,7 +593,56 @@ impl Game {
         }
     }
 
+    /// Check for nagashimangan. This function assume we reached ryukyoku.
+    ///
+    /// 【条件①】流局すること
+    /// 【条件②】捨て牌が一九字牌（么九牌）のみ
+    /// 【条件③】誰にも鳴かれていない
+    fn is_nagashi_mangan(&self) -> Option<Vec<Fon>> {
+        let mut winners = vec![];
+
+        for fon in [Fon::Ton, Fon::Nan, Fon::Shaa, Fon::Pee] {
+            let hoo = &self.hoo[fon as usize];
+
+            let only_jihai_or_1_9 = hoo
+                .river
+                .iter()
+                .all(|sutehai| sutehai.hai().is_jihai_or_1_9());
+            let mut never_called = true;
+            'next_player: for p in &self.players {
+                for fuuro in p.te.fuuro() {
+                    if let Some(direction) = fuuro.direction() {
+                        let wind_pointed_at = match direction {
+                            Direction::Right => p.wind.next(),
+                            Direction::Front => p.wind.next_nth(2),
+                            Direction::Left => p.wind.next_nth(3),
+                        };
+                        if wind_pointed_at == fon {
+                            never_called = false;
+                            continue 'next_player;
+                        }
+                    }
+                }
+            }
+
+            if only_jihai_or_1_9 && never_called {
+                winners.push(fon);
+            }
+        }
+
+        if winners.is_empty() {
+            None
+        } else {
+            Some(winners)
+        }
+    }
+
     fn ryukyoku(&mut self) -> KyokuResult {
+        // Check Nagashimangan
+        if let Some(players) = self.is_nagashi_mangan() {
+            return self.agari(players, WinningMethod::Nagashimangan, None, false);
+        }
+
         // Check tempai
         let mut tempai = [false; 4];
         let mut oya_tempai = false;
@@ -708,23 +757,34 @@ impl Game {
         let mut oya_agari = false;
         for winner in players {
             let p = &self.players[winner as usize];
-            let hupai = if let Some(hai) = chankan {
-                hai
+            let points = if winning_method == WinningMethod::Nagashimangan {
+                let yaku = Yaku::Nagashimangan;
+                let han = yaku.han(p.te.fuuro().is_empty());
+                (vec![yaku], han, 0)
             } else {
-                match winning_method {
-                    WinningMethod::Ron => self.last_thrown_tile().expect("Has last thrown tile"),
-                    WinningMethod::Tsumo => p.te.tsumo.expect("Has tsumohai"),
-                }
+                let hupai = if let Some(hai) = chankan {
+                    hai
+                } else {
+                    match winning_method {
+                        WinningMethod::Ron => {
+                            self.last_thrown_tile().expect("Has last thrown tile")
+                        }
+                        WinningMethod::Tsumo => p.te.tsumo.expect("Has tsumohai"),
+                        WinningMethod::Nagashimangan => {
+                            unreachable!("Nagashimangan already handled")
+                        }
+                    }
+                };
+                trace!(
+                    "Compute points for winner player {} (hupai: {})",
+                    winner as usize,
+                    hupai.to_char()
+                );
+                AgariTe::from_te(&p.te, self, hupai, winning_method, winner)
+                    .chankan(chankan.is_some())
+                    .rinshankaihou(rinshankaihou)
+                    .points()
             };
-            trace!(
-                "Compute points for winner player {} (hupai: {})",
-                winner as usize,
-                hupai.to_char()
-            );
-            let points = AgariTe::from_te(&p.te, self, hupai, winning_method, winner)
-                .chankan(chankan.is_some())
-                .rinshankaihou(rinshankaihou)
-                .points();
             trace!("Points: {:?}", &points);
             let han = points.1;
             let fu = points.2;
@@ -743,7 +803,7 @@ impl Game {
                     self.score[winner as usize].score += total;
                     self.score[loser as usize].score -= total;
                 }
-                WinningMethod::Tsumo => {
+                WinningMethod::Tsumo | WinningMethod::Nagashimangan => {
                     if winner == Fon::Ton {
                         let points = points_tsumo_oya(han, fu);
                         let total = points + honba_points;
@@ -1701,6 +1761,18 @@ pub enum Fuuro {
         from: Direction,
     },
     Kantsu(KantsuInner),
+}
+
+impl Fuuro {
+    fn direction(&self) -> Option<Direction> {
+        match self {
+            Fuuro::Shuntsu { from, .. }
+            | Fuuro::Kootsu { from, .. }
+            | Fuuro::Kantsu(KantsuInner::DaiMinkan { from, .. })
+            | Fuuro::Kantsu(KantsuInner::ShouMinkan { from, .. }) => Some(*from),
+            Fuuro::Kantsu(KantsuInner::Ankan { .. }) => None,
+        }
+    }
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
@@ -2674,5 +2746,20 @@ pub mod tests {
     fn test_riichi() {
         let game: Game = ron::de::from_reader(std::fs::File::open("riichi.ron").unwrap()).unwrap();
         assert_eq!(game.can_riichi(), vec![ThrowableOnRiichi::Tsumohai]);
+    }
+
+    #[test]
+    fn test_nagashimangan() {
+        let game: Game =
+            ron::de::from_reader(std::fs::File::open("nagashimangan.ron").unwrap()).unwrap();
+        assert_eq!(game.is_nagashi_mangan(), Some(vec![Fon::Ton]));
+    }
+
+    #[test]
+    fn test_nagashimangan_called() {
+        let game: Game =
+            ron::de::from_reader(std::fs::File::open("nagashimangan-called.ron").unwrap()).unwrap();
+        // 南家 called on one of 東家's 捨て牌, so no nagashi-mangan
+        assert_eq!(game.is_nagashi_mangan(), None);
     }
 }

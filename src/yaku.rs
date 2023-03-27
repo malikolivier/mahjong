@@ -21,6 +21,7 @@ pub struct AgariTe<'t, 'g> {
 pub enum WinningMethod {
     Ron,
     Tsumo,
+    Nagashimangan,
 }
 
 #[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
@@ -631,6 +632,7 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             let agari_fu = match self.agari_te.method {
                 WinningMethod::Ron => 10,
                 WinningMethod::Tsumo => 2,
+                WinningMethod::Nagashimangan => 0,
             };
 
             let mut mentsu_fu = 0;
