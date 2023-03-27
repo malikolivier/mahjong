@@ -409,9 +409,6 @@ impl Game {
     /// Plays a turn.
     /// Returns `Some(KyokuResult)` if this was the last turn, `None` otherwise.
     fn next_turn(&mut self, channels: &[AiServer; 4]) -> Option<KyokuResult> {
-        // TODO: Ryukyoku conditions:
-        //   - same wind thrown 4 times on first turn.
-
         self.tx_refresh(channels);
 
         // Listen for chi/pon/kan/ron
@@ -652,6 +649,19 @@ impl Game {
             && self.player_is_riichi(Fon::Pee)
         {
             return true;
+        }
+
+        // Same wind thrown 4 times on first turn (四風連打)
+        let first_sutehai = self.hoo[0].river.first();
+        if let Some(sutehai) = first_sutehai {
+            let hai = sutehai.hai();
+            if self
+                .hoo
+                .iter()
+                .all(|hoo| hoo.river.first().map(|s| s.hai()) == Some(hai))
+            {
+                return true;
+            }
         }
 
         false
