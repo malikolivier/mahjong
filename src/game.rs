@@ -1128,9 +1128,9 @@ impl Game {
         let mut grid = {
             const SIZE: usize = 25;
             let mut grid: [[String; SIZE]; SIZE] = Default::default();
-            for i in 0..SIZE {
-                for j in 0..SIZE {
-                    grid[i][j] = String::from("  ");
+            for row in grid.iter_mut() {
+                for cell in row.iter_mut() {
+                    *cell = String::from("  ");
                 }
             }
             grid
