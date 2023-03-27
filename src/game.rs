@@ -411,7 +411,6 @@ impl Game {
     fn next_turn(&mut self, channels: &[AiServer; 4]) -> Option<KyokuResult> {
         // TODO: Ryukyoku conditions:
         //   - 4 riichi;
-        //   - 4 kan from different players;
         //   - same wind thrown 4 times on first turn.
 
         self.tx_refresh(channels);
@@ -488,6 +487,10 @@ impl Game {
         trace!("Calls: {:?}", &calls);
         match calls {
             [None, None, None] => {
+                if self.is_tochu_ryuukyoku() {
+                    return Some(self.tochu_ryuukyoku());
+                }
+
                 if !self.draw() {
                     return Some(self.ryukyoku());
                 }
@@ -633,6 +636,24 @@ impl Game {
         }
 
         KyokuResult::Ryukyoku { oya_tempai }
+    }
+
+    fn is_tochu_ryuukyoku(&self) -> bool {
+        // スーカン流れ
+        if self.kan_count() >= 4 {
+            if !self.kan_same_player() {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    /// 途中流局
+    ///
+    /// スーカン流れ、四風連打などの場合。点数のやり取りはありません。
+    fn tochu_ryuukyoku(&self) -> KyokuResult {
+        KyokuResult::Ryukyoku { oya_tempai: false }
     }
 
     /// Ends a game player with the given players winning.
