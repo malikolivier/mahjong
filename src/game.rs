@@ -488,7 +488,9 @@ impl Game {
                 }
 
                 if !self.draw() {
-                    return Some(self.ryukyoku());
+                    let result = self.ryukyoku();
+                    self.send_game_result(result.clone(), channels);
+                    return Some(result);
                 }
                 self.do_turn(channels, false)
             }
