@@ -1509,9 +1509,6 @@ pub struct Te {
 }
 
 impl Te {
-    pub fn contains(&self, hai: Hai) -> bool {
-        self.hai.contains(&hai) || self.tsumo == Some(hai)
-    }
     pub fn index(&self, hai: Hai) -> Option<TehaiIndex> {
         self.hai.index(&hai).map(TehaiIndex::Tehai).or_else(|| {
             if self.tsumo == Some(hai) {

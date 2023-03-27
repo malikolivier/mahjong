@@ -45,26 +45,11 @@ impl<T: PartialOrd> OrderedList<T> {
         self.container.remove(index)
     }
 
-    pub fn contains(&self, element: &T) -> bool {
-        self.container.contains(element)
-    }
-
     pub fn index(&self, element: &T) -> Option<usize> {
         self.container.iter().position(|x| x == element)
     }
     pub fn get(&self, i: usize) -> Option<&T> {
         self.container.get(i)
-    }
-}
-
-impl<'x, T: 'x + PartialOrd> OrderedList<T> {
-    pub fn contains_all<I: IntoIterator<Item = &'x T>>(&self, ls: I) -> bool {
-        for x in ls {
-            if !self.contains(&x) {
-                return false;
-            }
-        }
-        true
     }
 }
 
