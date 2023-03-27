@@ -143,7 +143,7 @@ fn cursive_human() -> ai::AiServer {
                                     let tile2 =
                                         game.player_te(player).nth(chi[1]).expect("Has tile");
                                     dialog = dialog.button(
-                                        format!("Chi {}{}", tile1.to_string(), tile2.to_string()),
+                                        format!("Chi {}{}", tile1, tile2),
                                         move |s| {
                                             tx_call
                                                 .send(Some(ai::Call::Chi { index: chi }))
@@ -219,33 +219,27 @@ fn cursive_human() -> ai::AiServer {
                             match throwable {
                                 game::ThrowableOnRiichi::Te(index) => {
                                     let tile = game.player_te(player).nth(index).expect("Has tile");
-                                    dialog = dialog.button(
-                                        format!("Riichi {}", tile.to_string()),
-                                        move |s| {
-                                            tx_turn
-                                                .send(ai::TurnResult::ThrowHai {
-                                                    index: TehaiIndex::Tehai(index),
-                                                    riichi: true,
-                                                })
-                                                .expect("Sent turn result!");
-                                            s.quit();
-                                        },
-                                    )
+                                    dialog = dialog.button(format!("Riichi {}", tile), move |s| {
+                                        tx_turn
+                                            .send(ai::TurnResult::ThrowHai {
+                                                index: TehaiIndex::Tehai(index),
+                                                riichi: true,
+                                            })
+                                            .expect("Sent turn result!");
+                                        s.quit();
+                                    })
                                 }
                                 game::ThrowableOnRiichi::Tsumohai => {
                                     let tile = game.player_tsumo(player).expect("Has tsumohai");
-                                    dialog = dialog.button(
-                                        format!("Riichi {}", tile.to_string()),
-                                        move |s| {
-                                            tx_turn
-                                                .send(ai::TurnResult::ThrowHai {
-                                                    index: TehaiIndex::Tsumohai,
-                                                    riichi: true,
-                                                })
-                                                .expect("Sent turn result!");
-                                            s.quit();
-                                        },
-                                    )
+                                    dialog = dialog.button(format!("Riichi {}", tile), move |s| {
+                                        tx_turn
+                                            .send(ai::TurnResult::ThrowHai {
+                                                index: TehaiIndex::Tsumohai,
+                                                riichi: true,
+                                            })
+                                            .expect("Sent turn result!");
+                                        s.quit();
+                                    })
                                 }
                             };
                         }
@@ -254,7 +248,7 @@ fn cursive_human() -> ai::AiServer {
                         for hai in can_ankan {
                             let tx_turn = tx_turn.clone();
                             let index = game.player_te_(player).index(hai).expect("Has ankan tile");
-                            dialog = dialog.button(format!("AnKan {}", hai.to_string()), move |s| {
+                            dialog = dialog.button(format!("AnKan {}", hai), move |s| {
                                 tx_turn
                                     .send(ai::TurnResult::Ankan { index })
                                     .expect("Sent turn result!");
@@ -266,7 +260,7 @@ fn cursive_human() -> ai::AiServer {
                         for hai in can_shominkan {
                             let tx_turn = tx_turn.clone();
                             let index = game.player_te_(player).index(hai).expect("Has kakan tile");
-                            dialog = dialog.button(format!("Kakan {}", hai.to_string()), move |s| {
+                            dialog = dialog.button(format!("Kakan {}", hai), move |s| {
                                 tx_turn
                                     .send(ai::TurnResult::Kakan { index })
                                     .expect("Sent turn result!");
@@ -362,7 +356,7 @@ fn cursive_human() -> ai::AiServer {
 
 fn test_print_all_chars() {
     for hai in tiles::make_all_tiles().iter() {
-        print!("{}", hai.to_string());
+        print!("{}", hai);
     }
     print!("{}", tiles::Hai::back_char());
     println!("{}", tiles::Hai::back_char());

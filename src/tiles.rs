@@ -1,5 +1,8 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use std::{fmt::Debug, str::FromStr};
+use std::{
+    fmt::{self, Debug},
+    str::FromStr,
+};
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum Values {
@@ -290,25 +293,27 @@ impl Hai {
         }
     }
 
+    pub fn back_char() -> char {
+        std::char::from_u32(0x1F02B).unwrap()
+    }
+}
+
+impl fmt::Display for Hai {
     /// Convert to terminal-friendly strings for display
-    pub fn to_string(self) -> String {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Hai::Ji(JiHai::Sangen(Sangen::Chun)) => {
                 let mut s = String::new();
                 // Add VS15 before mahjong Chun tile for it to be shown as char (not emoji)
                 s.push(std::char::from_u32(0x1F004).unwrap());
                 s.push(std::char::from_u32(0xFE0E).unwrap());
-                s
+                write!(f, "{}", s)
             }
             _ => {
                 // Except for Chun, all tiles seem to be shown as half-width characters, so add space
-                format!("{} ", self.to_char())
+                write!(f, "{} ", self.to_char())
             }
         }
-    }
-
-    pub fn back_char() -> char {
-        std::char::from_u32(0x1F02B).unwrap()
     }
 }
 
