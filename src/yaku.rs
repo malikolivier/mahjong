@@ -593,6 +593,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             yakus.retain(|y| y.is_yakuman());
             yakus.push(Yaku::Chihou);
         }
+        if self.renhou() {
+            yakus.retain(|y| y.is_yakuman());
+            yakus.push(Yaku::Renhou);
+        }
         if self.tsuuiisou() {
             yakus.retain(|y| y.is_yakuman());
             yakus.push(Yaku::Tsuuiisou);
@@ -1123,6 +1127,12 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         self.agari_te.wind != Fon::Ton
             && self.agari_te.game.first_uninterrupted_turn()
             && self.agari_te.method == WinningMethod::Tsumo
+    }
+
+    fn renhou(&self) -> bool {
+        self.agari_te.game.first_uninterrupted_turn()
+            && self.agari_te.method == WinningMethod::Ron
+            && self.agari_te.game.tsumo_cnt() <= self.agari_te.wind as usize
     }
 
     fn tsuuiisou(&self) -> bool {
@@ -1771,9 +1781,9 @@ mod tests {
         assert_eq!(yaku, vec![Yaku::Tenhou]);
     }
     #[test]
-    fn test_not_tenhou_on_ron() {
+    fn test_renhou() {
         let yaku = yaku_from_str("🀝🀞🀟🀟🀠🀡🀐🀐🀑🀒🀓🀖🀖", "🀖", WinningMethod::Ron, true).unwrap();
-        assert_eq!(yaku, vec![]);
+        assert_eq!(yaku, vec![Yaku::Renhou]);
     }
 
     #[test]

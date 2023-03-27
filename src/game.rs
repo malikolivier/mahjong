@@ -1425,6 +1425,9 @@ impl Game {
     pub fn player_riichi(&self, p: Fon) -> Option<&Riichi> {
         self.players[p as usize].riichi.as_ref()
     }
+    pub fn tsumo_cnt(&self) -> usize {
+        self.tsumo_cnt
+    }
     #[cfg(test)]
     pub fn tsumo_cnt_mut(&mut self) -> &mut usize {
         &mut self.tsumo_cnt
