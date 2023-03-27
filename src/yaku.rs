@@ -1894,7 +1894,7 @@ mod tests {
         let player_wind = Fon::Ton;
         let mut game = Game::default();
         if !first_turn {
-            *game.tsumo_cnt() = 5; // Make it 5th turn to avoid tenhou / chihou
+            *game.tsumo_cnt_mut() = 5; // Make it 5th turn to avoid tenhou / chihou
         }
         {
             let te = game.player_te_mut(player_wind);
