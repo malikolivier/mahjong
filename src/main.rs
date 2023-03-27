@@ -1,7 +1,10 @@
+use std::path::PathBuf;
+
 use env_logger;
 use log::{debug, info};
 use ron;
 
+use clap::Parser;
 use cursive::views::Dialog;
 use cursive::views::TextView;
 use cursive::Cursive;
@@ -16,16 +19,28 @@ mod yaku;
 
 use ai::TehaiIndex;
 
+#[derive(Parser, Debug)]
+#[command(author, version, about, long_about = None)]
+struct Args {
+    /// Load game from state (.ron file)
+    #[arg(long)]
+    from_state: Option<PathBuf>,
+}
+
 fn main() {
     let mut log_builder = env_logger::Builder::from_default_env();
     log_builder.target(env_logger::Target::Stderr).init();
 
     test_print_all_chars();
 
+    let args = Args::parse();
+
     let mut rng: StdRng = SeedableRng::from_seed([0; 32]);
-    let mut game = game::Game::new(&mut rng);
-    // let mut game: game::Game =
-    //     ron::de::from_reader(std::fs::File::open("in.ron").unwrap()).unwrap();
+    let mut game: game::Game = if let Some(file) = args.from_state {
+        ron::de::from_reader(std::fs::File::open(file).unwrap()).unwrap()
+    } else {
+        game::Game::new(&mut rng)
+    };
     game.play_hanchan(
         [
             cursive_human(),
