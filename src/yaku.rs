@@ -1110,7 +1110,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     }
 
     fn tenhou(&self) -> bool {
-        self.agari_te.wind == Fon::Ton && self.agari_te.game.first_uninterrupted_turn()
+        self.agari_te.wind == Fon::Ton
+            && self.agari_te.game.first_uninterrupted_turn()
+            && self.agari_te.method == WinningMethod::Tsumo
     }
 
     fn tsuuiisou(&self) -> bool {
@@ -1757,6 +1759,11 @@ mod tests {
     fn test_tenhou() {
         let yaku = yaku_from_str("🀝🀞🀟🀟🀠🀡🀐🀐🀑🀒🀓🀖🀖", "🀖", WinningMethod::Tsumo, true).unwrap();
         assert_eq!(yaku, vec![Yaku::Tenhou]);
+    }
+    #[test]
+    fn test_not_tenhou_on_ron() {
+        let yaku = yaku_from_str("🀝🀞🀟🀟🀠🀡🀐🀐🀑🀒🀓🀖🀖", "🀖", WinningMethod::Ron, true).unwrap();
+        assert_eq!(yaku, vec![]);
     }
 
     #[test]
