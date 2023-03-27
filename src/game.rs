@@ -1963,7 +1963,7 @@ impl Game {
             }
         }
         if first_turn && no_fuuro {
-            let mut set = std::collections::HashSet::new();
+            let mut set = std::collections::BTreeSet::new();
             for hai in self.players[self.turn as usize].te.hai.iter() {
                 if hai.is_jihai_or_1_9() {
                     set.insert(*hai);
@@ -2010,9 +2010,9 @@ impl Game {
 
     /// Can call Kan on one of these tiles during one's own turn
     fn can_ankan(&self) -> Vec<Hai> {
-        use std::collections::{hash_map::Entry, HashMap};
+        use std::collections::{btree_map::Entry, BTreeMap};
 
-        fn count(cnt_map: &mut HashMap<Hai, usize>, hai: Hai) {
+        fn count(cnt_map: &mut BTreeMap<Hai, usize>, hai: Hai) {
             match cnt_map.entry(hai) {
                 Entry::Vacant(cnt) => {
                     cnt.insert(1);
@@ -2023,7 +2023,7 @@ impl Game {
             }
         }
 
-        let mut cnt_map = HashMap::new();
+        let mut cnt_map = BTreeMap::new();
         for hai in self.players[self.turn as usize].te.hai.iter() {
             count(&mut cnt_map, *hai);
         }
@@ -2089,7 +2089,7 @@ fn count_shanten(te: &[Hai]) -> usize {
 /// Only works for closed hands
 fn count_chitoitsu_shanten(te: &[Hai]) -> Option<usize> {
     if te.len() == 13 || te.len() == 14 {
-        let mut uniq = std::collections::HashSet::new();
+        let mut uniq = std::collections::BTreeSet::new();
         for hai in te {
             uniq.insert(hai);
         }
@@ -2120,7 +2120,7 @@ fn count_chitoitsu_shanten(te: &[Hai]) -> Option<usize> {
 /// Only works for closed hands
 fn count_kokushimuso_shanten(te: &[Hai]) -> Option<usize> {
     if te.len() == 13 || te.len() == 14 {
-        let mut uniq = std::collections::HashSet::new();
+        let mut uniq = std::collections::BTreeSet::new();
         let mut any_toitsu = false;
         for hai in te {
             if hai.is_jihai_or_1_9() {

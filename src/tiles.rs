@@ -42,7 +42,7 @@ pub enum JiHai {
     Sangen(Sangen),
 }
 
-#[derive(Debug, Ord, PartialOrd, Hash, Copy, Clone)]
+#[derive(Debug, Ord, PartialOrd, Copy, Clone)]
 pub struct SuuHai {
     pub suu: Suu,
     pub value: Values,
@@ -123,7 +123,7 @@ impl Sangen {
     }
 }
 
-#[derive(Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
+#[derive(Ord, PartialOrd, Eq, PartialEq, Copy, Clone)]
 pub enum Hai {
     Suu(SuuHai),
     Ji(JiHai),

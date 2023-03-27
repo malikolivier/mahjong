@@ -800,8 +800,8 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     fn iipeikou(&self) -> bool {
         if self.closed() {
             if let WinningCombination::Normal { mentsu, .. } = &self.combination {
-                use std::collections::hash_map::Entry;
-                let mut cnt = std::collections::HashMap::new();
+                use std::collections::btree_map::Entry;
+                let mut cnt = std::collections::BTreeMap::new();
                 for m in mentsu {
                     if !is_kootsu(m) {
                         match cnt.entry(m) {
@@ -1068,8 +1068,8 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     fn ryanpeikou(&self) -> bool {
         if self.closed() {
             if let WinningCombination::Normal { mentsu, .. } = &self.combination {
-                use std::collections::hash_map::Entry;
-                let mut cnt = std::collections::HashMap::new();
+                use std::collections::btree_map::Entry;
+                let mut cnt = std::collections::BTreeMap::new();
                 for m in mentsu {
                     if !is_kootsu(m) {
                         match cnt.entry(m) {
