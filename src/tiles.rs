@@ -177,30 +177,29 @@ impl Hai {
     }
 
     pub fn is_1_9(self) -> bool {
-        match self {
+        matches!(
+            self,
             Hai::Suu(SuuHai {
-                value: Values::Ii, ..
-            })
-            | Hai::Suu(SuuHai {
+                value: Values::Ii,
+                ..
+            }) | Hai::Suu(SuuHai {
                 value: Values::Kyuu,
                 ..
-            }) => true,
-            _ => false,
-        }
+            })
+        )
     }
 
     pub fn is_jihai_or_1_9(self) -> bool {
-        match self {
+        matches!(
+            self,
             Hai::Suu(SuuHai {
-                value: Values::Ii, ..
-            })
-            | Hai::Suu(SuuHai {
+                value: Values::Ii,
+                ..
+            }) | Hai::Suu(SuuHai {
                 value: Values::Kyuu,
                 ..
-            })
-            | Hai::Ji(..) => true,
-            _ => false,
-        }
+            }) | Hai::Ji(..)
+        )
     }
 
     pub fn is_yakuhai(self, ba: Fon, player: Fon) -> bool {
@@ -212,29 +211,17 @@ impl Hai {
     }
 
     pub fn is_sangen(self) -> bool {
-        match self {
-            Hai::Ji(JiHai::Sangen(_)) => true,
-            _ => false,
-        }
+        matches!(self, Hai::Ji(JiHai::Sangen(_)))
     }
 
     pub fn is_haku(self) -> bool {
-        match self {
-            Hai::Ji(JiHai::Sangen(Sangen::Haku)) => true,
-            _ => false,
-        }
+        matches!(self, Hai::Ji(JiHai::Sangen(Sangen::Haku)))
     }
     pub fn is_hatsu(self) -> bool {
-        match self {
-            Hai::Ji(JiHai::Sangen(Sangen::Hatsu)) => true,
-            _ => false,
-        }
+        matches!(self, Hai::Ji(JiHai::Sangen(Sangen::Hatsu)))
     }
     pub fn is_chun(self) -> bool {
-        match self {
-            Hai::Ji(JiHai::Sangen(Sangen::Chun)) => true,
-            _ => false,
-        }
+        matches!(self, Hai::Ji(JiHai::Sangen(Sangen::Chun)))
     }
     pub fn is_fon(self, fon: Fon) -> bool {
         match self {
