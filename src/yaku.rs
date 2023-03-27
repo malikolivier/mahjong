@@ -181,11 +181,7 @@ impl Yaku {
     }
 
     pub fn is_yakuman(self) -> bool {
-        if let Yakuman(_) = self.han(true) {
-            true
-        } else {
-            false
-        }
+        matches!(self.han(true), Yakuman(_))
     }
 
     pub fn name(self) -> &'static str {
@@ -910,11 +906,7 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     }
 
     fn chiitoitsu(&self) -> bool {
-        if let WinningCombination::Chiitoitsu(_) = self.combination {
-            true
-        } else {
-            false
-        }
+        matches!(self.combination, WinningCombination::Chiitoitsu(_))
     }
 
     fn toitoi(&self) -> bool {
