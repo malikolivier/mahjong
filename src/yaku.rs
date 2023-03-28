@@ -1,7 +1,7 @@
 use log::{debug, trace};
 
 use super::game::{Fuuro, Game, KantsuInner, Te};
-use super::tiles::{Fon, Hai, SuuHai};
+use super::tiles::{Fon, Hai, JiHai, SuuHai};
 
 #[derive(Debug, Copy, Clone)]
 pub struct AgariTe<'t, 'g> {
@@ -605,6 +605,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             yakus.retain(|y| y.is_yakuman());
             yakus.push(Yaku::Daisangen);
         }
+        if self.shousuushii() {
+            yakus.retain(|y| y.is_yakuman());
+            yakus.push(Yaku::Shousuushii);
+        }
         if self.tsuuiisou() {
             yakus.retain(|y| y.is_yakuman());
             yakus.push(Yaku::Tsuuiisou);
@@ -1166,6 +1170,33 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
                 }
             }
             has_haku && has_chun && has_hatsu
+        } else {
+            false
+        }
+    }
+
+    fn shousuushii(&self) -> bool {
+        if let Some(mentsu) = self.mentsu() {
+            // Check that we have all 4 winds (3 in mentsu and 1 in toitsu)
+            let mut has_fon = [false; 4];
+            for m in mentsu {
+                if let Some(Hai::Ji(JiHai::Fon(fon))) = m.as_kootsu_hai() {
+                    has_fon[fon as usize] = true;
+                }
+            }
+
+            if let WinningCombination::Normal { toitsu, .. } = &self.combination {
+                if let Hai::Ji(JiHai::Fon(fon)) = toitsu[0] {
+                    let index = fon as usize;
+                    if has_fon[index] {
+                        return false;
+                    } else {
+                        has_fon[index] = true;
+                    }
+                }
+            }
+
+            has_fon.into_iter().all(|x| x)
         } else {
             false
         }
@@ -1832,6 +1863,12 @@ mod tests {
     fn test_daisangen() {
         let yaku = yaku_from_str_ron("🀇🀈🀉🀃🀃🀆🀆🀆🀅🀅🀅🀄🀄", "🀄").unwrap();
         assert_eq!(yaku, vec![Yaku::Daisangen]);
+    }
+
+    #[test]
+    fn test_shousuushii() {
+        let yaku = yaku_from_str_ron("🀀🀀🀀🀁🀁🀁🀂🀂🀂🀃🀃🀑🀑", "🀑").unwrap();
+        assert_eq!(yaku, vec![Yaku::Shousuushii]);
     }
 
     #[test]
