@@ -230,6 +230,26 @@ impl Hai {
         }
     }
 
+    pub fn is_green(self) -> bool {
+        if matches!(self, Hai::Ji(JiHai::Sangen(Sangen::Hatsu))) {
+            return true;
+        }
+
+        if let Hai::Suu(SuuHai {
+            suu: Suu::Sou,
+            value,
+            ..
+        }) = self
+        {
+            matches!(
+                value,
+                Values::Ryan | Values::San | Values::Suu | Values::Roo | Values::Paa
+            )
+        } else {
+            false
+        }
+    }
+
     pub fn next(self) -> Self {
         match self {
             Hai::Suu(SuuHai { suu, value, .. }) => Hai::Suu(SuuHai {
