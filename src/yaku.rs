@@ -601,6 +601,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             yakus.retain(|y| y.is_yakuman());
             yakus.push(Yaku::Ryuuiisou);
         }
+        if self.daisangen() {
+            yakus.retain(|y| y.is_yakuman());
+            yakus.push(Yaku::Daisangen);
+        }
         if self.tsuuiisou() {
             yakus.retain(|y| y.is_yakuman());
             yakus.push(Yaku::Tsuuiisou);
@@ -1141,6 +1145,30 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
 
     fn ryuuiisou(&self) -> bool {
         self.agari_te.hai_all().all(Hai::is_green)
+    }
+
+    fn daisangen(&self) -> bool {
+        if let Some(mentsu) = self.mentsu() {
+            let mut has_haku = false;
+            let mut has_hatsu = false;
+            let mut has_chun = false;
+            for m in mentsu {
+                if let Some(hai) = m.as_kootsu_hai() {
+                    if hai.is_haku() {
+                        has_haku = true;
+                    }
+                    if hai.is_hatsu() {
+                        has_hatsu = true;
+                    }
+                    if hai.is_chun() {
+                        has_chun = true;
+                    }
+                }
+            }
+            has_haku && has_chun && has_hatsu
+        } else {
+            false
+        }
     }
 
     fn tsuuiisou(&self) -> bool {
@@ -1798,6 +1826,12 @@ mod tests {
     fn test_ryuuiisou() {
         let yaku = yaku_from_str_ron("🀑🀑🀒🀒🀓🀓🀕🀕🀕🀗🀅🀅🀅", "🀗").unwrap();
         assert_eq!(yaku, vec![Yaku::Ryuuiisou]);
+    }
+
+    #[test]
+    fn test_daisangen() {
+        let yaku = yaku_from_str_ron("🀇🀈🀉🀃🀃🀆🀆🀆🀅🀅🀅🀄🀄", "🀄").unwrap();
+        assert_eq!(yaku, vec![Yaku::Daisangen]);
     }
 
     #[test]
