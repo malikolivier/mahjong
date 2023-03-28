@@ -805,6 +805,21 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         }
     }
 
+    fn ankou_cnt(&self) -> usize {
+        if let Some(mentsu) = self.mentsu() {
+            let mut ankou_cnt = 0;
+            for m in mentsu {
+                match m {
+                    Mentsu_::Ankan(_) | Mentsu_::Ankou(_) => ankou_cnt += 1,
+                    _ => {}
+                }
+            }
+            ankou_cnt
+        } else {
+            0
+        }
+    }
+
     fn menzentsumo(&self) -> bool {
         self.closed() && self.agari_te.method == WinningMethod::Tsumo
     }
@@ -946,18 +961,7 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     }
 
     fn sanankou(&self) -> bool {
-        if let Some(mentsu) = self.mentsu() {
-            let mut ankou_cnt = 0;
-            for m in mentsu {
-                match m {
-                    Mentsu_::Ankan(_) | Mentsu_::Ankou(_) => ankou_cnt += 1,
-                    _ => {}
-                }
-            }
-            ankou_cnt == 3
-        } else {
-            false
-        }
+        self.ankou_cnt() == 3
     }
 
     fn sanshokudoukou(&self) -> bool {
