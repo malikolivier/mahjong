@@ -629,6 +629,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             yakus.retain(|y| y.is_yakuman());
             yakus.push(Yaku::Chinroutou);
         }
+        if self.suukantsuu() {
+            yakus.push(Yaku::Suukantsu);
+        }
         // TODO (other yakus)
 
         yakus
@@ -1268,6 +1271,11 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     fn chinroutou(&self) -> bool {
         self.agari_te.hai_all().all(Hai::is_1_9)
     }
+
+    fn suukantsuu(&self) -> bool {
+        self.kantsu_cnt() == 4
+    }
+
 }
 
 fn is_kootsu(mentsu: &[Hai; 3]) -> bool {
