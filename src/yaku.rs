@@ -828,6 +828,14 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         }
     }
 
+    fn kantsu_cnt(&self) -> usize {
+        if let Some(mentsu) = self.mentsu() {
+            mentsu.filter(|m| m.is_kan()).count()
+        } else {
+            0
+        }
+    }
+
     fn menzentsumo(&self) -> bool {
         self.closed() && self.agari_te.method == WinningMethod::Tsumo
     }
@@ -1065,12 +1073,7 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     }
 
     fn sankantsu(&self) -> bool {
-        if let Some(mentsu) = self.mentsu() {
-            let kan_cnt = mentsu.filter(|m| m.is_kan()).count();
-            kan_cnt == 3
-        } else {
-            false
-        }
+        self.kantsu_cnt() == 3
     }
 
     fn honitsu(&self) -> bool {
