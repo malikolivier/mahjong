@@ -621,6 +621,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             yakus.retain(|y| y.is_yakuman());
             yakus.push(Yaku::Chuurenpoutou);
         }
+        if self.suuankou() {
+            yakus.retain(|y| y.is_yakuman());
+            yakus.push(Yaku::Suuankou);
+        }
         // TODO (other yakus)
 
         yakus
@@ -1248,6 +1252,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         }
 
         count.iter().all(|c| *c >= 1) && count[0] >= 3 && count[8] >= 3
+    }
+
+    fn suuankou(&self) -> bool {
+        self.ankou_cnt() == 4
     }
 }
 
@@ -1916,9 +1924,9 @@ mod tests {
     }
 
     #[test]
-    fn test_tsuuiisou() {
+    fn test_tsuuiisou_suuankou() {
         let yaku = yaku_from_str_ron("🀆🀆🀆🀅🀅🀅🀀🀀🀀🀁🀁🀁🀂", "🀂").unwrap();
-        assert_eq!(yaku, vec![Yaku::Tsuuiisou]);
+        assert_eq!(yaku, vec![Yaku::Tsuuiisou, Yaku::Suuankou]);
     }
 
     #[test]
