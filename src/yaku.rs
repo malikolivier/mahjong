@@ -635,6 +635,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.suuankou_tanki() {
             yakus.push(Yaku::SuuankouTanki);
         }
+        if self.daisuushii() {
+            yakus.retain(|y| y.is_yakuman());
+            yakus.push(Yaku::Daisuushii);
+        }
         // TODO (other yakus)
 
         yakus
@@ -1205,6 +1209,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     }
 
     fn shousuushii(&self) -> bool {
+        if self.daisuushii() {
+            return false;
+        }
+
         if let Some(mentsu) = self.mentsu() {
             // Check that we have all 4 winds (3 in mentsu and 1 in toitsu)
             let mut has_fon = [false; 4];
@@ -1281,6 +1289,22 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
 
     fn suuankou_tanki(&self) -> bool {
         self.machi() == Machi::Tanki && self.ankou_cnt() == 4
+    }
+
+    fn daisuushii(&self) -> bool {
+        if let Some(mentsu) = self.mentsu() {
+            // Check that we have all 4 winds (4 in mentsu)
+            let mut has_fon = [false; 4];
+            for m in mentsu {
+                if let Some(Hai::Ji(JiHai::Fon(fon))) = m.as_kootsu_hai() {
+                    has_fon[fon as usize] = true;
+                }
+            }
+
+            has_fon.into_iter().all(|x| x)
+        } else {
+            false
+        }
     }
 }
 
@@ -1976,6 +2000,12 @@ mod tests {
     fn test_chinroutou() {
         let yaku = yaku_from_str_ron("🀇🀇🀏🀏🀏🀙🀙🀙🀡🀡🀡🀐🀐", "🀇").unwrap();
         assert_eq!(yaku, vec![Yaku::Chinroutou]);
+    }
+
+    #[test]
+    fn test_daisuushii() {
+        let yaku = yaku_from_str_ron("🀀🀀🀀🀁🀁🀁🀂🀂🀂🀃🀃🀑🀑", "🀃").unwrap();
+        assert_eq!(yaku, vec![Yaku::Daisuushii]);
     }
 
     #[test]
