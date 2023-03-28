@@ -6,6 +6,7 @@ use clap::Parser;
 use cursive::views::Dialog;
 use cursive::views::TextView;
 use cursive::Cursive;
+use cursive::CursiveExt;
 use rand::{rngs::StdRng, SeedableRng};
 
 mod ai;
