@@ -613,6 +613,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             yakus.retain(|y| y.is_yakuman());
             yakus.push(Yaku::Tsuuiisou);
         }
+        if self.kokushimusou() {
+            yakus.retain(|y| y.is_yakuman());
+            yakus.push(Yaku::Kokushimusou);
+        }
         // TODO (other yakus)
 
         yakus
@@ -1204,6 +1208,14 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
 
     fn tsuuiisou(&self) -> bool {
         self.agari_te.hai_all().all(Hai::is_jihai)
+    }
+
+    fn kokushimusou(&self) -> bool {
+        if let WinningCombination::Kokushimusou { .. } = &self.combination {
+            self.machi() == Machi::KokushimusouNormal
+        } else {
+            false
+        }
     }
 }
 
@@ -1875,6 +1887,12 @@ mod tests {
     fn test_tsuuiisou() {
         let yaku = yaku_from_str_ron("🀆🀆🀆🀅🀅🀅🀀🀀🀀🀁🀁🀁🀂", "🀂").unwrap();
         assert_eq!(yaku, vec![Yaku::Tsuuiisou]);
+    }
+
+    #[test]
+    fn test_kokushimuso() {
+        let yaku = yaku_from_str_ron("🀇🀏🀙🀡🀐🀘🀀🀀🀁🀂🀃🀆🀅", "🀄").unwrap();
+        assert_eq!(yaku, vec![Yaku::Kokushimusou]);
     }
 
     #[test]
