@@ -632,6 +632,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         if self.suukantsuu() {
             yakus.push(Yaku::Suukantsu);
         }
+        if self.suuankou_tanki() {
+            yakus.push(Yaku::SuuankouTanki);
+        }
         // TODO (other yakus)
 
         yakus
@@ -1265,7 +1268,7 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     }
 
     fn suuankou(&self) -> bool {
-        self.ankou_cnt() == 4
+        self.machi() != Machi::Tanki && self.ankou_cnt() == 4
     }
 
     fn chinroutou(&self) -> bool {
@@ -1276,6 +1279,9 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         self.kantsu_cnt() == 4
     }
 
+    fn suuankou_tanki(&self) -> bool {
+        self.machi() == Machi::Tanki && self.ankou_cnt() == 4
+    }
 }
 
 fn is_kootsu(mentsu: &[Hai; 3]) -> bool {
@@ -1943,9 +1949,9 @@ mod tests {
     }
 
     #[test]
-    fn test_tsuuiisou_suuankou() {
+    fn test_tsuuiisou_suuankou_tanki() {
         let yaku = yaku_from_str_ron("🀆🀆🀆🀅🀅🀅🀀🀀🀀🀁🀁🀁🀂", "🀂").unwrap();
-        assert_eq!(yaku, vec![Yaku::Tsuuiisou, Yaku::Suuankou]);
+        assert_eq!(yaku, vec![Yaku::Tsuuiisou, Yaku::SuuankouTanki]);
     }
 
     #[test]
@@ -1958,6 +1964,12 @@ mod tests {
     fn test_chuurenpoutou() {
         let yaku = yaku_from_str_ron("🀇🀇🀈🀈🀉🀊🀋🀌🀍🀎🀏🀏🀏", "🀇").unwrap();
         assert_eq!(yaku, vec![Yaku::Chuurenpoutou]);
+    }
+
+    #[test]
+    fn test_suuankou() {
+        let yaku = yaku_from_str_tsumo("🀙🀙🀙🀅🀅🀅🀀🀀🀀🀁🀁🀂🀂", "🀂").unwrap();
+        assert_eq!(yaku, vec![Yaku::Suuankou]);
     }
 
     #[test]
