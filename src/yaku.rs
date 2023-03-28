@@ -617,6 +617,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             yakus.retain(|y| y.is_yakuman());
             yakus.push(Yaku::Kokushimusou);
         }
+        if self.chuurenpoutou() {
+            yakus.retain(|y| y.is_yakuman());
+            yakus.push(Yaku::Chuurenpoutou);
+        }
         // TODO (other yakus)
 
         yakus
@@ -1216,6 +1220,30 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         } else {
             false
         }
+    }
+
+    fn chuurenpoutou(&self) -> bool {
+        if !self.closed() {
+            return false;
+        }
+
+        let mut count = [0usize; 9];
+        let found_suu = if let Some(Hai::Suu(SuuHai { suu, .. })) = self.agari_te.hai_all().next() {
+            suu
+        } else {
+            return false;
+        };
+        for hai in self.agari_te.hai_all() {
+            if let Hai::Suu(SuuHai { suu, value, .. }) = hai {
+                if suu != found_suu {
+                    return false;
+                }
+
+                count[value as usize - 1] += 1;
+            }
+        }
+
+        count.iter().all(|c| *c >= 1) && count[0] >= 3 && count[8] >= 3
     }
 }
 
@@ -1893,6 +1921,12 @@ mod tests {
     fn test_kokushimuso() {
         let yaku = yaku_from_str_ron("🀇🀏🀙🀡🀐🀘🀀🀀🀁🀂🀃🀆🀅", "🀄").unwrap();
         assert_eq!(yaku, vec![Yaku::Kokushimusou]);
+    }
+
+    #[test]
+    fn test_chuurenpoutou() {
+        let yaku = yaku_from_str_ron("🀇🀇🀈🀈🀉🀊🀋🀌🀍🀎🀏🀏🀏", "🀇").unwrap();
+        assert_eq!(yaku, vec![Yaku::Chuurenpoutou]);
     }
 
     #[test]
