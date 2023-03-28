@@ -639,6 +639,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             yakus.retain(|y| y.is_yakuman());
             yakus.push(Yaku::Daisuushii);
         }
+        if self.junsei_chuurenpoutou() {
+            yakus.retain(|y| y.is_yakuman());
+            yakus.push(Yaku::JunseiChuurenpoutou);
+        }
         // TODO (other yakus)
 
         yakus
@@ -1252,6 +1256,10 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
     }
 
     fn chuurenpoutou(&self) -> bool {
+        if self.junsei_chuurenpoutou() {
+            return false;
+        }
+
         if !self.closed() {
             return false;
         }
@@ -1305,6 +1313,31 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
         } else {
             false
         }
+    }
+
+    fn junsei_chuurenpoutou(&self) -> bool {
+        if !self.closed() {
+            return false;
+        }
+
+        // Contrary to normal chuurenpoutou, we exclude hupai on counting tiles
+        let mut count = [0usize; 9];
+        let found_suu = if let Hai::Suu(SuuHai { suu, .. }) = self.agari_te.hai[0] {
+            suu
+        } else {
+            return false;
+        };
+        for hai in self.agari_te.hai {
+            if let Hai::Suu(SuuHai { suu, value, .. }) = *hai {
+                if suu != found_suu {
+                    return false;
+                }
+
+                count[value as usize - 1] += 1;
+            }
+        }
+
+        count.iter().all(|c| *c >= 1) && count[0] >= 3 && count[8] >= 3
     }
 }
 
@@ -2006,6 +2039,12 @@ mod tests {
     fn test_daisuushii() {
         let yaku = yaku_from_str_ron("🀀🀀🀀🀁🀁🀁🀂🀂🀂🀃🀃🀑🀑", "🀃").unwrap();
         assert_eq!(yaku, vec![Yaku::Daisuushii]);
+    }
+
+    #[test]
+    fn test_junsei_chuurenpoutou() {
+        let yaku = yaku_from_str_ron("🀇🀇🀇🀈🀉🀊🀋🀌🀍🀎🀏🀏🀏", "🀇").unwrap();
+        assert_eq!(yaku, vec![Yaku::JunseiChuurenpoutou]);
     }
 
     #[test]
