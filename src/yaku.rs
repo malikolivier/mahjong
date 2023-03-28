@@ -70,7 +70,7 @@ pub enum Yaku {
     Chinroutou,
     Suukantsu,
     SuuankouTanki,
-    Daisuushi,
+    Daisuushii,
     JunseiChuurenpoutou,
     KokushimusouJuusanmen,
 }
@@ -122,7 +122,7 @@ const YAKU: [Yaku; 47] = [
     Chinroutou,
     Suukantsu,
     SuuankouTanki,
-    Daisuushi,
+    Daisuushii,
     JunseiChuurenpoutou,
     KokushimusouJuusanmen,
 ];
@@ -174,7 +174,7 @@ impl Yaku {
             Chinroutou => Yakuman(1),
             Suukantsu => Yakuman(1),
             SuuankouTanki => Yakuman(2),
-            Daisuushi => Yakuman(2),
+            Daisuushii => Yakuman(2),
             JunseiChuurenpoutou => Yakuman(2),
             KokushimusouJuusanmen => Yakuman(2),
         }
@@ -230,7 +230,7 @@ impl Yaku {
             Chinroutou => "清老頭",
             Suukantsu => "四槓子",
             SuuankouTanki => "四槓子単騎",
-            Daisuushi => "大四喜",
+            Daisuushii => "大四喜",
             JunseiChuurenpoutou => "純正九蓮宝燈",
             KokushimusouJuusanmen => "国士無双十三面",
         }
