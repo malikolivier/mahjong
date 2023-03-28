@@ -630,9 +630,11 @@ impl<'a, 't, 'g> AgariTeCombination<'a, 't, 'g> {
             yakus.push(Yaku::Chinroutou);
         }
         if self.suukantsuu() {
+            yakus.retain(|y| y.is_yakuman());
             yakus.push(Yaku::Suukantsu);
         }
         if self.suuankou_tanki() {
+            yakus.retain(|y| y.is_yakuman());
             yakus.push(Yaku::SuuankouTanki);
         }
         if self.daisuushii() {
