@@ -1484,18 +1484,30 @@ impl Game {
     }
 
     pub fn title_repr(&self) -> String {
-        let fon = match self.wind {
-            Fon::Ton => "東",
-            Fon::Nan => "南",
-            Fon::Shaa => "西",
-            Fon::Pee => "北",
-        };
-        let kyoku = format!("{}{}局", fon, self.kyoku + 1);
-        if self.honba == 0 {
+        fn fon_str(fon: Fon) -> &'static str {
+            match fon {
+                Fon::Ton => "東",
+                Fon::Nan => "南",
+                Fon::Shaa => "西",
+                Fon::Pee => "北",
+            }
+        }
+        let kyoku = format!("{}{}局", fon_str(self.wind), self.kyoku + 1);
+
+        let kyoku = if self.honba == 0 {
             kyoku
         } else {
             format!("{}{}本場", kyoku, self.honba)
-        }
+        };
+
+        let turn = format!(
+            "{:>2}巡目 {}家 ({:>2})",
+            "TODO",
+            fon_str(self.turn),
+            self.tsumo_cnt
+        );
+
+        format!("{kyoku} {turn}")
     }
 
     pub fn score_repr(&self) -> String {
