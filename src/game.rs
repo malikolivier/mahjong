@@ -1305,8 +1305,8 @@ impl Game {
             grid[17 + i / 6][9 + i % 6] = hai.to_string();
         }
 
-        // Player 2
-        let left_player = &self.players[1];
+        // Player 4
+        let left_player = &self.players[3];
         grid[2][0] = String::from(left_player.wind.to_kanji());
         let mut offset = 0;
         for fuuro in &left_player.te.fuuro {
@@ -1374,8 +1374,8 @@ impl Game {
             grid[8 + i % 6][7 - i / 6] = hai.to_string();
         }
 
-        // Player 4
-        let right_player = &self.players[3];
+        // Player 2
+        let right_player = &self.players[1];
         grid[22][24] = String::from(right_player.wind.to_kanji());
         // TODO: Called tiles not done
         for (i, hai) in right_player.te.hai.iter().enumerate() {
