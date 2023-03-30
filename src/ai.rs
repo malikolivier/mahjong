@@ -172,9 +172,17 @@ pub fn dump_caller_bot() -> AiServer {
                 return TurnResult::Kakan { index };
             }
 
-            // Else, simply throw the drawn tile
+            // Else, throw a tile (tsumohai first)
+            let te = game.player_te_(*player);
+            let index = if te.get(TehaiIndex::Tsumohai).is_some() {
+                // We can only throw tsumo hai if it exists!
+                TehaiIndex::Tsumohai
+            } else {
+                // Throw the first tile
+                TehaiIndex::Tehai(0)
+            };
             TurnResult::ThrowHai {
-                index: TehaiIndex::Tsumohai,
+                index,
                 riichi: false,
             }
         },
