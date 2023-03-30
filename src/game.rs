@@ -305,7 +305,7 @@ impl Game {
     }
 
     fn will_hanchan_end(&self) -> bool {
-        self.wind > Fon::Nan
+        self.wind > Fon::Nan || self.score.iter().any(|s| s.score < 0)
     }
 
     pub fn play_hanchan<R: Rng>(&mut self, mut channels: [AiServer; 4], rng: &mut R) {
