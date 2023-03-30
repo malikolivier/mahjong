@@ -64,36 +64,43 @@ pub fn channel() -> (AiServer, AiClient) {
     )
 }
 
-pub fn null_bot() -> AiServer {
-    let (server, client) = channel();
-    std::thread::spawn(move || loop {
-        let request = client.rx.recv().unwrap();
-        trace!("State: \n{}\n", &request.game.to_string_repr());
-        match request {
-            GameRequest {
-                request: Request::Call(..),
-                ..
-            } => {
-                client.tx_call.send(None).expect("Sent!");
+pub type CallHandler = fn(possible_calls: &[PossibleCall], request: &GameRequest) -> Option<Call>;
+pub type TurnHandler = fn(possible_actions: &PossibleActions, request: &GameRequest) -> TurnResult;
+
+impl AiServer {
+    pub fn new(handle_call: CallHandler, handle_turn: TurnHandler) -> AiServer {
+        let (server, client) = channel();
+
+        std::thread::spawn(move || loop {
+            let request = client.rx.recv().unwrap();
+            trace!("State: \n{}\n", &request.game.to_string_repr());
+
+            match &request.request {
+                Request::Call(possible_calls) => {
+                    let call = handle_call(possible_calls, &request);
+                    client.tx_call.send(call).expect("Sent!");
+                }
+                Request::DoTurn(possible_actions) => {
+                    let result = handle_turn(possible_actions, &request);
+                    client.tx_turn.send(result).expect("Sent!")
+                }
+                _ => {}
             }
-            GameRequest {
-                request: Request::DoTurn(PossibleActions { can_shominkan, .. }),
-                game,
-                player,
-            } => client
-                .tx_turn
-                .send(if let Some(hai) = can_shominkan.first() {
-                    let index = game.player_te_(player).index(*hai).expect("Has kakan tile");
-                    TurnResult::Kakan { index }
-                } else {
-                    TurnResult::ThrowHai {
-                        index: TehaiIndex::Tsumohai,
-                        riichi: false,
-                    }
-                })
-                .expect("Sent!"),
-            _ => {}
-        }
-    });
-    server
+        });
+
+        server
+    }
+}
+
+/// Dumb AI that is a simple drawing machine
+pub fn null_bot() -> AiServer {
+    AiServer::new(
+        // Never call
+        |_, _| None,
+        // Always throw the drawn tile without doing anything
+        |_, _| TurnResult::ThrowHai {
+            index: TehaiIndex::Tsumohai,
+            riichi: false,
+        },
+    )
 }
