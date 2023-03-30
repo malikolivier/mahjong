@@ -131,7 +131,16 @@ pub fn dump_caller_bot() -> AiServer {
             })
         },
         // Always do whatever they can co, else, just throw the drawn tile
-        |PossibleActions { can_shominkan, .. }, GameRequest { game, player, .. }| {
+        |PossibleActions {
+             can_tsumo,
+             can_shominkan,
+             ..
+         },
+         GameRequest { game, player, .. }| {
+            if *can_tsumo {
+                return TurnResult::Tsumo;
+            }
+
             if let Some(hai) = can_shominkan.first() {
                 let index = game
                     .player_te_(*player)
