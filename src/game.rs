@@ -2654,8 +2654,6 @@ mod solver {
 
 #[cfg(test)]
 pub mod tests {
-    use crate::ai::null_bot;
-
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::super::tiles::ParseHaiError;
     use super::*;
@@ -2875,7 +2873,7 @@ pub mod tests {
 
     #[test]
     fn test_rotate_players() {
-        let mut channels = [null_bot(), null_bot(), null_bot(), null_bot()];
+        let mut channels = Default::default();
         let mut game = Game::default();
         for fon in [Fon::Ton, Fon::Nan, Fon::Shaa, Fon::Pee] {
             assert_eq!(game.players[fon as usize].wind, fon);

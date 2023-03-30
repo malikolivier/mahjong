@@ -93,6 +93,12 @@ impl AiServer {
     }
 }
 
+impl Default for AiServer {
+    fn default() -> Self {
+        null_bot()
+    }
+}
+
 /// Dumb AI that is a simple drawing machine
 pub fn null_bot() -> AiServer {
     AiServer::new(
