@@ -1036,8 +1036,92 @@ impl Game {
         i: TehaiIndex,
         channels: &[AiServer; 4],
     ) -> Option<KyokuResult> {
-        let te = &mut self.players[self.turn as usize].te;
-        te.ankan(i);
+        // Retrieve chankan tile
+        let hai = self.players[self.turn as usize]
+            .te
+            .get(i)
+            .expect("Get tile from ankan");
+
+        // Do ankan
+        self.players[self.turn as usize].te.ankan(i);
+
+        // Check chankan
+        let chankan1 = self.can_chankan_on_ankan(self.turn.next(), hai);
+        let chankan2 = self.can_chankan_on_ankan(self.turn.next().next(), hai);
+        let chankan3 = self.can_chankan_on_ankan(self.turn.next().next().next(), hai);
+        let mut call1 = None;
+        let mut call2 = None;
+        let mut call3 = None;
+        if chankan1 {
+            channels[self.turn.next() as usize]
+                .tx
+                .send(GameRequest::new(
+                    self,
+                    Request::Call(vec![PossibleCall::Ron]),
+                    self.turn.next(),
+                ))
+                .expect("Sent!");
+        }
+        if chankan2 {
+            channels[self.turn.next().next() as usize]
+                .tx
+                .send(GameRequest::new(
+                    self,
+                    Request::Call(vec![PossibleCall::Ron]),
+                    self.turn.next().next(),
+                ))
+                .expect("Sent!");
+        }
+        if chankan3 {
+            channels[self.turn.next().next().next() as usize]
+                .tx
+                .send(GameRequest::new(
+                    self,
+                    Request::Call(vec![PossibleCall::Ron]),
+                    self.turn.next().next().next(),
+                ))
+                .expect("Sent!");
+        }
+        if chankan1 {
+            call1 = channels[self.turn.next() as usize]
+                .rx_call
+                .recv()
+                .expect("Received!");
+        }
+        if chankan2 {
+            call2 = channels[self.turn.next().next() as usize]
+                .rx_call
+                .recv()
+                .expect("Received!");
+        }
+        if chankan3 {
+            call3 = channels[self.turn.next().next().next() as usize]
+                .rx_call
+                .recv()
+                .expect("Received!");
+        }
+        // NB: If a riichi player did not call possible ron on a chankan,
+        // they will be in furiten.
+        self.riichi_furiten_check(hai);
+
+        let mut ron_calls = vec![];
+        if let Some(Call::Ron) = call1 {
+            ron_calls.push(self.turn.next());
+        }
+        if let Some(Call::Ron) = call2 {
+            ron_calls.push(self.turn.next().next());
+        }
+        if let Some(Call::Ron) = call3 {
+            ron_calls.push(self.turn.next().next().next());
+        }
+        if !ron_calls.is_empty() {
+            // Abort ankan!
+            self.players[self.turn as usize].te.abort_ankan(hai);
+            let result = self.agari(ron_calls, WinningMethod::Ron, Some(hai), false);
+            self.send_game_result(result.clone(), channels);
+            return Some(result);
+        }
+
         self.kan_after(self.turn, channels)
     }
 
@@ -1056,6 +1140,23 @@ impl Game {
             let (yaku, _, _) = agari_te.points();
             !yaku.is_empty()
         }
+    }
+
+    fn can_chankan_on_ankan(&self, player: Fon, hai: Hai) -> bool {
+        if !self.can_chankan(player, hai) {
+            return false;
+        }
+
+        let agari_te = AgariTe::from_te(
+            &self.players[player as usize].te,
+            self,
+            hai,
+            WinningMethod::Ron,
+            player,
+        )
+        .chankan(true);
+        let (yaku, _, _) = agari_te.points();
+        yaku.contains(&Yaku::Kokushimusou) || yaku.contains(&Yaku::KokushimusouJuusanmen)
     }
 
     /// Returns a boolean whose value is false if this is the last turn
@@ -1834,6 +1935,30 @@ impl Te {
             self.hai.insert(added);
         } else {
             unreachable!("Expect shominkan!");
+        }
+    }
+
+    /// Remove a ankan in this te (called in case of ankan)
+    pub fn abort_ankan(&mut self, hai: Hai) {
+        let ankan_index = self
+            .fuuro
+            .iter()
+            .position(|fuuro| {
+                if let Fuuro::Kantsu(KantsuInner::Ankan { own }) = fuuro {
+                    own[0] == hai
+                } else {
+                    false
+                }
+            })
+            .expect("Has ankan");
+        let ankan = self.fuuro.remove(ankan_index);
+        if let Fuuro::Kantsu(KantsuInner::Ankan { own }) = ankan {
+            self.hai.insert(own[0]);
+            self.hai.insert(own[1]);
+            self.hai.insert(own[2]);
+            self.hai.insert(own[3]);
+        } else {
+            unreachable!("Expect ankan!");
         }
     }
 
@@ -2654,6 +2779,8 @@ mod solver {
 
 #[cfg(test)]
 pub mod tests {
+    use std::str::FromStr;
+
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::super::tiles::ParseHaiError;
     use super::*;
@@ -2869,6 +2996,18 @@ pub mod tests {
             ron::de::from_reader(std::fs::File::open("nagashimangan-called.ron").unwrap()).unwrap();
         // 南家 called on one of 東家's 捨て牌, so no nagashi-mangan
         assert_eq!(game.is_nagashi_mangan(), None);
+    }
+
+    #[test]
+    fn test_kokushimuso_chankan_on_ankan() {
+        let game: Game =
+            ron::de::from_reader(std::fs::File::open("kokushimusou-chankan-ankan.ron").unwrap())
+                .unwrap();
+        let winning_tile = Hai::from_str("🀂").unwrap();
+        assert_eq!(game.can_chankan_on_ankan(Fon::Ton, winning_tile), true);
+        // Run the game to test the actual calling
+        // The dumb-caller-bot will call ankan
+        // cargo run -- --from-state kokushimusou-chankan-ankan.ron --p3 dumb-caller-bot
     }
 
     #[test]
