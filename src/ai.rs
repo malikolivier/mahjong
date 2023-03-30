@@ -134,6 +134,7 @@ pub fn dump_caller_bot() -> AiServer {
         |PossibleActions {
              can_tsumo,
              can_riichi,
+             can_kyusyukyuhai,
              can_shominkan,
              ..
          },
@@ -151,6 +152,10 @@ pub fn dump_caller_bot() -> AiServer {
                     index,
                     riichi: true,
                 };
+            }
+
+            if *can_kyusyukyuhai {
+                return TurnResult::Kyusyukyuhai;
             }
 
             if let Some(hai) = can_shominkan.first() {
