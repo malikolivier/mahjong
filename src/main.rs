@@ -351,6 +351,8 @@ fn cursive_human() -> ai::AiServer {
             }
         }
         debug!("Quitted...");
+
+        std::process::exit(0);
     });
 
     server
