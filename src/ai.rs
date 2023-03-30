@@ -104,3 +104,30 @@ pub fn null_bot() -> AiServer {
         },
     )
 }
+
+/// Dumb AI that calls whenever it can
+///
+/// Convenient for testing calls.
+pub fn dump_caller_bot() -> AiServer {
+    AiServer::new(
+        // Always call (TODO)
+        |_, _| None,
+        // Always do whatever they can co, else, just throw the drawn tile
+        |PossibleActions { can_shominkan, .. }, GameRequest { game, player, .. }| {
+            if let Some(hai) = can_shominkan.first() {
+                let index = game
+                    .player_te_(*player)
+                    .index(*hai)
+                    .expect("Has kakan tile");
+                return TurnResult::Kakan { index };
+            }
+            // TODO: Other possible actions
+
+            // Else, simply throw the drawn tile
+            TurnResult::ThrowHai {
+                index: TehaiIndex::Tsumohai,
+                riichi: false,
+            }
+        },
+    )
+}

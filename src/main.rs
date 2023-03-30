@@ -18,6 +18,7 @@ mod yaku;
 
 use ai::TehaiIndex;
 
+use crate::ai::dump_caller_bot;
 use crate::ai::null_bot;
 use crate::ai::AiServer;
 
@@ -46,12 +47,14 @@ struct Args {
 enum AI {
     CursiveHuman,
     NullBot,
+    DumbCallerBot,
 }
 
 fn make_ai_server(ai: AI) -> AiServer {
     match ai {
         AI::CursiveHuman => cursive_human(),
         AI::NullBot => null_bot(),
+        AI::DumbCallerBot => dump_caller_bot(),
     }
 }
 
