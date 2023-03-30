@@ -50,6 +50,7 @@ pub struct Game {
     pub turn: Fon,
     honba: usize,
     kyoku: usize,
+    jun: usize,
     tsumo_cnt: usize,
     /// 4 players indexed by Ton/Nan/Sha/Pee
     players: [Player; 4],
@@ -79,6 +80,7 @@ impl Default for Game {
             turn: Fon::Ton,
             honba: 0,
             kyoku: 0,
+            jun: 1,
             tsumo_cnt: 0,
             players: [
                 Player::new(Fon::Ton),
@@ -166,6 +168,7 @@ impl<'de> Deserialize<'de> for Game {
             kyoku: game.kyoku,
             honba: game.honba,
             players: game.players,
+            jun: 1, // TODO: Insert real value here
             tsumo_cnt: game.tsumo_cnt,
             yama,
             hoo: game.hoo,
@@ -339,6 +342,7 @@ impl Game {
         new_game.dice[1] = rng.gen();
 
         self.turn = new_game.turn;
+        self.jun = new_game.jun;
         self.tsumo_cnt = new_game.tsumo_cnt;
         self.players = new_game.players;
         self.yama = new_game.yama;
@@ -589,7 +593,7 @@ impl Game {
             TurnResult::Kakan { index } => self.announce_kakan(index, channels),
             TurnResult::ThrowHai { index, riichi } => {
                 self.throw_tile(self.turn, index, riichi);
-                self.turn = self.turn.next();
+                self.change_turn(self.turn.next());
                 None
             }
         }
@@ -907,6 +911,13 @@ impl Game {
         }
     }
 
+    fn change_turn(&mut self, next: Fon) {
+        self.turn = next;
+        if next == Fon::Ton {
+            self.jun += 1;
+        }
+    }
+
     /// p: Wind of the caller.
     pub fn call_chi(&mut self, p: Fon, index: [usize; 2]) {
         let hai = self.remove_last_thrown_tile();
@@ -935,7 +946,7 @@ impl Game {
         );
         te.open_shuntsu(hai, index);
         self.remove_ippatsu();
-        self.turn = p;
+        self.change_turn(p);
     }
 
     /// p: Wind of the caller.
@@ -961,7 +972,7 @@ impl Game {
         };
         te.open_kootsu(hai, direction);
         self.remove_ippatsu();
-        self.turn = p;
+        self.change_turn(p);
     }
 
     /// Returns a boolean whose value is false if this is the last turn
@@ -1124,7 +1135,7 @@ impl Game {
         }
         // Draw from mont intouchable and do a standard turn
         self.draw_from_rinshan(p);
-        self.turn = p;
+        self.change_turn(p);
         self.do_turn(channels, true)
     }
 
@@ -1502,7 +1513,7 @@ impl Game {
 
         let turn = format!(
             "{:>2}巡目 {}家 ({:>2})",
-            "TODO",
+            self.jun,
             fon_str(self.turn),
             self.tsumo_cnt
         );
@@ -2605,6 +2616,7 @@ pub mod tests {
                 turn: Fon::Ton,
                 kyoku: 0,
                 honba: 0,
+                jun: 1,
                 tsumo_cnt: 0,
                 players,
                 yama: [None; 136],
