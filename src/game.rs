@@ -120,6 +120,15 @@ impl fmt::Debug for Game {
     }
 }
 
+impl fmt::Display for Game {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let title = self.title_repr();
+        let score = self.score_repr();
+        let board = self.to_string_repr();
+        write!(f, "{}\n{}\n\n{}", title, score, board)
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 struct GameSerde {
     wind: Fon,
