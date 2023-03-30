@@ -110,8 +110,26 @@ pub fn null_bot() -> AiServer {
 /// Convenient for testing calls.
 pub fn dump_caller_bot() -> AiServer {
     AiServer::new(
-        // Always call (TODO)
-        |_, _| None,
+        // Always call
+        |possible_calls, _| {
+            let mut calls = Vec::from(possible_calls);
+
+            // Order possibles calls by priority
+            calls.sort_by_key(|c| match c {
+                PossibleCall::Ron => 1,
+                PossibleCall::Kan => 2,
+                PossibleCall::Pon => 3,
+                PossibleCall::Chi { .. } => 4,
+            });
+
+            // Always call the call with the highest priority
+            calls.first().map(|c| match c {
+                PossibleCall::Ron => Call::Ron,
+                PossibleCall::Kan => Call::Kan,
+                PossibleCall::Pon => Call::Pon,
+                PossibleCall::Chi { indices } => Call::Chi { index: indices[0] },
+            })
+        },
         // Always do whatever they can co, else, just throw the drawn tile
         |PossibleActions { can_shominkan, .. }, GameRequest { game, player, .. }| {
             if let Some(hai) = can_shominkan.first() {
