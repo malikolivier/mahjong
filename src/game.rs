@@ -1169,7 +1169,7 @@ impl Game {
         };
 
         // Player 3
-        let top_player = &self.players[2];
+        let top_player = &self.players[Fon::Shaa as usize];
         grid[0][22] = String::from(top_player.wind.to_kanji());
         let mut offset = 0;
         for fuuro in &top_player.te.fuuro {
@@ -1237,7 +1237,7 @@ impl Game {
         }
 
         // Player 1
-        let bottom_player = &self.players[0];
+        let bottom_player = &self.players[Fon::Ton as usize];
         grid[24][2] = String::from(bottom_player.wind.to_kanji());
         let mut offset = 0;
         for fuuro in &bottom_player.te.fuuro {
@@ -1306,7 +1306,7 @@ impl Game {
         }
 
         // Player 4
-        let left_player = &self.players[3];
+        let left_player = &self.players[Fon::Pee as usize];
         grid[2][0] = String::from(left_player.wind.to_kanji());
         let mut offset = 0;
         for fuuro in &left_player.te.fuuro {
@@ -1375,7 +1375,7 @@ impl Game {
         }
 
         // Player 2
-        let right_player = &self.players[1];
+        let right_player = &self.players[Fon::Nan as usize];
         grid[22][24] = String::from(right_player.wind.to_kanji());
         // TODO: Called tiles not done
         for (i, hai) in right_player.te.hai.iter().enumerate() {
