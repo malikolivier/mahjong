@@ -94,6 +94,15 @@ impl Fon {
     pub fn to_char(self) -> char {
         Hai::Ji(JiHai::Fon(self)).to_char()
     }
+
+    pub fn to_kanji(self) -> &'static str {
+        match self {
+            Fon::Ton => "東",
+            Fon::Nan => "南",
+            Fon::Shaa => "西",
+            Fon::Pee => "北",
+        }
+    }
 }
 
 const FON: [Fon; 4] = [Fon::Ton, Fon::Nan, Fon::Shaa, Fon::Pee];

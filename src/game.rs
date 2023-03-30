@@ -1504,15 +1504,7 @@ impl Game {
     }
 
     pub fn title_repr(&self) -> String {
-        fn fon_str(fon: Fon) -> &'static str {
-            match fon {
-                Fon::Ton => "東",
-                Fon::Nan => "南",
-                Fon::Shaa => "西",
-                Fon::Pee => "北",
-            }
-        }
-        let kyoku = format!("{}{}局", fon_str(self.wind), self.kyoku + 1);
+        let kyoku = format!("{}{}局", self.wind.to_kanji(), self.kyoku + 1);
 
         let kyoku = if self.honba == 0 {
             kyoku
@@ -1523,7 +1515,7 @@ impl Game {
         let turn = format!(
             "{:>2}巡目 {}家 ({:>2})",
             self.jun,
-            fon_str(self.turn),
+            self.turn.to_kanji(),
             self.tsumo_cnt
         );
 
