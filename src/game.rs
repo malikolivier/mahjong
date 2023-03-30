@@ -196,16 +196,20 @@ impl GameRequest {
 pub enum Request {
     Refresh,
     Call(Vec<PossibleCall>),
-    DoTurn {
-        can_tsumo: bool,
-        /// List of tiles that can be thrown so that the user can call riichi.
-        can_riichi: Vec<ThrowableOnRiichi>,
-        can_kyusyukyuhai: bool,
-        /// Can call kan on one of these tiles during own turn
-        can_shominkan: Vec<Hai>,
-        can_ankan: Vec<Hai>,
-    },
+    DoTurn(PossibleActions),
     DisplayScore(KyokuResult),
+}
+
+#[derive(Debug, Clone)]
+pub struct PossibleActions {
+    /// Can win by calling tsumo
+    pub can_tsumo: bool,
+    /// List of tiles that can be thrown so that the user can call riichi.
+    pub can_riichi: Vec<ThrowableOnRiichi>,
+    pub can_kyusyukyuhai: bool,
+    /// Can call kan on one of these tiles during own turn
+    pub can_shominkan: Vec<Hai>,
+    pub can_ankan: Vec<Hai>,
 }
 
 #[derive(Debug, Clone)]
@@ -560,13 +564,13 @@ impl Game {
             .tx
             .send(GameRequest::new(
                 self,
-                Request::DoTurn {
+                Request::DoTurn(PossibleActions {
                     can_tsumo: self.can_tsumo(),
                     can_riichi: self.can_riichi(),
                     can_kyusyukyuhai: self.can_kyusyukyuhai(),
                     can_shominkan: self.can_shominkan(),
                     can_ankan: self.can_ankan(),
-                },
+                }),
                 self.turn,
             ))
             .expect("Sent!");

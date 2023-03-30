@@ -188,13 +188,13 @@ fn cursive_human() -> ai::AiServer {
 
                     instant = None;
                 }
-                game::Request::DoTurn {
+                game::Request::DoTurn(game::PossibleActions {
                     can_tsumo,
                     can_riichi,
                     can_kyusyukyuhai,
                     can_shominkan,
                     can_ankan,
-                } => {
+                }) => {
                     let mut dialog = Dialog::text("").title("Hand");
                     if can_tsumo {
                         let tx_turn = tx_turn.clone();

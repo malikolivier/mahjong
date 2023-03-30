@@ -1,4 +1,4 @@
-use super::game::{GameRequest, Request};
+use super::game::{GameRequest, PossibleActions, Request};
 use log::trace;
 
 #[derive(Debug, Copy, Eq, PartialEq, PartialOrd, Ord, Clone)]
@@ -77,7 +77,7 @@ pub fn null_bot() -> AiServer {
                 client.tx_call.send(None).expect("Sent!");
             }
             GameRequest {
-                request: Request::DoTurn { can_shominkan, .. },
+                request: Request::DoTurn(PossibleActions { can_shominkan, .. }),
                 game,
                 player,
             } => client
