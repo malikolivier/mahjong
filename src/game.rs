@@ -1715,8 +1715,12 @@ impl Te {
 
     /// Make a chi in this te
     pub fn open_shuntsu(&mut self, hai: Hai, index: [usize; 2]) {
+        // Second tile's index may change after first tile removal,
+        // so we get the second tile before removing the first one.
+        let hai3 = self.get(TehaiIndex::Tehai(index[1])).expect("Has title");
         let hai2 = self.remove(TehaiIndex::Tehai(index[0]));
-        let hai3 = self.remove(TehaiIndex::Tehai(index[1]));
+        let hai3_new_index = self.index(hai3).expect("Has title");
+        self.remove(hai3_new_index);
         let new_shuntsu = Fuuro::Shuntsu {
             own: [hai2, hai3],
             taken: hai,
