@@ -58,7 +58,7 @@ pub struct Game {
     /// 4 rivers indexed by Ton/Nan/Sha/Pee
     hoo: [Hoo; 4],
     dice: [Dice; 2],
-    /// What is left on the table in front of each player
+    /// Score of each player, indexed by Ton/Nan/Sha/Pee
     score: [Score; 4],
 }
 
@@ -282,6 +282,16 @@ impl Game {
         self.tsumo_cnt <= 4 && self.players.iter().all(|p| p.te.fuuro.is_empty())
     }
 
+    /// Rotate players (called when oya changes)
+    fn rotate_players(&mut self, channels: &mut [AiServer; 4]) {
+        channels.rotate_right(1);
+        self.score.rotate_right(1);
+        self.players.rotate_right(1);
+        for p in &mut self.players {
+            p.wind = p.wind.next();
+        }
+    }
+
     pub fn play_hanchan<R: Rng>(&mut self, mut channels: [AiServer; 4], rng: &mut R) {
         loop {
             let result = self.play(&channels);
@@ -290,8 +300,7 @@ impl Game {
                     self.honba += 1;
                     if !oya_tempai {
                         // Move players if oya is not tempai
-                        channels.rotate_right(1);
-                        self.score.rotate_right(1);
+                        self.rotate_players(&mut channels);
 
                         self.kyoku += 1;
                         if self.kyoku > 3 {
@@ -310,8 +319,7 @@ impl Game {
                         self.honba += 1;
                     } else {
                         // Move player
-                        channels.rotate_right(1);
-                        self.score.rotate_right(1);
+                        self.rotate_players(&mut channels);
 
                         self.kyoku += 1;
                         if self.kyoku > 3 {
@@ -2579,6 +2587,8 @@ mod solver {
 
 #[cfg(test)]
 pub mod tests {
+    use crate::ai::null_bot;
+
     // Note this useful idiom: importing names from outer (for mod tests) scope.
     use super::super::tiles::ParseHaiError;
     use super::*;
@@ -2794,5 +2804,20 @@ pub mod tests {
             ron::de::from_reader(std::fs::File::open("nagashimangan-called.ron").unwrap()).unwrap();
         // 南家 called on one of 東家's 捨て牌, so no nagashi-mangan
         assert_eq!(game.is_nagashi_mangan(), None);
+    }
+
+    #[test]
+    fn test_rotate_players() {
+        let mut channels = [null_bot(), null_bot(), null_bot(), null_bot()];
+        let mut game = Game::default();
+        for fon in [Fon::Ton, Fon::Nan, Fon::Shaa, Fon::Pee] {
+            assert_eq!(game.players[fon as usize].wind, fon);
+        }
+        game.rotate_players(&mut channels);
+        // Check that the invariant that players are always indexed by wind
+        // So their winds and the indexed must match
+        for fon in [Fon::Ton, Fon::Nan, Fon::Shaa, Fon::Pee] {
+            assert_eq!(game.players[fon as usize].wind, fon);
+        }
     }
 }
