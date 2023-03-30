@@ -210,6 +210,7 @@ pub enum Request {
     Call(Vec<PossibleCall>),
     DoTurn(PossibleActions),
     DisplayScore(KyokuResult),
+    EndGame,
 }
 
 #[derive(Debug, Clone)]
@@ -292,6 +293,17 @@ impl Game {
         }
     }
 
+    fn tx_end_hanchan(&self, channels: &[AiServer; 4]) {
+        let mut player = Fon::Ton;
+        for channel in channels {
+            channel
+                .tx
+                .send(GameRequest::new(self, Request::EndGame, player))
+                .expect("Sent!");
+            player = player.next();
+        }
+    }
+
     pub fn play_hanchan<R: Rng>(&mut self, mut channels: [AiServer; 4], rng: &mut R) {
         loop {
             let result = self.play(&channels);
@@ -308,7 +320,7 @@ impl Game {
                             self.wind = self.wind.next();
                             if self.wind > Fon::Nan {
                                 info!("Hanchan completed!");
-                                // TODO: Hanchan is finished
+                                self.tx_end_hanchan(&channels);
                                 return;
                             }
                         }
@@ -327,7 +339,7 @@ impl Game {
                             self.wind = self.wind.next();
                             if self.wind > Fon::Nan {
                                 info!("Hanchan completed!");
-                                // TODO: Hanchan is finished
+                                self.tx_end_hanchan(&channels);
                                 return;
                             }
                         }

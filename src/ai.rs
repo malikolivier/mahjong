@@ -84,6 +84,7 @@ impl AiServer {
                     let result = handle_turn(possible_actions, &request);
                     client.tx_turn.send(result).expect("Sent!")
                 }
+                Request::EndGame => return,
                 _ => {}
             }
         });

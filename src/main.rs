@@ -120,6 +120,7 @@ fn cursive_human() -> ai::AiServer {
             siv.add_layer(TextView::new(display));
 
             match request {
+                game::Request::EndGame => return,
                 game::Request::Refresh => {
                     snapshot(&game);
                     instant = Some(std::time::Instant::now());
