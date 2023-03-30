@@ -1,4 +1,4 @@
-use super::game::{GameRequest, PossibleActions, Request};
+use super::game::{GameRequest, PossibleActions, Request, ThrowableOnRiichi};
 use log::trace;
 
 #[derive(Debug, Copy, Eq, PartialEq, PartialOrd, Ord, Clone)]
@@ -133,12 +133,24 @@ pub fn dump_caller_bot() -> AiServer {
         // Always do whatever they can co, else, just throw the drawn tile
         |PossibleActions {
              can_tsumo,
+             can_riichi,
              can_shominkan,
              ..
          },
          GameRequest { game, player, .. }| {
             if *can_tsumo {
                 return TurnResult::Tsumo;
+            }
+
+            if !can_riichi.is_empty() {
+                let index = match can_riichi[0] {
+                    ThrowableOnRiichi::Te(index) => TehaiIndex::Tehai(index),
+                    ThrowableOnRiichi::Tsumohai => TehaiIndex::Tsumohai,
+                };
+                return TurnResult::ThrowHai {
+                    index,
+                    riichi: true,
+                };
             }
 
             if let Some(hai) = can_shominkan.first() {
