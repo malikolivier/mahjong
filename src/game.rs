@@ -31,7 +31,7 @@ impl Dice {
 
 impl Distribution<Dice> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Dice {
-        match rng.gen_range(0, 6) {
+        match rng.gen_range(0..6) {
             0 => Dice::One,
             1 => Dice::Two,
             2 => Dice::Three,
