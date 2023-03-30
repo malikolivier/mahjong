@@ -1229,7 +1229,7 @@ impl Game {
         if let Some(hai) = top_player.te.tsumo {
             grid[0][top_player.te.hai.len() + 1 + offset + 5] = hai.to_string();
         }
-        for (i, sutehai) in self.hoo[2].river.iter().enumerate() {
+        for (i, sutehai) in self.hoo[Fon::Shaa as usize].river.iter().enumerate() {
             let hai = match sutehai {
                 SuteHai::Normal(hai) | SuteHai::Riichi(hai) => hai,
             };
@@ -1298,7 +1298,7 @@ impl Game {
             grid[24][bottom_player.te.hai.len() + 1 + 5] = hai.to_string();
         }
 
-        for (i, sutehai) in self.hoo[0].river.iter().enumerate() {
+        for (i, sutehai) in self.hoo[Fon::Ton as usize].river.iter().enumerate() {
             let hai = match sutehai {
                 SuteHai::Normal(hai) | SuteHai::Riichi(hai) => hai,
             };
@@ -1367,7 +1367,7 @@ impl Game {
             grid[left_player.te.hai.len() + 6][0] = hai.to_string();
         }
 
-        for (i, sutehai) in self.hoo[1].river.iter().enumerate() {
+        for (i, sutehai) in self.hoo[Fon::Pee as usize].river.iter().enumerate() {
             let hai = match sutehai {
                 SuteHai::Normal(hai) | SuteHai::Riichi(hai) => hai,
             };
@@ -1436,7 +1436,7 @@ impl Game {
             grid[24 - right_player.te.hai.len() - 6][24] = hai.to_string();
         }
 
-        for (i, sutehai) in self.hoo[3].river.iter().enumerate() {
+        for (i, sutehai) in self.hoo[Fon::Nan as usize].river.iter().enumerate() {
             let hai = match sutehai {
                 SuteHai::Normal(hai) | SuteHai::Riichi(hai) => hai,
             };
