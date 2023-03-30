@@ -304,6 +304,10 @@ impl Game {
         }
     }
 
+    fn will_hanchan_end(&self) -> bool {
+        self.wind > Fon::Nan
+    }
+
     pub fn play_hanchan<R: Rng>(&mut self, mut channels: [AiServer; 4], rng: &mut R) {
         loop {
             let result = self.play(&channels);
@@ -318,11 +322,6 @@ impl Game {
                         if self.kyoku > 3 {
                             self.kyoku = 0;
                             self.wind = self.wind.next();
-                            if self.wind > Fon::Nan {
-                                info!("Hanchan completed!");
-                                self.tx_end_hanchan(&channels);
-                                return;
-                            }
                         }
                     }
                 }
@@ -337,14 +336,15 @@ impl Game {
                         if self.kyoku > 3 {
                             self.kyoku = 0;
                             self.wind = self.wind.next();
-                            if self.wind > Fon::Nan {
-                                info!("Hanchan completed!");
-                                self.tx_end_hanchan(&channels);
-                                return;
-                            }
                         }
                     }
                 }
+            }
+
+            if self.will_hanchan_end() {
+                info!("Hanchan completed!");
+                self.tx_end_hanchan(&channels);
+                return;
             }
             self.reset(rng);
         }
