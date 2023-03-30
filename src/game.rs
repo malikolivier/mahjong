@@ -1162,6 +1162,7 @@ impl Game {
 
         // Player 3
         let top_player = &self.players[2];
+        grid[0][22] = String::from(top_player.wind.to_kanji());
         let mut offset = 0;
         for fuuro in &top_player.te.fuuro {
             match fuuro {
@@ -1229,6 +1230,7 @@ impl Game {
 
         // Player 1
         let bottom_player = &self.players[0];
+        grid[24][2] = String::from(bottom_player.wind.to_kanji());
         let mut offset = 0;
         for fuuro in &bottom_player.te.fuuro {
             match fuuro {
@@ -1297,6 +1299,7 @@ impl Game {
 
         // Player 2
         let left_player = &self.players[1];
+        grid[2][0] = String::from(left_player.wind.to_kanji());
         let mut offset = 0;
         for fuuro in &left_player.te.fuuro {
             match fuuro {
@@ -1365,6 +1368,7 @@ impl Game {
 
         // Player 4
         let right_player = &self.players[3];
+        grid[22][24] = String::from(right_player.wind.to_kanji());
         // TODO: Called tiles not done
         for (i, hai) in right_player.te.hai.iter().enumerate() {
             grid[24 - i - 5][24] = hai.to_string();
