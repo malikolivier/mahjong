@@ -1536,16 +1536,16 @@ impl Game {
         }
         format!(
             "{}: {}  {}\n{}: {}  {}\n{}: {}  {}\n{}: {}  {}",
-            Fon::Ton.to_char(),
+            Fon::Ton.to_kanji(),
             self.score[Fon::Ton as usize].score,
             riichi_bou_repr(self.score[Fon::Ton as usize].riichi_bou),
-            Fon::Nan.to_char(),
+            Fon::Nan.to_kanji(),
             self.score[Fon::Nan as usize].score,
             riichi_bou_repr(self.score[Fon::Nan as usize].riichi_bou),
-            Fon::Shaa.to_char(),
+            Fon::Shaa.to_kanji(),
             self.score[Fon::Shaa as usize].score,
             riichi_bou_repr(self.score[Fon::Shaa as usize].riichi_bou),
-            Fon::Pee.to_char(),
+            Fon::Pee.to_kanji(),
             self.score[Fon::Pee as usize].score,
             riichi_bou_repr(self.score[Fon::Pee as usize].riichi_bou),
         )
