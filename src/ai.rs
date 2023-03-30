@@ -136,7 +136,7 @@ pub fn dump_caller_bot() -> AiServer {
              can_riichi,
              can_kyusyukyuhai,
              can_shominkan,
-             ..
+             can_ankan,
          },
          GameRequest { game, player, .. }| {
             if *can_tsumo {
@@ -158,6 +158,12 @@ pub fn dump_caller_bot() -> AiServer {
                 return TurnResult::Kyusyukyuhai;
             }
 
+            if !can_ankan.is_empty() {
+                let hai = can_ankan[0];
+                let index = game.player_te_(*player).index(hai).expect("Has kakan tile");
+                return TurnResult::Ankan { index };
+            }
+
             if let Some(hai) = can_shominkan.first() {
                 let index = game
                     .player_te_(*player)
@@ -165,7 +171,6 @@ pub fn dump_caller_bot() -> AiServer {
                     .expect("Has kakan tile");
                 return TurnResult::Kakan { index };
             }
-            // TODO: Other possible actions
 
             // Else, simply throw the drawn tile
             TurnResult::ThrowHai {
