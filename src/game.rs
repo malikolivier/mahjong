@@ -302,6 +302,13 @@ impl Game {
                 .expect("Sent!");
             player = player.next();
         }
+
+        for (i, c) in channels.iter().enumerate() {
+            // Wait for each channel thread to end
+            if c.rx_turn.recv().is_ok() {
+                panic!("Expects channel {i} to be closed!");
+            }
+        }
     }
 
     fn will_hanchan_end(&self) -> bool {
