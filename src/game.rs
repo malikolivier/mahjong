@@ -2016,6 +2016,39 @@ impl Fuuro {
             Fuuro::Kantsu(KantsuInner::Ankan { .. }) => None,
         }
     }
+
+    /// Get all tiles in this fuuro
+    pub fn hai_all(&self) -> Vec<Hai> {
+        let mut open_hai = Vec::with_capacity(4);
+        match self {
+            Fuuro::Shuntsu { own, taken, .. } | Fuuro::Kootsu { own, taken, .. } => {
+                open_hai.push(own[0]);
+                open_hai.push(own[1]);
+                open_hai.push(*taken);
+            }
+            Fuuro::Kantsu(KantsuInner::Ankan { own }) => {
+                open_hai.push(own[0]);
+                open_hai.push(own[1]);
+                open_hai.push(own[2]);
+                open_hai.push(own[3]);
+            }
+            Fuuro::Kantsu(KantsuInner::DaiMinkan { own, taken, .. }) => {
+                open_hai.push(own[0]);
+                open_hai.push(own[1]);
+                open_hai.push(own[2]);
+                open_hai.push(*taken);
+            }
+            Fuuro::Kantsu(KantsuInner::ShouMinkan {
+                own, taken, added, ..
+            }) => {
+                open_hai.push(own[0]);
+                open_hai.push(own[1]);
+                open_hai.push(*added);
+                open_hai.push(*taken);
+            }
+        }
+        open_hai
+    }
 }
 
 #[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]

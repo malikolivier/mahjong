@@ -299,33 +299,7 @@ impl<'t, 'g> AgariTe<'t, 'g> {
     fn hai_all(&self) -> impl Iterator<Item = Hai> + '_ {
         let mut open_hai = Vec::with_capacity(4 * self.fuuro.len());
         for fuuro in self.fuuro {
-            match fuuro {
-                Fuuro::Shuntsu { own, taken, .. } | Fuuro::Kootsu { own, taken, .. } => {
-                    open_hai.push(own[0]);
-                    open_hai.push(own[1]);
-                    open_hai.push(*taken);
-                }
-                Fuuro::Kantsu(KantsuInner::Ankan { own }) => {
-                    open_hai.push(own[0]);
-                    open_hai.push(own[1]);
-                    open_hai.push(own[2]);
-                    open_hai.push(own[3]);
-                }
-                Fuuro::Kantsu(KantsuInner::DaiMinkan { own, taken, .. }) => {
-                    open_hai.push(own[0]);
-                    open_hai.push(own[1]);
-                    open_hai.push(own[2]);
-                    open_hai.push(*taken);
-                }
-                Fuuro::Kantsu(KantsuInner::ShouMinkan {
-                    own, taken, added, ..
-                }) => {
-                    open_hai.push(own[0]);
-                    open_hai.push(own[1]);
-                    open_hai.push(*added);
-                    open_hai.push(*taken);
-                }
-            }
+            open_hai.append(&mut fuuro.hai_all());
         }
         self.hai().chain(open_hai)
     }
