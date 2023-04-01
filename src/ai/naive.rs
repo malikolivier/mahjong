@@ -1,5 +1,8 @@
 use crate::{
-    game::{count_shanten, find_machi, Game, GameRequest, PossibleActions, ThrowableOnRiichi},
+    game::{
+        count_shanten, find_machi, find_machi_incomplete, Game, GameRequest, PossibleActions,
+        ThrowableOnRiichi,
+    },
     tiles::{Fon, Hai},
 };
 
@@ -74,8 +77,8 @@ fn choose_tile_to_throw(player: Fon, game: &Game) -> TehaiIndex {
 
         let shanten = count_shanten(&tiles);
 
-        let machi_count = 0;
-        // TODO: Count machi to maximize their numbers on each throw
+        // Count machi to maximize their numbers on each throw
+        let machi_count = find_machi_incomplete(&tiles).len();
         (shanten, usize::MAX - machi_count)
     });
 
