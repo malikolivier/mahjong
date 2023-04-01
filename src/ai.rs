@@ -167,7 +167,7 @@ pub fn dump_caller_bot() -> AiServer {
 
             if !can_ankan.is_empty() {
                 let hai = can_ankan[0];
-                let index = game.player_te_(*player).index(hai).expect("Has kakan tile");
+                let index = game.player_te_(*player).index(hai).expect("Has ankan tile");
                 return TurnResult::Ankan { index };
             }
 
