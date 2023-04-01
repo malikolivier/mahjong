@@ -82,6 +82,9 @@ fn main() {
         ],
         &mut rng,
     );
+
+    // Dump table before ending
+    println!("{}", game);
 }
 
 fn cursive_human() -> ai::AiServer {
