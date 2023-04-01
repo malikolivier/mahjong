@@ -3,7 +3,7 @@ use crate::{
         count_shanten, find_machi, find_machi_incomplete, Game, GameRequest, PossibleActions,
         ThrowableOnRiichi,
     },
-    tiles::{Fon, Hai},
+    tiles::{Fon, Hai, SuuHai, Values},
 };
 
 use super::{Call, PossibleCall, TehaiIndex, TurnResult};
@@ -79,7 +79,17 @@ fn choose_tile_to_throw(player: Fon, game: &Game) -> TehaiIndex {
 
         // Count machi to maximize their numbers on each throw
         let machi_count = find_machi_incomplete(&tiles).len();
-        (shanten, usize::MAX - machi_count)
+
+        // Prioritize keeping tiles easy to combine with others
+        let easy_to_combine_priority = match thrown_tile {
+            Hai::Ji(_) => 0, // bad compatibility, throw it first
+            Hai::Suu(SuuHai { value, .. }) => match value {
+                Values::Ii | Values::Kyuu => 1,  // worse of suuhai
+                Values::Ryan | Values::Paa => 2, // mid
+                _ => 3,                          // Good
+            },
+        };
+        (shanten, usize::MAX - machi_count, easy_to_combine_priority)
     });
 
     let chosen_tile = candidates[0];
