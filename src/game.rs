@@ -336,6 +336,7 @@ impl Game {
                     if oya_agari {
                         self.honba += 1;
                     } else {
+                        self.honba = 0;
                         // Move player
                         self.rotate_players(&mut channels);
 
