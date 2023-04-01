@@ -1,6 +1,8 @@
 use super::game::{GameRequest, PossibleActions, Request, ThrowableOnRiichi};
 use log::trace;
 
+mod naive;
+
 #[derive(Debug, Copy, Eq, PartialEq, PartialOrd, Ord, Clone)]
 pub enum Call {
     /// Call a Chi. Includes the index of the tiles in the chi.
@@ -85,6 +87,7 @@ impl AiServer {
                     client.tx_turn.send(result).expect("Sent!")
                 }
                 Request::EndGame => return,
+                Request::Refresh => println!("{}", request.game),
                 _ => {}
             }
         });
@@ -194,4 +197,9 @@ pub fn dump_caller_bot() -> AiServer {
             }
         },
     )
+}
+
+/// WIP
+pub fn naive() -> AiServer {
+    AiServer::new(naive::handle_call, naive::handle_turn)
 }

@@ -19,6 +19,7 @@ mod yaku;
 use ai::TehaiIndex;
 
 use crate::ai::dump_caller_bot;
+use crate::ai::naive;
 use crate::ai::null_bot;
 use crate::ai::AiServer;
 
@@ -48,6 +49,7 @@ enum AI {
     CursiveHuman,
     NullBot,
     DumbCallerBot,
+    Naive,
 }
 
 fn make_ai_server(ai: AI) -> AiServer {
@@ -55,6 +57,7 @@ fn make_ai_server(ai: AI) -> AiServer {
         AI::CursiveHuman => cursive_human(),
         AI::NullBot => null_bot(),
         AI::DumbCallerBot => dump_caller_bot(),
+        AI::Naive => naive(),
     }
 }
 
