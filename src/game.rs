@@ -2419,6 +2419,9 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
     solver::GroupTree::shanten(&root)
 }
 
+/// List waits for this hand
+///
+/// TODO: This function does not work for 国士無双
 fn find_machi(te: &[Hai]) -> Vec<Hai> {
     let open_mentsu_count = (14 - te.len()) / 3;
     let root = solver::GroupTree::generate(te, open_mentsu_count, 4, open_mentsu_count, 0);
