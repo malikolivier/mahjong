@@ -2470,6 +2470,24 @@ pub fn find_machi(te: &[Hai]) -> Vec<Hai> {
     machi
 }
 
+/// List waits for the incomplete groups in this hand
+///
+/// TODO: This function does not work for 国士無双
+pub fn find_machi_incomplete(te: &[Hai]) -> Vec<Hai> {
+    let open_mentsu_count = (14 - te.len()) / 3;
+    let root = solver::GroupTree::generate(te, open_mentsu_count, 4, open_mentsu_count, 0);
+
+    let mut machi = vec![];
+    for groups in solver::GroupTree::possible_groups_tree(&root) {
+        machi.extend(groups.machi());
+    }
+
+    machi.sort();
+    machi.dedup();
+
+    machi
+}
+
 mod solver {
     use super::{Hai, SuuHai, Values};
     use std::fmt;
