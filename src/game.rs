@@ -1730,6 +1730,33 @@ impl Game {
             riichi_bou_repr(self.score[Fon::Pee as usize].riichi_bou),
         )
     }
+
+    /// Count number of visible hai on the board for given player
+    pub fn how_many_visible(&self, hai: Hai, player: Fon) -> usize {
+        let in_player_hand = self.players[player as usize]
+            .te
+            .hai_closed_all()
+            .filter(|h| *h == hai)
+            .count();
+
+        let in_hoo = self.hoo.iter().fold(0, |acc, hoo| {
+            acc + hoo.river.iter().filter(|h| h.hai() == hai).count()
+        });
+
+        let in_fuuro = self.players.iter().fold(0, |acc, p| {
+            acc + p.te.fuuro.iter().fold(0, |acc, f| {
+                acc + f.hai_all().into_iter().filter(|h| *h == hai).count()
+            })
+        });
+
+        let in_dora = self
+            .dora_indicator()
+            .into_iter()
+            .filter(|h| *h == hai)
+            .count();
+
+        in_player_hand + in_hoo + in_fuuro + in_dora
+    }
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
@@ -1981,6 +2008,11 @@ impl Te {
     }
     pub fn fuuro(&self) -> &[Fuuro] {
         self.fuuro.as_ref()
+    }
+
+    /// Iterate over all closed (non-fuuro) tiles
+    pub fn hai_closed_all(&self) -> impl Iterator<Item = Hai> + '_ {
+        self.hai.iter().copied().chain(self.tsumo.into_iter())
     }
 }
 
@@ -2348,7 +2380,7 @@ fn is_tempai(te: &[Hai]) -> bool {
 
 /// Thanks https://qiita.com/tomo_hxx/items/75b5f771285e1334c0a5 !
 /// http://ara.moo.jp/mjhmr/shanten.htm
-fn count_shanten(te: &[Hai]) -> usize {
+pub fn count_shanten(te: &[Hai]) -> usize {
     let some_chi = count_chitoitsu_shanten(te);
     let some_koku = count_kokushimuso_shanten(te);
     let normal = count_normal_shanten(te);
@@ -2422,7 +2454,7 @@ fn count_normal_shanten(te: &[Hai]) -> usize {
 /// List waits for this hand
 ///
 /// TODO: This function does not work for 国士無双
-fn find_machi(te: &[Hai]) -> Vec<Hai> {
+pub fn find_machi(te: &[Hai]) -> Vec<Hai> {
     let open_mentsu_count = (14 - te.len()) / 3;
     let root = solver::GroupTree::generate(te, open_mentsu_count, 4, open_mentsu_count, 0);
     let root = solver::GroupTree::shanten0(root);
