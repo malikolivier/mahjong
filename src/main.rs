@@ -26,6 +26,10 @@ use crate::ai::AiServer;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
+    /// Seed for random number generation
+    #[arg(long, default_value_t = 0)]
+    seed: u8,
+
     /// Load game from state (.ron file)
     #[arg(long)]
     from_state: Option<PathBuf>,
@@ -69,7 +73,7 @@ fn main() {
 
     let args = Args::parse();
 
-    let mut rng: StdRng = SeedableRng::from_seed([0; 32]);
+    let mut rng: StdRng = SeedableRng::from_seed([args.seed; 32]);
     let mut game: game::Game = if let Some(file) = args.from_state {
         ron::de::from_reader(std::fs::File::open(file).unwrap()).unwrap()
     } else {
