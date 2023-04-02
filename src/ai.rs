@@ -70,7 +70,7 @@ pub type CallHandler = fn(possible_calls: &[PossibleCall], request: &GameRequest
 pub type TurnHandler = fn(possible_actions: &PossibleActions, request: &GameRequest) -> TurnResult;
 
 impl AiServer {
-    pub fn new(handle_call: CallHandler, handle_turn: TurnHandler) -> AiServer {
+    pub fn new(handle_call: CallHandler, handle_turn: TurnHandler, log: bool) -> AiServer {
         let (server, client) = channel();
 
         std::thread::spawn(move || loop {
@@ -87,17 +87,25 @@ impl AiServer {
                     client.tx_turn.send(result).expect("Sent!")
                 }
                 Request::EndGame => return,
-                Request::Refresh => println!("{}", request.game),
-                Request::DisplayScore(result) => match result {
-                    KyokuResult::Agari { winners, .. } => {
-                        for winner in winners {
-                            println!("KYOKU END: Player {} won with {:?}", winner.0 as usize, &winner.1);
+                Request::Refresh => {}
+                Request::DisplayScore(result) => {
+                    if log {
+                        match result {
+                            KyokuResult::Agari { winners, .. } => {
+                                for winner in winners {
+                                    println!(
+                                        "KYOKU END: Player {} won with {:?}",
+                                        winner.0 as usize, &winner.1
+                                    );
+                                }
+                            }
+                            KyokuResult::Ryukyoku { .. } => {
+                                println!("KYOKU END: Ryukyoku");
+                            }
                         }
+                        println!("{}", request.game);
                     }
-                    KyokuResult::Ryukyoku { .. } => {
-                        println!("KYOKU END: Ryukyoku");
-                    }
-                },
+                }
             }
         });
 
@@ -121,6 +129,7 @@ pub fn null_bot() -> AiServer {
             index: TehaiIndex::Tsumohai,
             riichi: false,
         },
+        false,
     )
 }
 
@@ -205,10 +214,11 @@ pub fn dump_caller_bot() -> AiServer {
                 riichi: false,
             }
         },
+        false,
     )
 }
 
 /// WIP
 pub fn naive() -> AiServer {
-    AiServer::new(naive::handle_call, naive::handle_turn)
+    AiServer::new(naive::handle_call, naive::handle_turn, true)
 }
