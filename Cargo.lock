@@ -595,6 +595,7 @@ dependencies = [
  "log",
  "rand",
  "ron",
+ "rurel",
  "serde",
  "serde_derive",
 ]
@@ -798,6 +799,15 @@ dependencies = [
  "base64",
  "bitflags",
  "serde",
+]
+
+[[package]]
+name = "rurel"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d991d4b0eb75646eb37fec5a76ed7b652434b4ea2ef069013fc91598cf221e88"
+dependencies = [
+ "rand",
 ]
 
 [[package]]

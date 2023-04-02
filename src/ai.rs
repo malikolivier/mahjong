@@ -2,8 +2,10 @@ use super::game::{GameRequest, KyokuResult, PossibleActions, Request, ThrowableO
 use log::trace;
 
 mod naive;
+mod rurel;
+pub use self::rurel::train as rurel_train;
 
-#[derive(Debug, Copy, Eq, PartialEq, PartialOrd, Ord, Clone)]
+#[derive(Debug, Copy, Eq, PartialEq, PartialOrd, Ord, Clone, Hash)]
 pub enum Call {
     /// Call a Chi. Includes the index of the tiles in the chi.
     Chi { index: [usize; 2] },
@@ -23,6 +25,7 @@ pub enum PossibleCall {
     Ron,
 }
 
+#[derive(Clone, Hash, Eq, PartialEq)]
 pub enum TurnResult {
     ThrowHai { index: TehaiIndex, riichi: bool },
     Tsumo,
@@ -221,4 +224,9 @@ pub fn dump_caller_bot() -> AiServer {
 /// WIP
 pub fn naive() -> AiServer {
     AiServer::new(naive::handle_call, naive::handle_turn, true)
+}
+
+/// WIP
+pub fn rurel() -> AiServer {
+    AiServer::new(rurel::handle_call, rurel::handle_turn, true)
 }

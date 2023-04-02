@@ -9,7 +9,7 @@ use cursive::Cursive;
 use cursive::CursiveExt;
 use rand::{rngs::StdRng, SeedableRng};
 
-mod ai;
+pub mod ai;
 mod game;
 mod list;
 mod points;
@@ -21,11 +21,17 @@ use ai::TehaiIndex;
 use crate::ai::dump_caller_bot;
 use crate::ai::naive;
 use crate::ai::null_bot;
+use crate::ai::rurel;
+use crate::ai::rurel_train;
 use crate::ai::AiServer;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
+    /// Train rurel
+    #[arg(long, default_value_t = false)]
+    train: bool,
+
     /// Seed for random number generation
     #[arg(long, default_value_t = 0)]
     seed: u8,
@@ -54,6 +60,7 @@ enum AI {
     NullBot,
     DumbCallerBot,
     Naive,
+    Rurel,
 }
 
 fn make_ai_server(ai: AI) -> AiServer {
@@ -62,6 +69,7 @@ fn make_ai_server(ai: AI) -> AiServer {
         AI::NullBot => null_bot(),
         AI::DumbCallerBot => dump_caller_bot(),
         AI::Naive => naive(),
+        AI::Rurel => rurel(),
     }
 }
 
@@ -72,6 +80,10 @@ fn main() {
     test_print_all_chars();
 
     let args = Args::parse();
+    if args.train {
+        rurel_train();
+        return;
+    }
 
     let mut rng: StdRng = SeedableRng::from_seed([args.seed; 32]);
     let mut game: game::Game = if let Some(file) = args.from_state {
