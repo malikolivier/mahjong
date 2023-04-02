@@ -24,7 +24,7 @@ pub fn handle_call(possible_calls: &[PossibleCall], _: &GameRequest) -> Option<C
 ///
 /// NB:
 ///  - Never use kyusyukyuhai
-///  - Only announce ankan if it does not reduce the number of waits (TODO)
+///  - Only announce ankan if it does not reduce the shanten number
 ///  - Always call shominkan (as it does not change the player's wait and likeky
 ///    to increase points with a dora in most cases)
 pub fn handle_turn(possible_actions: &PossibleActions, request: &GameRequest) -> TurnResult {
@@ -40,6 +40,14 @@ pub fn handle_turn(possible_actions: &PossibleActions, request: &GameRequest) ->
             index,
             riichi: true,
         };
+    }
+
+    if !possible_actions.can_ankan.is_empty() {
+        let index = choose_ankan_tile(&possible_actions.can_ankan, request.player, &request.game);
+        if let Some(index) = index {
+            println!("Ankan!");
+            return TurnResult::Ankan { index };
+        }
     }
 
     if let Some(hai) = possible_actions.can_shominkan.first() {
@@ -137,4 +145,28 @@ fn machi_count(te: &[Hai], player: Fon, game: &Game) -> usize {
         count += remaining_count;
     }
     count
+}
+
+fn choose_ankan_tile(ankan_tiles: &[Hai], player: Fon, game: &Game) -> Option<TehaiIndex> {
+    let mut tiles: Vec<_> = ankan_tiles.iter().copied().map(Some).collect();
+    tiles.push(None);
+
+    let te = game.player_te_(player);
+    tiles.sort_by_key(|tile| {
+        let mut te = te.clone();
+        if let Some(ankan_tile) = tile {
+            let index = te.index(*ankan_tile).expect("Has ankan tile");
+            te.ankan(index);
+        }
+        let hai_all: Vec<_> = te.hai_closed_all().collect();
+        count_shanten(&hai_all)
+    });
+
+    let tile_to_ankan = tiles[0];
+    if let Some(tile) = tile_to_ankan {
+        let index = te.index(tile).expect("Has ankan tile");
+        Some(index)
+    } else {
+        None
+    }
 }
