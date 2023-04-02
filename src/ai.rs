@@ -1,4 +1,4 @@
-use super::game::{GameRequest, PossibleActions, Request, ThrowableOnRiichi};
+use super::game::{GameRequest, KyokuResult, PossibleActions, Request, ThrowableOnRiichi};
 use log::trace;
 
 mod naive;
@@ -88,7 +88,16 @@ impl AiServer {
                 }
                 Request::EndGame => return,
                 Request::Refresh => println!("{}", request.game),
-                _ => {}
+                Request::DisplayScore(result) => match result {
+                    KyokuResult::Agari { winners, .. } => {
+                        for winner in winners {
+                            println!("KYOKU END: Player {} won with {:?}", winner.0 as usize, &winner.1);
+                        }
+                    }
+                    KyokuResult::Ryukyoku { .. } => {
+                        println!("KYOKU END: Ryukyoku");
+                    }
+                },
             }
         });
 
