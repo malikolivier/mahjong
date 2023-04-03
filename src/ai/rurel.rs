@@ -1,4 +1,11 @@
-use std::hash::{Hash, Hasher};
+use std::{
+    hash::{Hash, Hasher},
+    mem::MaybeUninit,
+    ops::DerefMut,
+    rc::Rc,
+    sync::{mpsc::Sender, Arc, Mutex},
+    thread::JoinHandle,
+};
 
 use rand::{rngs::StdRng, SeedableRng};
 use rurel::{
@@ -8,7 +15,7 @@ use rurel::{
 };
 
 use crate::{
-    game::{Game, GameRequest, PossibleActions, Request, ThrowableOnRiichi},
+    game::{self, Game, GameRequest, PossibleActions, Request, ThrowableOnRiichi},
     tiles::Fon,
 };
 
@@ -33,7 +40,7 @@ impl Hash for MyState {
     }
 }
 
-#[derive(Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 enum MyAction {
     NormalTurn(TurnResult),
     Call(Option<Call>),
@@ -147,6 +154,10 @@ impl State for MyState {
 
 struct MyAgent {
     state: MyState,
+    tx_call: Sender<Option<Call>>,
+    tx_turn: Sender<TurnResult>,
+    // game_thread: MaybeUninit<JoinHandle<()>>,
+    // ai_thread: MaybeUninit<JoinHandle<()>>,
 }
 impl Agent<MyState> for MyAgent {
     fn current_state(&self) -> &MyState {
@@ -154,40 +165,38 @@ impl Agent<MyState> for MyAgent {
     }
     fn take_action(&mut self, action: &MyAction) {
         // Change state according to action
-        let game = &mut self.state.request.game;
+
         // Advance until next turn
-        let mut channels = [null_bot(), null_bot(), null_bot(), null_bot()];
-        let player = self.state.request.player;
-        // Set training server
-        let (server, client) = crate::ai::channel();
-
-        let action = action.clone();
-        std::thread::spawn(move || loop {
-            let request = client.rx.recv().unwrap();
-            match &request.request {
-                Request::Call(_possible_calls) => {
-                    if let MyAction::Call(call) = action {
-                        client.tx_call.send(call).expect("Sent!");
-                    } else {
-                        unreachable!()
-                    }
+        let request = &self.state.request;
+        println!("RUREL::TRAIN: action={:?}", action);
+        if let MyAction::Wait = action {
+            // let the game be played without interfering
+            return;
+        }
+        println!("RUREL::TRAIN: request={:?}", request.request);
+        println!(
+            "RUREL::TRAIN: te=    {:?}",
+            request.game.player_te_(request.player)
+        );
+        match &request.request {
+            Request::Call(_possible_calls) => {
+                if let MyAction::Call(call) = action {
+                    self.tx_call.send(*call).expect("Sent!");
+                } else {
+                    unreachable!()
                 }
-                Request::DoTurn(_possible_actions) => {
-                    if let MyAction::NormalTurn(result) = &action {
-                        client.tx_turn.send(result.clone()).expect("Sent!");
-                    } else {
-                        unreachable!()
-                    }
-                }
-                Request::EndGame => return,
-                Request::Refresh => {}
-                Request::DisplayScore { .. } => {}
             }
-        });
-
-        channels[player as usize] = server;
-        let mut rng: StdRng = SeedableRng::from_seed([0; 32]);
-        game.play_hanchan(channels, &mut rng);
+            Request::DoTurn(_possible_actions) => {
+                if let MyAction::NormalTurn(result) = &action {
+                    self.tx_turn.send(result.clone()).expect("Sent!");
+                } else {
+                    unreachable!()
+                }
+            }
+            Request::EndGame => {}
+            Request::Refresh => {}
+            Request::DisplayScore { .. } => {}
+        }
     }
 }
 
@@ -201,23 +210,49 @@ pub fn handle_turn(possible_actions: &PossibleActions, request: &GameRequest) ->
 
 pub fn train() {
     let mut trainer = AgentTrainer::new();
-    let mut rng: StdRng = SeedableRng::from_seed([0; 32]);
-    let game = Game::new(&mut rng);
 
-    let mut agent = MyAgent {
+    let (server, client) = crate::ai::channel();
+    let rx = client.rx;
+    let agent = Arc::new(Mutex::new(MyAgent {
         state: MyState {
             request: GameRequest {
-                game,
+                game: Game::default(),
                 request: Request::Refresh,
                 player: Fon::Ton,
             },
         },
-    };
+        tx_call: client.tx_call,
+        tx_turn: client.tx_turn,
+    }));
 
+    let agent2 = agent.clone();
+    let ai_thread = std::thread::spawn(move || {
+        let request = rx.recv().unwrap();
+        let mut agent = agent2.lock().unwrap();
+        agent.state.request = request;
+        // Now game thread waits for response!
+        // We will send it with Agent::take_action
+    });
+
+    let game_thread = std::thread::spawn(move || {
+        let mut rng: StdRng = SeedableRng::from_seed([0; 32]);
+        let channels = [server, null_bot(), null_bot(), null_bot()];
+        let mut game = Game::new(&mut rng);
+        game.play_hanchan(channels, &mut rng);
+    });
+
+    let mut a = agent.lock().unwrap();
+    // a.ai_thread.write(ai_thread);
+    // unsafe { a.ai_thread.assume_init() };
+    // a.game_thread.write(game_thread);
+    // unsafe { a.game_thread.assume_init() };
     trainer.train(
-        &mut agent,
+        a.deref_mut(),
         &QLearning::new(0.2, 0.01, 2.),
         &mut FixedIterations::new(100000),
         &RandomExploration::new(),
     );
+
+    ai_thread.join().unwrap();
+    game_thread.join().unwrap();
 }

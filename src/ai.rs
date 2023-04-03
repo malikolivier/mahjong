@@ -25,7 +25,7 @@ pub enum PossibleCall {
     Ron,
 }
 
-#[derive(Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub enum TurnResult {
     ThrowHai { index: TehaiIndex, riichi: bool },
     Tsumo,
