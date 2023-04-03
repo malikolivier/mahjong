@@ -15,18 +15,18 @@ use crate::{
 use super::{null_bot, AiServer, Call, PossibleCall, TehaiIndex, TurnResult};
 
 #[derive(Clone)]
-struct MyState<'g> {
-    request: &'g GameRequest,
+struct MyState {
+    request: GameRequest,
 }
 
-impl<'g> PartialEq for MyState<'g> {
+impl PartialEq for MyState {
     /// Compare only what the current player knows of the state
     fn eq(&self, other: &Self) -> bool {
         unimplemented!("PartialEq")
     }
 }
-impl<'g> Eq for MyState<'g> {}
-impl<'g> Hash for MyState<'g> {
+impl Eq for MyState {}
+impl Hash for MyState {
     /// Only take into account what the current player knows about the state
     fn hash<H: Hasher>(&self, state: &mut H) {
         unimplemented!("Hash")
@@ -41,7 +41,7 @@ enum MyAction {
     Wait,
 }
 
-impl<'g> State for MyState<'g> {
+impl State for MyState {
     type A = MyAction;
     fn reward(&self) -> f64 {
         unimplemented!("reward")
@@ -52,7 +52,7 @@ impl<'g> State for MyState<'g> {
             game,
             request,
             player,
-        } = self.request;
+        } = &self.request;
         match request {
             Request::Call(possible_calls) => {
                 let mut actions = vec![MyAction::Call(None)];
@@ -145,16 +145,49 @@ impl<'g> State for MyState<'g> {
     }
 }
 
-struct MyAgent<'g> {
-    state: MyState<'g>,
+struct MyAgent {
+    state: MyState,
 }
-impl<'g> Agent<MyState<'g>> for MyAgent<'g> {
-    fn current_state(&self) -> &MyState<'g> {
+impl Agent<MyState> for MyAgent {
+    fn current_state(&self) -> &MyState {
         &self.state
     }
     fn take_action(&mut self, action: &MyAction) {
         // Change state according to action
-        unimplemented!()
+        let game = &mut self.state.request.game;
+        // Advance until next turn
+        let mut channels = [null_bot(), null_bot(), null_bot(), null_bot()];
+        let player = self.state.request.player;
+        // Set training server
+        let (server, client) = crate::ai::channel();
+
+        let action = action.clone();
+        std::thread::spawn(move || loop {
+            let request = client.rx.recv().unwrap();
+            match &request.request {
+                Request::Call(_possible_calls) => {
+                    if let MyAction::Call(call) = action {
+                        client.tx_call.send(call).expect("Sent!");
+                    } else {
+                        unreachable!()
+                    }
+                }
+                Request::DoTurn(_possible_actions) => {
+                    if let MyAction::NormalTurn(result) = &action {
+                        client.tx_turn.send(result.clone()).expect("Sent!");
+                    } else {
+                        unreachable!()
+                    }
+                }
+                Request::EndGame => return,
+                Request::Refresh => {}
+                Request::DisplayScore { .. } => {}
+            }
+        });
+
+        channels[player as usize] = server;
+        let mut rng: StdRng = SeedableRng::from_seed([0; 32]);
+        game.play_hanchan(channels, &mut rng);
     }
 }
 
@@ -173,7 +206,7 @@ pub fn train() {
 
     let mut agent = MyAgent {
         state: MyState {
-            request: &GameRequest {
+            request: GameRequest {
                 game,
                 request: Request::Refresh,
                 player: Fon::Ton,
