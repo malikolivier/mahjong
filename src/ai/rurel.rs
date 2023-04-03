@@ -51,7 +51,7 @@ enum MyAction {
 impl State for MyState {
     type A = MyAction;
     fn reward(&self) -> f64 {
-        unimplemented!("reward")
+        self.request.game.player_score(self.request.player) as f64
     }
     fn actions(&self) -> Vec<MyAction> {
         // List possible, legal actions for each game state

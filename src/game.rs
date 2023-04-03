@@ -1620,6 +1620,9 @@ impl Game {
     pub fn player_te_(&self, p: Fon) -> &Te {
         &self.players[p as usize].te
     }
+    pub fn player_score(&self, p: Fon) -> isize {
+        self.score[p as usize].score
+    }
     #[cfg(test)]
     pub fn player_te_mut(&mut self, p: Fon) -> &mut Te {
         &mut self.players[p as usize].te
