@@ -58,12 +58,14 @@ enum MyAction {
 impl State for MyState {
     type A = MyAction;
     fn reward(&self) -> f64 {
-        let score = self.request.game.player_score(self.request.player) as f64;
+        let score = self.request.game.player_score(self.request.player);
+        // dbg!(score);
 
-        let te = self.request.game.player_te_(self.request.player);
-        let hai_all: Vec<_> = te.hai_closed_all().collect();
-        let shanten = count_shanten(&hai_all) as f64;
-        dbg!(score - shanten)
+        // let te = self.request.game.player_te_(self.request.player);
+        // let hai_all: Vec<_> = te.hai_closed_all().collect();
+        // let shanten = count_shanten(&hai_all);
+        // dbg!(shanten);
+        dbg!(score as f64) // - shanten as f64)
     }
     fn actions(&self) -> Vec<MyAction> {
         // List possible, legal actions for each game state
@@ -181,15 +183,15 @@ impl Agent<MyState> for MyAgent {
         // Change state according to action
 
         let request = &self.state.request;
-        println!("RUREL::TRAIN: action={:?}", action);
+        // println!("RUREL::TRAIN: action={:?}", action);
         if let MyAction::Wait = action {
             // let the game be played without interfering
         } else {
-            println!("RUREL::TRAIN: request={:?}", request.request);
-            println!(
-                "RUREL::TRAIN: te=    {:?}",
-                request.game.player_te_(request.player)
-            );
+            // println!("RUREL::TRAIN: request={:?}", request.request);
+            // println!(
+            //     "RUREL::TRAIN: te=    {:?}",
+            //     request.game.player_te_(request.player)
+            // );
             match &request.request {
                 Request::Call(_possible_calls) => {
                     if let MyAction::Call(call) = action {
