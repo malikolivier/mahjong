@@ -160,6 +160,7 @@ impl State for MyState {
 struct MyAgent {
     state: MyState,
     client: AiClient,
+    hanchan_done: usize,
     // tx_call: Sender<Option<Call>>,
     // tx_turn: Sender<TurnResult>,
     // game_thread: MaybeUninit<JoinHandle<()>>,
@@ -206,6 +207,26 @@ impl Agent<MyState> for MyAgent {
         // Advance until next turn
         let request = self.client.rx.recv().unwrap();
         self.state.request = request;
+
+        if let GameRequest {
+            request: Request::EndGame,
+            ..
+        } = &self.state.request
+        {
+            // Reset game to do another hanchan
+            self.hanchan_done += 1;
+
+            let (server, client) = crate::ai::channel();
+            self.client = client;
+
+            let mut rng: StdRng = SeedableRng::from_seed([self.hanchan_done as u8; 32]);
+            let channels = [server, null_bot(), null_bot(), null_bot()];
+            let mut game = Game::new(&mut rng);
+
+            std::thread::spawn(move || {
+                game.play_hanchan(channels, &mut rng);
+            });
+        }
     }
 }
 
@@ -259,6 +280,7 @@ pub fn train() {
     let mut agent = MyAgent {
         state: MyState { request },
         client,
+        hanchan_done: 0,
     };
 
     // let mut a = agent.lock().unwrap();
