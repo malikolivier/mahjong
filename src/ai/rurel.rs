@@ -222,6 +222,7 @@ impl Agent<MyState> for MyAgent {
         {
             // Reset game to do another hanchan
             self.hanchan_done += 1;
+            println!("HANCHAN DONE: {}", self.hanchan_done);
 
             let (server, client) = crate::ai::channel();
             self.client = client;
@@ -325,17 +326,18 @@ pub fn train() {
     // unsafe { a.ai_thread.assume_init() };
     // a.game_thread.write(game_thread);
     // unsafe { a.game_thread.assume_init() };
+    const ITER_CNT: u32 = 100_000;
     trainer.train(
         // a.deref_mut(),
         &mut agent,
         &QLearning::new(0.2, 0.01, 2.),
-        &mut FixedIterations::new(100000),
+        &mut FixedIterations::new(ITER_CNT),
         &RandomExploration::new(),
     );
 
     let learnings = trainer.export_learned_values();
     let out = ron::ser::to_string(&learnings).expect("Saved content");
-    let mut f = std::fs::File::create("learnings.ron").expect("Create file");
+    let mut f = std::fs::File::create(format!("learnings-{}.ron", ITER_CNT)).expect("Create file");
     f.write_all(out.as_bytes()).unwrap();
 
     println!("END SUCCESS");
