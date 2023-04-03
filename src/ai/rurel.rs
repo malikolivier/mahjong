@@ -65,7 +65,7 @@ impl State for MyState {
         // let hai_all: Vec<_> = te.hai_closed_all().collect();
         // let shanten = count_shanten(&hai_all);
         // dbg!(shanten);
-        dbg!(score as f64) // - shanten as f64)
+        score as f64 // - shanten as f64)
     }
     fn actions(&self) -> Vec<MyAction> {
         // List possible, legal actions for each game state
@@ -224,7 +224,11 @@ impl Agent<MyState> for MyAgent {
         {
             // Reset game to do another hanchan
             self.hanchan_done += 1;
-            println!("HANCHAN DONE: {}", self.hanchan_done);
+            println!(
+                "HANCHAN DONE: {}, reward: {}",
+                self.hanchan_done,
+                self.state.reward()
+            );
 
             let (server, client) = crate::ai::channel();
             self.client = client;
