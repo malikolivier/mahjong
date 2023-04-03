@@ -29,14 +29,19 @@ struct MyState {
 impl PartialEq for MyState {
     /// Compare only what the current player knows of the state
     fn eq(&self, other: &Self) -> bool {
-        unimplemented!("PartialEq")
+        let p = self.request.player;
+        self.request
+            .game
+            .known_game(p)
+            .eq(&other.request.game.known_game(p))
     }
 }
 impl Eq for MyState {}
 impl Hash for MyState {
     /// Only take into account what the current player knows about the state
     fn hash<H: Hasher>(&self, state: &mut H) {
-        unimplemented!("Hash")
+        let p = self.request.player;
+        self.request.game.known_game(p).hash(state)
     }
 }
 

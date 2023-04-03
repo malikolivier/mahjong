@@ -1,6 +1,7 @@
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use std::{
     fmt::{self, Debug},
+    hash::{Hash, Hasher},
     str::FromStr,
 };
 
@@ -56,6 +57,13 @@ impl PartialEq for SuuHai {
     }
 }
 impl Eq for SuuHai {}
+impl Hash for SuuHai {
+    /// Ignore akadora during comparison (for now)
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.suu.hash(state);
+        self.value.hash(state);
+    }
+}
 
 #[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
 pub enum Fon {
@@ -132,7 +140,7 @@ impl Sangen {
     }
 }
 
-#[derive(Ord, PartialOrd, Eq, PartialEq, Copy, Clone)]
+#[derive(Ord, PartialOrd, Eq, PartialEq, Copy, Clone, Hash)]
 pub enum Hai {
     Suu(SuuHai),
     Ji(JiHai),

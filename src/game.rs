@@ -62,8 +62,28 @@ pub struct Game {
     score: [Score; 4],
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
-struct Score {
+#[derive(Copy, Clone, PartialEq, Eq, Hash)]
+pub struct KnownGame<'g> {
+    /// 場の風
+    pub wind: Fon,
+    /// Current player that should draw
+    pub turn: Fon,
+    pub honba: usize,
+    pub kyoku: usize,
+    pub jun: usize,
+    pub tsumo_cnt: usize,
+    /// 4 players indexed by Ton/Nan/Sha/Pee
+    pub players: [&'g [Fuuro]; 4],
+    pub dora_indicators: [Option<Hai>; 5],
+    /// 4 rivers indexed by Ton/Nan/Sha/Pee
+    pub hoo: &'g [Hoo; 4],
+    pub dice: [Dice; 2],
+    /// Score of each player, indexed by Ton/Nan/Sha/Pee
+    pub score: [Score; 4],
+}
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Eq, PartialEq, Hash)]
+pub struct Score {
     riichi_bou: usize,
     score: isize,
 }
@@ -242,6 +262,33 @@ impl Game {
         let mut game = Self::default();
         game.reset(rng);
         game
+    }
+
+    /// Get current known state for player Fon
+    pub fn known_game(&self, player: Fon) -> KnownGame<'_> {
+        const EMPTY_SLICE: &[Fuuro] = &[];
+        let mut players = [EMPTY_SLICE; 4];
+        for (i, p) in self.players.iter().enumerate() {
+            players[i] = &p.te.fuuro;
+        }
+
+        let mut dora_indicators = [None; 5];
+        for (i, indicator) in self.dora_indicator().into_iter().enumerate() {
+            dora_indicators[i] = Some(indicator);
+        }
+        KnownGame {
+            wind: self.wind,
+            turn: self.turn,
+            honba: self.honba,
+            kyoku: self.kyoku,
+            jun: self.jun,
+            tsumo_cnt: self.tsumo_cnt,
+            players,
+            dora_indicators,
+            hoo: &self.hoo,
+            dice: self.dice,
+            score: self.score,
+        }
     }
     fn wall_break_index(&self) -> usize {
         let dice_result = self.dice[0] as usize + self.dice[1] as usize;
@@ -1762,12 +1809,12 @@ impl Game {
     }
 }
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct Hoo {
     river: Vec<SuteHai>,
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum SuteHai {
     Normal(Hai),
     Riichi(Hai),
@@ -2026,7 +2073,7 @@ pub enum Direction {
     Right,
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, Hash)]
 pub enum Fuuro {
     Shuntsu {
         own: [Hai; 2],
@@ -2086,7 +2133,7 @@ impl Fuuro {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize)]
+#[derive(Debug, Eq, PartialEq, Clone, Serialize, Deserialize, Hash)]
 pub enum KantsuInner {
     Ankan {
         own: [Hai; 4],
