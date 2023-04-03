@@ -64,6 +64,8 @@ pub struct Game {
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
 pub struct KnownGame<'g> {
+    pub te: &'g [Hai],
+    pub tsumo: Option<Hai>,
     /// 場の風
     pub wind: Fon,
     /// Current player that should draw
@@ -266,6 +268,8 @@ impl Game {
 
     /// Get current known state for player Fon
     pub fn known_game(&self, player: Fon) -> KnownGame<'_> {
+        let te = self.player_te_(player);
+
         const EMPTY_SLICE: &[Fuuro] = &[];
         let mut players = [EMPTY_SLICE; 4];
         for (i, p) in self.players.iter().enumerate() {
@@ -276,7 +280,10 @@ impl Game {
         for (i, indicator) in self.dora_indicator().into_iter().enumerate() {
             dora_indicators[i] = Some(indicator);
         }
+
         KnownGame {
+            te: te.hai(),
+            tsumo: te.tsumo,
             wind: self.wind,
             turn: self.turn,
             honba: self.honba,
