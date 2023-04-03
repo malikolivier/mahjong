@@ -1,11 +1,6 @@
 use std::{
     hash::{Hash, Hasher},
     io::Write,
-    mem::MaybeUninit,
-    ops::DerefMut,
-    rc::Rc,
-    sync::{mpsc::Sender, Arc, Mutex},
-    thread::JoinHandle,
 };
 
 use rand::{rngs::StdRng, SeedableRng};
@@ -16,12 +11,9 @@ use rurel::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    game::{self, count_shanten, Game, GameRequest, PossibleActions, Request, ThrowableOnRiichi},
-    tiles::Fon,
-};
+use crate::game::{Game, GameRequest, PossibleActions, Request, ThrowableOnRiichi};
 
-use super::{null_bot, AiClient, AiServer, Call, PossibleCall, TehaiIndex, TurnResult};
+use super::{null_bot, AiClient, Call, PossibleCall, TehaiIndex, TurnResult};
 
 #[derive(Clone, Serialize, Deserialize)]
 struct MyState {
@@ -58,14 +50,9 @@ enum MyAction {
 impl State for MyState {
     type A = MyAction;
     fn reward(&self) -> f64 {
+        // TODO: We should take other things into account in the reward function
         let score = self.request.game.player_score(self.request.player);
-        // dbg!(score);
-
-        // let te = self.request.game.player_te_(self.request.player);
-        // let hai_all: Vec<_> = te.hai_closed_all().collect();
-        // let shanten = count_shanten(&hai_all);
-        // dbg!(shanten);
-        score as f64 // - shanten as f64)
+        score as f64
     }
     fn actions(&self) -> Vec<MyAction> {
         // List possible, legal actions for each game state
@@ -170,10 +157,6 @@ struct MyAgent {
     state: MyState,
     client: AiClient,
     hanchan_done: usize,
-    // tx_call: Sender<Option<Call>>,
-    // tx_turn: Sender<TurnResult>,
-    // game_thread: MaybeUninit<JoinHandle<()>>,
-    // ai_thread: MaybeUninit<JoinHandle<()>>,
 }
 impl Agent<MyState> for MyAgent {
     fn current_state(&self) -> &MyState {
@@ -183,15 +166,9 @@ impl Agent<MyState> for MyAgent {
         // Change state according to action
 
         let request = &self.state.request;
-        // println!("RUREL::TRAIN: action={:?}", action);
         if let MyAction::Wait = action {
             // let the game be played without interfering
         } else {
-            // println!("RUREL::TRAIN: request={:?}", request.request);
-            // println!(
-            //     "RUREL::TRAIN: te=    {:?}",
-            //     request.game.player_te_(request.player)
-            // );
             match &request.request {
                 Request::Call(_possible_calls) => {
                     if let MyAction::Call(call) = action {
@@ -217,6 +194,7 @@ impl Agent<MyState> for MyAgent {
         let request = self.client.rx.recv().unwrap();
         self.state.request = request;
 
+        // Check for end of hanchan
         if let GameRequest {
             request: Request::EndGame,
             ..
@@ -246,7 +224,8 @@ impl Agent<MyState> for MyAgent {
 
 fn ai_trainer() -> AgentTrainer<MyState> {
     let mut trainer = AgentTrainer::new();
-    let state = ron::de::from_reader(std::fs::File::open("learnings.ron").unwrap()).unwrap();
+    let state =
+        ron::de::from_reader(std::fs::File::open("learnings-1000000.ron").unwrap()).unwrap();
     trainer.import_state(state);
 
     trainer
@@ -286,36 +265,12 @@ pub fn train() {
     let mut trainer = AgentTrainer::new();
 
     let (server, client) = crate::ai::channel();
-    // let rx = client.rx;
-    // let mut agent = //Arc::new(Mutex::new(
-    //     MyAgent {
-    //     state: MyState {
-    //         request: GameRequest {
-    //             game: Game::default(),
-    //             request: Request::Refresh,
-    //             player: Fon::Ton,
-    //         },
-    //     },
-    //     client,
-    //     // tx_call: client.tx_call,
-    //     // tx_turn: client.tx_turn,
-    // }
-    //))
-
-    // let agent2 = agent.clone();
-    // let ai_thread = std::thread::spawn(move || {
-    //     let request = rx.recv().unwrap();
-    //     let mut agent = agent2.lock().unwrap();
-    //     agent.state.request = request;
-    //     // Now game thread waits for response!
-    //     // We will send it with Agent::take_action
-    // });
 
     let mut rng: StdRng = SeedableRng::from_seed([0; 32]);
     let channels = [server, null_bot(), null_bot(), null_bot()];
     let mut game = Game::new(&mut rng);
 
-    let game_thread = std::thread::spawn(move || {
+    std::thread::spawn(move || {
         game.play_hanchan(channels, &mut rng);
     });
 
@@ -327,14 +282,8 @@ pub fn train() {
         hanchan_done: 0,
     };
 
-    // let mut a = agent.lock().unwrap();
-    // a.ai_thread.write(ai_thread);
-    // unsafe { a.ai_thread.assume_init() };
-    // a.game_thread.write(game_thread);
-    // unsafe { a.game_thread.assume_init() };
-    const ITER_CNT: u32 = 100_000;
+    const ITER_CNT: u32 = 1_000_000;
     trainer.train(
-        // a.deref_mut(),
         &mut agent,
         &QLearning::new(0.2, 0.01, 2.),
         &mut FixedIterations::new(ITER_CNT),
@@ -346,5 +295,5 @@ pub fn train() {
     let mut f = std::fs::File::create(format!("learnings-{}.ron", ITER_CNT)).expect("Create file");
     f.write_all(out.as_bytes()).unwrap();
 
-    println!("END SUCCESS");
+    println!("END LEARNING WITH SUCCESS");
 }
