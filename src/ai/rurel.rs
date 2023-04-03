@@ -15,7 +15,7 @@ use rurel::{
 };
 
 use crate::{
-    game::{self, Game, GameRequest, PossibleActions, Request, ThrowableOnRiichi},
+    game::{self, Game, GameRequest, PossibleActions, Request, ThrowableOnRiichi, count_shanten},
     tiles::Fon,
 };
 
@@ -56,7 +56,12 @@ enum MyAction {
 impl State for MyState {
     type A = MyAction;
     fn reward(&self) -> f64 {
-        self.request.game.player_score(self.request.player) as f64
+        let score = self.request.game.player_score(self.request.player) as f64;
+
+        let te = self.request.game.player_te_(self.request.player);
+        let hai_all: Vec<_> = te.hai_closed_all().collect();
+        let shanten = count_shanten(&hai_all) as f64;
+        score - shanten
     }
     fn actions(&self) -> Vec<MyAction> {
         // List possible, legal actions for each game state
