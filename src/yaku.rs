@@ -1,4 +1,5 @@
 use log::{debug, trace};
+use serde::{Serialize, Deserialize};
 
 use super::game::{Fuuro, Game, KantsuInner, Te};
 use super::tiles::{Fon, Hai, JiHai, SuuHai};
@@ -24,7 +25,7 @@ pub enum WinningMethod {
     Nagashimangan,
 }
 
-#[derive(Debug, Eq, PartialEq, Hash, Copy, Clone)]
+#[derive(Debug, Eq, PartialEq, Hash, Copy, Clone, Serialize, Deserialize)]
 pub enum Yaku {
     Menzentsumo,
     Riichi,

@@ -4,7 +4,7 @@ use std::{
     ops::DerefMut,
     rc::Rc,
     sync::{mpsc::Sender, Arc, Mutex},
-    thread::JoinHandle,
+    thread::JoinHandle, io::Write,
 };
 
 use rand::{rngs::StdRng, SeedableRng};
@@ -13,6 +13,7 @@ use rurel::{
     strategy::{explore::RandomExploration, learn::QLearning, terminate::FixedIterations},
     AgentTrainer,
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{
     game::{self, Game, GameRequest, PossibleActions, Request, ThrowableOnRiichi, count_shanten},
@@ -21,7 +22,7 @@ use crate::{
 
 use super::{null_bot, AiClient, AiServer, Call, PossibleCall, TehaiIndex, TurnResult};
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 struct MyState {
     request: GameRequest,
 }
@@ -45,7 +46,7 @@ impl Hash for MyState {
     }
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 enum MyAction {
     NormalTurn(TurnResult),
     Call(Option<Call>),
@@ -61,7 +62,7 @@ impl State for MyState {
         let te = self.request.game.player_te_(self.request.player);
         let hai_all: Vec<_> = te.hai_closed_all().collect();
         let shanten = count_shanten(&hai_all) as f64;
-        score - shanten
+        dbg!(score - shanten)
     }
     fn actions(&self) -> Vec<MyAction> {
         // List possible, legal actions for each game state
@@ -301,6 +302,10 @@ pub fn train() {
         &RandomExploration::new(),
     );
 
-    // ai_thread.join().unwrap();
-    game_thread.join().unwrap();
+    let learnings = trainer.export_learned_values();
+    let out = ron::ser::to_string(&learnings).expect("Saved content");
+    let mut f = std::fs::File::create("learnings.ron").expect("Create file");
+    f.write_all(out.as_bytes()).unwrap();
+
+    println!("END SUCCESS");
 }

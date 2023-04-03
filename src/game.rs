@@ -207,7 +207,7 @@ impl<'de> Deserialize<'de> for Game {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct GameRequest {
     pub game: Game,
     pub request: Request,
@@ -224,7 +224,7 @@ impl GameRequest {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Request {
     Refresh,
     Call(Vec<PossibleCall>),
@@ -233,7 +233,7 @@ pub enum Request {
     EndGame,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PossibleActions {
     /// Can win by calling tsumo
     pub can_tsumo: bool,
@@ -245,7 +245,7 @@ pub struct PossibleActions {
     pub can_ankan: Vec<Hai>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum KyokuResult {
     Agari {
         /// List of winners with their respective Yaku.
@@ -2418,7 +2418,7 @@ impl Game {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq, Clone, Copy, Serialize, Deserialize)]
 pub enum ThrowableOnRiichi {
     Te(usize),
     Tsumohai,

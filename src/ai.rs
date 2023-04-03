@@ -1,11 +1,12 @@
 use super::game::{GameRequest, KyokuResult, PossibleActions, Request, ThrowableOnRiichi};
 use log::trace;
+use serde::{Deserialize, Serialize};
 
 mod naive;
 mod rurel;
 pub use self::rurel::train as rurel_train;
 
-#[derive(Debug, Copy, Eq, PartialEq, PartialOrd, Ord, Clone, Hash)]
+#[derive(Debug, Copy, Eq, PartialEq, PartialOrd, Ord, Clone, Hash, Serialize, Deserialize)]
 pub enum Call {
     /// Call a Chi. Includes the index of the tiles in the chi.
     Chi { index: [usize; 2] },
@@ -17,7 +18,7 @@ pub enum Call {
     Ron,
 }
 
-#[derive(Debug, Eq, PartialEq, PartialOrd, Ord, Clone)]
+#[derive(Debug, Eq, PartialEq, PartialOrd, Ord, Clone, Serialize, Deserialize)]
 pub enum PossibleCall {
     Chi { indices: Vec<[usize; 2]> },
     Pon,
@@ -25,7 +26,7 @@ pub enum PossibleCall {
     Ron,
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub enum TurnResult {
     ThrowHai { index: TehaiIndex, riichi: bool },
     Tsumo,
@@ -34,7 +35,7 @@ pub enum TurnResult {
     Ankan { index: TehaiIndex },
 }
 
-#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone)]
+#[derive(Debug, Ord, PartialOrd, Eq, PartialEq, Hash, Copy, Clone, Serialize, Deserialize)]
 pub enum TehaiIndex {
     Tehai(usize),
     Tsumohai,
