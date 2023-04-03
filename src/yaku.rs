@@ -1,5 +1,5 @@
 use log::{debug, trace};
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use super::game::{Fuuro, Game, KantsuInner, Te};
 use super::tiles::{Fon, Hai, JiHai, SuuHai};

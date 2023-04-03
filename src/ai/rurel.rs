@@ -1,10 +1,11 @@
 use std::{
     hash::{Hash, Hasher},
+    io::Write,
     mem::MaybeUninit,
     ops::DerefMut,
     rc::Rc,
     sync::{mpsc::Sender, Arc, Mutex},
-    thread::JoinHandle, io::Write,
+    thread::JoinHandle,
 };
 
 use rand::{rngs::StdRng, SeedableRng};
@@ -16,7 +17,7 @@ use rurel::{
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    game::{self, Game, GameRequest, PossibleActions, Request, ThrowableOnRiichi, count_shanten},
+    game::{self, count_shanten, Game, GameRequest, PossibleActions, Request, ThrowableOnRiichi},
     tiles::Fon,
 };
 
@@ -236,12 +237,42 @@ impl Agent<MyState> for MyAgent {
     }
 }
 
-pub fn handle_call(possible_calls: &[PossibleCall], _: &GameRequest) -> Option<Call> {
-    unimplemented!()
+fn ai_trainer() -> AgentTrainer<MyState> {
+    let mut trainer = AgentTrainer::new();
+    let state = ron::de::from_reader(std::fs::File::open("learnings.ron").unwrap()).unwrap();
+    trainer.import_state(state);
+
+    trainer
 }
 
-pub fn handle_turn(possible_actions: &PossibleActions, request: &GameRequest) -> TurnResult {
-    unimplemented!()
+pub fn handle_call(_: &[PossibleCall], request: &GameRequest) -> Option<Call> {
+    let action = ai_trainer().best_action(&MyState {
+        request: request.clone(),
+    });
+    if let Some(action) = action {
+        if let MyAction::Call(call) = action {
+            call
+        } else {
+            unreachable!("Cannot do something outside of calling here")
+        }
+    } else {
+        panic!("Don't know what to do. Did not learn enough");
+    }
+}
+
+pub fn handle_turn(_: &PossibleActions, request: &GameRequest) -> TurnResult {
+    let action = ai_trainer().best_action(&MyState {
+        request: request.clone(),
+    });
+    if let Some(action) = action {
+        if let MyAction::NormalTurn(result) = action {
+            result
+        } else {
+            unreachable!("Cannot do something outside of normal turn here")
+        }
+    } else {
+        panic!("Don't know what to do. Did not learn enough");
+    }
 }
 
 pub fn train() {
