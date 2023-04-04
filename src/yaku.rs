@@ -179,7 +179,7 @@ impl Yaku {
             Suuankou => "四暗刻",
             Chinroutou => "清老頭",
             Suukantsu => "四槓子",
-            SuuankouTanki => "四槓子単騎",
+            SuuankouTanki => "四暗刻単騎",
             Daisuushii => "大四喜",
             JunseiChuurenpoutou => "純正九蓮宝燈",
             KokushimusouJuusanmen => "国士無双十三面",
