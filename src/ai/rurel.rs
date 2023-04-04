@@ -166,7 +166,7 @@ impl State for MyState {
                 for (i, action) in actions.iter().enumerate() {
                     if let MyAction::Call(call) = action {
                         if *call == naive_call {
-                            weights[i] = actions.len();
+                            weights[i] = actions.len() * 10;
                             break;
                         }
                     }
@@ -177,7 +177,7 @@ impl State for MyState {
                 for (i, action) in actions.iter().enumerate() {
                     if let MyAction::NormalTurn(turn) = action {
                         if *turn == naive_turn {
-                            weights[i] = actions.len();
+                            weights[i] = actions.len() * 10;
                             break;
                         }
                     }
