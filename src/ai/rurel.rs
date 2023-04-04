@@ -3,7 +3,7 @@ use std::{
     io::Write,
 };
 
-use rand::{rngs::StdRng, SeedableRng};
+use rand::{distributions::WeightedIndex, prelude::Distribution, rngs::StdRng, SeedableRng};
 use rurel::{
     mdp::{Agent, State},
     strategy::{explore::RandomExploration, learn::QLearning, terminate::FixedIterations},
@@ -11,7 +11,10 @@ use rurel::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::game::{Game, GameRequest, PossibleActions, Request, ThrowableOnRiichi};
+use crate::{
+    ai::naive,
+    game::{Game, GameRequest, PossibleActions, Request, ThrowableOnRiichi},
+};
 
 use super::{null_bot, AiClient, Call, PossibleCall, TehaiIndex, TurnResult};
 
@@ -150,6 +153,42 @@ impl State for MyState {
             // Otherwise, do nothing
             _ => vec![MyAction::Wait],
         }
+    }
+
+    /// Override default random action. Apply weight to each choice.
+    fn random_action(&self) -> MyAction {
+        let mut actions = self.actions();
+        let mut weights = vec![1; actions.len()];
+        // Set weight: prioritize the move the naive AI would have done
+        match &self.request.request {
+            Request::Call(possible_calls) => {
+                let naive_call = naive::handle_call(possible_calls, &self.request);
+                for (i, action) in actions.iter().enumerate() {
+                    if let MyAction::Call(call) = action {
+                        if *call == naive_call {
+                            weights[i] = actions.len();
+                            break;
+                        }
+                    }
+                }
+            }
+            Request::DoTurn(possible_actions) => {
+                let naive_turn = naive::handle_turn(possible_actions, &self.request);
+                for (i, action) in actions.iter().enumerate() {
+                    if let MyAction::NormalTurn(turn) = action {
+                        if *turn == naive_turn {
+                            weights[i] = actions.len();
+                            break;
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+        let dist = WeightedIndex::new(&weights).unwrap();
+        let mut rng = rand::thread_rng();
+        let index = dist.sample(&mut rng);
+        actions.swap_remove(index)
     }
 }
 
